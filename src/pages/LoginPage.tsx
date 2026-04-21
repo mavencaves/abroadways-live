@@ -4,10 +4,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { getOAuthUrl } from "@/lib/api";
+import { authDebug, getOAuthUrl } from "@/lib/api";
 import GoogleIcon from "@/components/google-icon";
 import FacebookIcon from "@/components/facebook-icon";
 
@@ -16,18 +16,54 @@ export default function SignInPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const { login } = useAuth();
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const { login, token, user, isLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation() as any;
-    const from = location.state?.from?.pathname || "/";
+    const from = location.state?.from?.pathname || "/dashboard";
+    const targetAfterLogin = from.startsWith("/dashboard") ? from : "/dashboard";
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
+    const debugState = useMemo(
+        () => ({
+            apiBaseUrl: authDebug.apiBaseUrl,
+            loginEndpoint: authDebug.loginEndpoint,
+            hasToken: Boolean(token || (typeof window !== "undefined" && localStorage.getItem("auth_token"))),
+            hasCurrentUser: Boolean(user || storedUser),
+            loading: submitting || isLoading,
+            error: errorMessage ?? "none",
+        }),
+        [errorMessage, isLoading, storedUser, submitting, token, user]
+    );
+
+    useEffect(() => {
+        if (!isLoading && token && user) {
+            navigate("/dashboard", { replace: true });
+        }
+    }, [isLoading, navigate, token, user]);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (submitting) return;
+        setErrorMessage(null);
+
+        if (!email.trim() || !password.trim()) {
+            setErrorMessage("Please enter both your email address and password.");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            await login(email, password);
-            navigate(from, { replace: true });
+            await login(email.trim(), password);
+            navigate(targetAfterLogin, { replace: true });
+        } catch (error: any) {
+            const status = error?.response?.status;
+            const message =
+                status === 401 || status === 403
+                    ? error?.response?.data?.message || "Your email or password is incorrect."
+                    : error?.code === "ERR_NETWORK"
+                      ? "Cannot reach the authentication server. Please check the backend server and API base URL."
+                      : error?.response?.data?.message || error?.message || "Login failed. Please try again.";
+            setErrorMessage(message);
         } finally {
             setSubmitting(false);
         }
@@ -95,6 +131,11 @@ export default function SignInPage() {
                     <Button type="submit" className="h-12 w-full text-base font-semibold text-white" disabled={submitting}>
                         {submitting ? "Signing In..." : "Sign In"}
                     </Button>
+                    {errorMessage ? (
+                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {errorMessage}
+                        </div>
+                    ) : null}
                 </form>
 
                 <div className="flex items-center">
@@ -131,6 +172,16 @@ export default function SignInPage() {
                         <Link to="/signup">Create an account</Link>
                     </Button>
                 </p>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-600">
+                    <p className="font-semibold text-slate-900">Temporary Auth Debug</p>
+                    <p><span className="font-medium">API base URL:</span> {debugState.apiBaseUrl}</p>
+                    <p><span className="font-medium">Login endpoint:</span> {debugState.loginEndpoint}</p>
+                    <p><span className="font-medium">Token exists:</span> {debugState.hasToken ? "yes" : "no"}</p>
+                    <p><span className="font-medium">Current user exists:</span> {debugState.hasCurrentUser ? "yes" : "no"}</p>
+                    <p><span className="font-medium">Loading state:</span> {debugState.loading ? "loading" : "idle"}</p>
+                    <p><span className="font-medium">Error state:</span> {debugState.error}</p>
+                </div>
             </CardContent>
         </Card>
     );

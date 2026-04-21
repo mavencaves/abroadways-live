@@ -8,6 +8,23 @@ type User = {
   role: string;
 };
 
+const AUTH_TOKEN_KEY = "auth_token";
+const AUTH_USER_KEY = "auth_user";
+
+const persistAuthState = (token: string | null, user: User | null) => {
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+
+  if (user) {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(AUTH_USER_KEY);
+  }
+};
+
 type AuthContextValue = {
   user: User | null;
   token: string | null;
@@ -26,40 +43,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("auth_token");
+    const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+    const savedUserRaw = localStorage.getItem(AUTH_USER_KEY);
+    let savedUser: User | null = null;
+
+    if (savedUserRaw) {
+      try {
+        savedUser = JSON.parse(savedUserRaw) as User;
+      } catch {
+        localStorage.removeItem(AUTH_USER_KEY);
+      }
+    }
     setToken(savedToken);
+    setUser(savedUser);
     if (!savedToken) {
       setIsLoading(false);
       return;
     }
     authApi
       .me()
-      .then((res) => setUser(res.data))
+      .then((res) => {
+        setUser(res.data);
+        persistAuthState(savedToken, res.data);
+      })
+      .catch(() => {
+        setToken(null);
+        setUser(null);
+        persistAuthState(null, null);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
     const newToken: string = res.data.token;
-    localStorage.setItem("auth_token", newToken);
+    persistAuthState(newToken, null);
     setToken(newToken);
     // fetch profile after login
     const me = await authApi.me();
     setUser(me.data);
+    persistAuthState(newToken, me.data);
   };
 
   const register = async (name: string, email: string, password: string) => {
     const res = await authApi.register({ name, email, password });
     const newToken: string = res.data.token;
-    localStorage.setItem("auth_token", newToken);
+    persistAuthState(newToken, null);
     setToken(newToken);
     // fetch profile after register
     const me = await authApi.me();
     setUser(me.data);
+    persistAuthState(newToken, me.data);
   };
 
   const logout = () => {
-    localStorage.removeItem("auth_token");
+    persistAuthState(null, null);
     setToken(null);
     setUser(null);
   };
@@ -67,6 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshMe = async () => {
     const me = await authApi.me();
     setUser(me.data);
+    if (token) {
+      persistAuthState(token, me.data);
+    }
   };
 
   const value = useMemo(
@@ -84,5 +125,3 @@ export function useAuth() {
   }
   return ctx;
 }
-
-

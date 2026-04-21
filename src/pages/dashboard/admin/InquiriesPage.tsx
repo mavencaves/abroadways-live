@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
 
 type Inquiry = {
   _id: string;
@@ -30,12 +31,19 @@ const statusClasses: Record<Inquiry["status"], string> = {
 };
 
 export default function InquiriesPage() {
+  const { user } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const canManageInquiries = user ? ["admin", "content-manager"].includes(user.role) : false;
 
   const loadInquiries = async () => {
+    if (!canManageInquiries) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setLoadError(null);
@@ -46,6 +54,10 @@ export default function InquiriesPage() {
       const message =
         status === 401
           ? "Your session has expired or you do not have permission to view inquiries. Please sign in again with an admin or content-manager account."
+          : status === 403
+            ? "Access denied. Only admin and content-manager accounts can view inquiries."
+            : status >= 500
+              ? "The inquiry service is having trouble right now. Please try again shortly."
           : error?.response?.data?.message || "Failed to load inquiries.";
 
       setLoadError(message);
@@ -57,7 +69,7 @@ export default function InquiriesPage() {
 
   useEffect(() => {
     loadInquiries();
-  }, []);
+  }, [canManageInquiries]);
 
   const handleStatusChange = async (inquiry: Inquiry, status: Inquiry["status"]) => {
     try {
@@ -94,10 +106,36 @@ export default function InquiriesPage() {
     return <div className="container mx-auto p-6 text-slate-500">Loading inquiries...</div>;
   }
 
+  if (!canManageInquiries) {
+    return (
+      <div className="container mx-auto space-y-6 p-6">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Inquiries route is live</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Inquiries</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Review callback requests, consultation inquiries, and contact form submissions from the public site.
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm font-medium text-amber-700">
+              Access denied. Only admin and content-manager accounts can open the inquiries dashboard.
+            </p>
+            <p className="text-sm text-slate-600">
+              Your current role is <span className="font-medium text-slate-900">{user?.role || "unknown"}</span>.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loadError) {
     return (
       <div className="container mx-auto space-y-6 p-6">
         <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Inquiries route is live</p>
           <h1 className="text-3xl font-semibold text-slate-950">Inquiries</h1>
           <p className="mt-2 text-sm text-slate-600">
             Review callback requests, consultation inquiries, and contact form submissions from the public site.
@@ -122,6 +160,7 @@ export default function InquiriesPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Inquiries route is live</p>
         <h1 className="text-3xl font-semibold text-slate-950">Inquiries</h1>
         <p className="mt-2 text-sm text-slate-600">
           Review callback requests, consultation inquiries, and contact form submissions from the public site.

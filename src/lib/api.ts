@@ -23,6 +23,11 @@ export const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
 });
 
+export const authDebug = {
+  apiBaseUrl: API_BASE_URL,
+  loginEndpoint: `${API_BASE_URL}/api/v1/auth/login`,
+};
+
 apiClient.interceptors.request.use((config) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   if (token) {

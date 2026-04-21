@@ -363,9 +363,7 @@ function App() {
                 <Route path={"users"} element={<UsersPage/>}/>
                 <Route path={"blogs"} element={<BlogsPage/>}/>
                 <Route path={"events"} element={<EventsPage/>}/>
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
-                    <Route path={"inquiries"} element={<InquiriesPage/>}/>
-                </Route>
+                <Route path={"inquiries"} element={<InquiriesPage/>}/>
                 <Route path={"ads"} element={<AdsPage/>}/>
                 <Route path={"ai-query"} element={<AIQueriesDashboard/>}/>
                 <Route path={"courses"} element={<CoursesPage/>}/>
