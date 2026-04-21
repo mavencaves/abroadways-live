@@ -243,7 +243,7 @@ export default function Navbar() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-48 rounded-[1.25rem] border border-slate-200 p-2 shadow-[0_24px_56px_rgba(15,23,42,0.14)]">
                                         {["admin", "content-manager", "course-manager"].includes(user.role) && (
-                                            <DropdownMenuItem onSelect={() => navigate("/admin/dashboard")}>
+                                            <DropdownMenuItem onSelect={() => navigate("/dashboard")}>
                                                 Admin Panel
                                             </DropdownMenuItem>
                                         )}
@@ -311,7 +311,7 @@ export default function Navbar() {
                                                             className="w-full bg-blue-600 py-3 text-base font-medium text-white hover:bg-blue-700"
                                                             onClick={() => {
                                                                 setIsOpen(false);
-                                                                navigate("/admin/dashboard");
+                                                                navigate("/dashboard");
                                                             }}
                                                         >
                                                             Admin Panel

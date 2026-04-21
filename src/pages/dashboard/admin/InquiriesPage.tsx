@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { inquiriesApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,14 +33,23 @@ export default function InquiriesPage() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadInquiries = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const response = await inquiriesApi.getAll();
       setInquiries(Array.isArray(response.data) ? response.data : []);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to load inquiries.");
+      const status = error?.response?.status;
+      const message =
+        status === 401
+          ? "Your session has expired or you do not have permission to view inquiries. Please sign in again with an admin or content-manager account."
+          : error?.response?.data?.message || "Failed to load inquiries.";
+
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -82,6 +92,31 @@ export default function InquiriesPage() {
 
   if (loading) {
     return <div className="container mx-auto p-6 text-slate-500">Loading inquiries...</div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="container mx-auto space-y-6 p-6">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-950">Inquiries</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Review callback requests, consultation inquiries, and contact form submissions from the public site.
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm font-medium text-red-600">{loadError}</p>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={loadInquiries}>Try Again</Button>
+              <Button asChild variant="outline">
+                <Link to="/login">Go to Sign In</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -195,6 +195,13 @@ function LegacyExamAliasRedirect() {
     return <Navigate to={getLegacyExamRedirect(pathname)} replace />;
 }
 
+function LegacyDashboardRedirect() {
+    const { pathname } = useLocation();
+    const nextPath = pathname.replace(/^\/admin\/dashboard/, "/dashboard") || "/dashboard";
+
+    return <Navigate to={nextPath} replace />;
+}
+
 
 
 function App() {
@@ -348,13 +355,17 @@ function App() {
                 <Route path={"/calculator/cgpa"} element={<CGPACalculatorPage/>}/>
 
             </Route>
+            <Route path={"/admin/dashboard"} element={<LegacyDashboardRedirect/>}/>
+            <Route path={"/admin/dashboard/*"} element={<LegacyDashboardRedirect/>}/>
             <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager', 'course-manager']}/>}>
-            <Route path={"/admin/dashboard"} element={<AdminDashboardLayout/>}>
+            <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
                 <Route index element={<DashboardOverview/>}/>
                 <Route path={"users"} element={<UsersPage/>}/>
                 <Route path={"blogs"} element={<BlogsPage/>}/>
                 <Route path={"events"} element={<EventsPage/>}/>
-                <Route path={"inquiries"} element={<InquiriesPage/>}/>
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
+                    <Route path={"inquiries"} element={<InquiriesPage/>}/>
+                </Route>
                 <Route path={"ads"} element={<AdsPage/>}/>
                 <Route path={"ai-query"} element={<AIQueriesDashboard/>}/>
                 <Route path={"courses"} element={<CoursesPage/>}/>

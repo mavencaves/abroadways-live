@@ -17,7 +17,7 @@ export function NavMain({ items }: { items: { title: string; url: string; icon?:
                   <SidebarMenuItem key={item.title}>
                       <NavLink
                           to={item.url}
-                          end={item.url === "/admin/dashboard"}
+                          end={item.url === "/dashboard"}
                           title={item.title}
                           className={({ isActive }) =>
                               [

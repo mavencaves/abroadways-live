@@ -6,7 +6,11 @@ export default function ProtectedRoute({ requiredRoles }: { requiredRoles?: stri
   const location = useLocation();
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-6 text-sm text-slate-600">
+        Checking your access...
+      </div>
+    );
   }
 
   if (!token) {
@@ -20,5 +24,4 @@ export default function ProtectedRoute({ requiredRoles }: { requiredRoles?: stri
 
   return <Outlet />;
 }
-
 
