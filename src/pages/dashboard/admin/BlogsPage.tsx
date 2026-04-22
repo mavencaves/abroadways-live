@@ -3,6 +3,7 @@ import {
   Download,
   Edit,
   FileText,
+  ExternalLink,
   MoreVertical,
   Plus,
   Search,
@@ -10,6 +11,7 @@ import {
   Trash2,
   TrendingUp,
 } from "lucide-react";
+import { Link } from "react-router";
 import { blogsApi } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,24 +40,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface Blog {
   _id: string;
   title: string;
+  slug?: string;
   content: string;
+  contentHtml?: string;
   author: string;
   image?: string;
+  featuredImage?: string;
   category: string;
+  tags?: string[];
   status: "published" | "draft" | "archived";
   clicks: number;
   createdAt: string;
@@ -88,21 +84,10 @@ export default function BlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<BlogStatusFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("updated-desc");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    author: "",
-    image: "",
-    category: "",
-    status: "draft" as Blog["status"],
-  });
 
   const canManageBlogs = user ? ["admin", "content-manager"].includes(user.role) : false;
 
@@ -193,59 +178,6 @@ export default function BlogsPage() {
     link.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exported successfully.");
-  };
-
-  const handleCreate = () => {
-    setEditingBlog(null);
-    setFormData({
-      title: "",
-      content: "",
-      author: "",
-      image: "",
-      category: "",
-      status: "draft",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleEdit = (blog: Blog) => {
-    setEditingBlog(blog);
-    setFormData({
-      title: blog.title,
-      content: blog.content,
-      author: blog.author,
-      image: blog.image || "",
-      category: blog.category || "",
-      status: blog.status,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.title.trim() || !formData.content.trim() || !formData.author.trim()) {
-      toast.error("Title, content, and author are required.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const payload = { ...formData, status: formData.status || "draft" };
-
-      if (editingBlog) {
-        await blogsApi.update(editingBlog._id, payload);
-        toast.success("Blog updated successfully.");
-      } else {
-        await blogsApi.create(payload);
-        toast.success("Blog created successfully.");
-      }
-
-      setIsDialogOpen(false);
-      await loadBlogs();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to save blog.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = async (id: string) => {
@@ -371,9 +303,11 @@ export default function BlogsPage() {
                 <Download className="h-4 w-4" />
                 Export CSV
               </Button>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Blog
+              <Button asChild className="gap-2">
+                <Link to="/dashboard/blogs/new">
+                  <Plus className="h-4 w-4" />
+                  Create Blog
+                </Link>
               </Button>
             </div>
           </div>
@@ -401,9 +335,11 @@ export default function BlogsPage() {
             <p className="max-w-xl text-sm text-slate-500">
               Try a different search term, switch back to all statuses, or create a new article to get started.
             </p>
-            <Button onClick={handleCreate} className="mt-1 gap-2">
-              <Plus className="h-4 w-4" />
-              Create Blog
+            <Button asChild className="mt-1 gap-2">
+              <Link to="/dashboard/blogs/new">
+                <Plus className="h-4 w-4" />
+                Create Blog
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -445,6 +381,18 @@ export default function BlogsPage() {
                           <div className="max-w-[360px]">
                             <p className="font-medium text-slate-900">{blog.title}</p>
                             <p className="line-clamp-2 text-sm text-slate-500">{blog.content}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {blog.slug ? (
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+                                  /{blog.slug}
+                                </span>
+                              ) : null}
+                              {blog.tags?.slice(0, 2).map((tag) => (
+                                <span key={`${blog._id}-${tag}`} className="rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -470,9 +418,17 @@ export default function BlogsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(blog)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                            <DropdownMenuItem asChild>
+                              <Link to={`/dashboard/blogs/${blog._id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/blog/${blog._id}`} target="_blank" rel="noreferrer">
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View Live
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600"
@@ -493,98 +449,6 @@ export default function BlogsPage() {
           </CardContent>
         </Card>
       )}
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingBlog ? "Edit blog" : "Create blog"}</DialogTitle>
-            <DialogDescription>
-              {editingBlog
-                ? "Update the selected blog post."
-                : "Add a new blog post to the Abroadways publishing workflow."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(event) => setFormData({ ...formData, title: event.target.value })}
-                placeholder="Blog title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="content">Content</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(event) => setFormData({ ...formData, content: event.target.value })}
-                placeholder="Write the blog content here"
-                rows={10}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="author">Author</Label>
-                <Input
-                  id="author"
-                  value={formData.author}
-                  onChange={(event) => setFormData({ ...formData, author: event.target.value })}
-                  placeholder="Author name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(event) => setFormData({ ...formData, category: event.target.value })}
-                  placeholder="Scholarships, Study Abroad, Visa Guidance..."
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  type="url"
-                  value={formData.image}
-                  onChange={(event) => setFormData({ ...formData, image: event.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: Blog["status"]) =>
-                    setFormData((prev) => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} className="bg-blue-700 hover:bg-blue-800" disabled={saving}>
-              {saving ? "Saving..." : editingBlog ? "Update Blog" : "Create Blog"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

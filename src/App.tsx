@@ -112,6 +112,8 @@ import UsersPage from "@/pages/dashboard/admin/UsersPage.tsx";
 import BlogsPage from "./pages/dashboard/admin/BlogsPage";
 import EventsPage from "./pages/dashboard/admin/EventsPage";
 import DashboardOverview from "./pages/dashboard/admin/DashBoardOverview";
+import BlogEditorPage from "./pages/dashboard/admin/BlogEditorPage";
+import EventEditorPage from "./pages/dashboard/admin/EventEditorPage";
 import EligibilityFirstPage from "./pages/Elegibility/ElegibilityFirstPage";
 import BookAseat from "./pages/BookAseat/BookAseat";
 import HigherEducationRegionPage from "@/pages/HigherEducationRegionPage.tsx";
@@ -346,7 +348,11 @@ function App() {
                 <Route index element={<DashboardOverview/>}/>
                 <Route path={"users"} element={<UsersPage/>}/>
                 <Route path={"blogs"} element={<BlogsPage/>}/>
+                <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
+                <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
                 <Route path={"events"} element={<EventsPage/>}/>
+                <Route path={"events/new"} element={<EventEditorPage/>}/>
+                <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
                 <Route path={"inquiries"} element={<InquiriesPage/>}/>
             </Route>
             </Route>

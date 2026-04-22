@@ -3,17 +3,83 @@ const Blog = require('../models/blogModel');
 
 const allowedStatuses = ['draft', 'published', 'archived'];
 
-const createBlog = asyncHandler(async (req, res) => {
-  const { title, content, author, image, category, status } = req.body;
-  const normalizedStatus = allowedStatuses.includes(status) ? status : undefined;
-  const blog = await Blog.create({
+const slugify = (value = '') =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const normalizeTags = (tags) => {
+  if (Array.isArray(tags)) {
+    return tags.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+
+  if (typeof tags === 'string') {
+    return tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  }
+
+  return [];
+};
+
+const htmlToPlainText = (html = '') =>
+  html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/(p|div|h1|h2|h3|h4|h5|h6|li|blockquote)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+const buildBlogPayload = (body, existingBlog) => {
+  const {
     title,
+    slug,
     content,
+    contentHtml,
     author,
     image,
+    featuredImage,
     category,
-    status: normalizedStatus ?? 'draft',
-  });
+    tags,
+    status,
+  } = body;
+
+  const normalizedStatus = allowedStatuses.includes(status) ? status : existingBlog?.status || 'draft';
+  const normalizedHtml = contentHtml || existingBlog?.contentHtml || '';
+  const plainTextContent =
+    content && String(content).trim()
+      ? content
+      : normalizedHtml
+        ? htmlToPlainText(normalizedHtml)
+        : existingBlog?.content || '';
+  const resolvedTitle = title || existingBlog?.title || '';
+  const resolvedImage = featuredImage !== undefined ? featuredImage : image;
+  const normalizedSlug = slug ? slugify(slug) : slugify(resolvedTitle);
+
+  return {
+    title: resolvedTitle,
+    slug: normalizedSlug,
+    content: plainTextContent,
+    contentHtml: normalizedHtml || undefined,
+    author: author || existingBlog?.author || '',
+    image: resolvedImage !== undefined ? resolvedImage : existingBlog?.image,
+    featuredImage: resolvedImage !== undefined ? resolvedImage : existingBlog?.featuredImage,
+    category: category || existingBlog?.category || 'general',
+    tags: normalizeTags(tags),
+    status: normalizedStatus,
+  };
+};
+
+const createBlog = asyncHandler(async (req, res) => {
+  const payload = buildBlogPayload(req.body);
+  const blog = await Blog.create(payload);
   res.status(201).json(blog);
 });
 
@@ -33,18 +99,20 @@ const getBlogById = asyncHandler(async (req, res) => {
 });
 
 const updateBlog = asyncHandler(async (req, res) => {
-  const { title, content, author, image, category, status } = req.body;
   const blog = await Blog.findById(req.params.id);
 
   if (blog) {
-    blog.title = title || blog.title;
-    blog.content = content || blog.content;
-    blog.author = author || blog.author;
-    blog.image = image !== undefined ? image : blog.image;
-    blog.category = category || blog.category;
-    if (status !== undefined && allowedStatuses.includes(status)) {
-      blog.status = status;
-    }
+    const payload = buildBlogPayload(req.body, blog);
+    blog.title = payload.title;
+    blog.slug = payload.slug;
+    blog.content = payload.content;
+    blog.contentHtml = payload.contentHtml;
+    blog.author = payload.author;
+    blog.image = payload.image;
+    blog.featuredImage = payload.featuredImage;
+    blog.category = payload.category;
+    blog.tags = payload.tags;
+    blog.status = payload.status;
     const updatedBlog = await blog.save();
     res.json(updatedBlog);
   } else {

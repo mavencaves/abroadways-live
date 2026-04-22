@@ -4,6 +4,7 @@ import {
   Clock3,
   Download,
   Edit,
+  ExternalLink,
   MapPin,
   MoreVertical,
   Plus,
@@ -11,6 +12,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { Link } from "react-router";
 import { eventsApi } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,16 +41,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface Event {
   _id: string;
@@ -87,21 +79,10 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [timingFilter, setTimingFilter] = useState<TimingFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("date-asc");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    location: "",
-    image: "",
-  });
 
   const canManageEvents = user ? ["admin", "content-manager"].includes(user.role) : false;
 
@@ -193,57 +174,6 @@ export default function EventsPage() {
     link.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exported successfully.");
-  };
-
-  const handleCreate = () => {
-    setEditingEvent(null);
-    setFormData({
-      title: "",
-      description: "",
-      date: "",
-      time: "",
-      location: "",
-      image: "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleEdit = (entry: Event) => {
-    setEditingEvent(entry);
-    const eventDate = new Date(entry.date);
-    setFormData({
-      title: entry.title,
-      description: entry.description,
-      date: eventDate.toISOString().split("T")[0],
-      time: entry.time,
-      location: entry.location,
-      image: entry.image || "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.title.trim() || !formData.description.trim() || !formData.date || !formData.time || !formData.location.trim()) {
-      toast.error("Title, description, date, time, and location are required.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      if (editingEvent) {
-        await eventsApi.update(editingEvent._id, formData);
-        toast.success("Event updated successfully.");
-      } else {
-        await eventsApi.create(formData);
-        toast.success("Event created successfully.");
-      }
-      setIsDialogOpen(false);
-      await loadEvents();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to save event.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = async (id: string) => {
@@ -379,9 +309,11 @@ export default function EventsPage() {
                 <Download className="h-4 w-4" />
                 Export CSV
               </Button>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Event
+              <Button asChild className="gap-2">
+                <Link to="/dashboard/events/new">
+                  <Plus className="h-4 w-4" />
+                  Create Event
+                </Link>
               </Button>
             </div>
           </div>
@@ -409,9 +341,11 @@ export default function EventsPage() {
             <p className="max-w-xl text-sm text-slate-500">
               Adjust your search or create a new event to keep the Abroadways calendar up to date.
             </p>
-            <Button onClick={handleCreate} className="mt-1 gap-2">
-              <Plus className="h-4 w-4" />
-              Create Event
+            <Button asChild className="mt-1 gap-2">
+              <Link to="/dashboard/events/new">
+                <Plus className="h-4 w-4" />
+                Create Event
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -490,9 +424,17 @@ export default function EventsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                              <DropdownMenuItem asChild>
+                                <Link to={`/dashboard/events/${entry._id}/edit`}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link to="/event" target="_blank" rel="noreferrer">
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  View Public Page
+                                </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-600"
@@ -514,89 +456,6 @@ export default function EventsPage() {
           </CardContent>
         </Card>
       )}
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingEvent ? "Edit event" : "Create event"}</DialogTitle>
-            <DialogDescription>
-              {editingEvent
-                ? "Update the selected event record."
-                : "Add a new event to the Abroadways calendar."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(event) => setFormData({ ...formData, title: event.target.value })}
-                placeholder="Event title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(event) => setFormData({ ...formData, description: event.target.value })}
-                placeholder="Share the event overview, audience, and main value for attendees"
-                rows={6}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(event) => setFormData({ ...formData, date: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={(event) => setFormData({ ...formData, time: event.target.value })}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(event) => setFormData({ ...formData, location: event.target.value })}
-                  placeholder="Dhaka, Online, or a venue name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  type="url"
-                  value={formData.image}
-                  onChange={(event) => setFormData({ ...formData, image: event.target.value })}
-                  placeholder="https://example.com/event-image.jpg"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} className="bg-blue-700 hover:bg-blue-800" disabled={saving}>
-              {saving ? "Saving..." : editingEvent ? "Update Event" : "Create Event"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
