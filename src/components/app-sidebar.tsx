@@ -29,7 +29,7 @@ const navLinks = [
     title: "Users",
     url: "/dashboard/users",
     icon: IconUsers,
-    allowedRoles: ["admin", "content-manager"],
+    allowedRoles: ["admin"],
   },
   {
     title: "Blogs",

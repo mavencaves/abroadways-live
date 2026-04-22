@@ -1,3 +1,18 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  Download,
+  Edit,
+  FileText,
+  MoreVertical,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  TrendingUp,
+} from "lucide-react";
+import { blogsApi } from "@/lib/api";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,10 +48,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Plus, Search, MoreVertical, TrendingUp, Edit, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { blogsApi } from "@/lib/api";
-import { toast } from "sonner";
 
 interface Blog {
   _id: string;
@@ -51,11 +62,37 @@ interface Blog {
   updatedAt: string;
 }
 
+type BlogStatusFilter = "all" | Blog["status"];
+type SortOrder = "updated-desc" | "updated-asc";
+
+const statusStyles: Record<Blog["status"], string> = {
+  published: "bg-emerald-100 text-emerald-700",
+  draft: "bg-amber-100 text-amber-700",
+  archived: "bg-slate-100 text-slate-700",
+};
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+const formatStatus = (status: Blog["status"]) =>
+  status.charAt(0).toUpperCase() + status.slice(1);
+
 export default function BlogsPage() {
+  const { user } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<BlogStatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("updated-desc");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [formData, setFormData] = useState({
@@ -64,23 +101,98 @@ export default function BlogsPage() {
     author: "",
     image: "",
     category: "",
-    status: "draft" as "published" | "draft" | "archived",
+    status: "draft" as Blog["status"],
   });
 
-  useEffect(() => {
-    loadBlogs();
-  }, []);
+  const canManageBlogs = user ? ["admin", "content-manager"].includes(user.role) : false;
 
   const loadBlogs = async () => {
+    if (!canManageBlogs) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setLoadError(null);
       const response = await blogsApi.getAll();
-      setBlogs(response.data);
+      const list = Array.isArray(response.data) ? response.data : [];
+      setBlogs(list);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to load blogs");
+      const status = error?.response?.status;
+      const message =
+        status === 401
+          ? "Your session has expired. Please sign in again to continue managing blogs."
+          : status === 403
+            ? "Access denied. Only admin and content-manager accounts can manage blogs."
+            : error?.response?.data?.message || "Failed to load blogs.";
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadBlogs();
+  }, [canManageBlogs]);
+
+  const filteredBlogs = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return [...blogs]
+      .filter((blog) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          blog.title.toLowerCase().includes(normalizedSearch) ||
+          blog.content.toLowerCase().includes(normalizedSearch) ||
+          blog.author.toLowerCase().includes(normalizedSearch) ||
+          blog.category?.toLowerCase().includes(normalizedSearch);
+
+        const matchesStatus = statusFilter === "all" || blog.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.updatedAt || a.createdAt).getTime();
+        const bTime = new Date(b.updatedAt || b.createdAt).getTime();
+        return sortOrder === "updated-desc" ? bTime - aTime : aTime - bTime;
+      });
+  }, [blogs, searchTerm, statusFilter, sortOrder]);
+
+  const publishedCount = blogs.filter((entry) => entry.status === "published").length;
+  const draftCount = blogs.filter((entry) => entry.status === "draft").length;
+  const archivedCount = blogs.filter((entry) => entry.status === "archived").length;
+
+  const exportCsv = () => {
+    if (!filteredBlogs.length) {
+      toast.error("There are no blogs to export.");
+      return;
+    }
+
+    const headers = ["Title", "Author", "Category", "Status", "Clicks", "Updated"];
+    const rows = filteredBlogs.map((entry) =>
+      [
+        entry.title,
+        entry.author,
+        entry.category || "Uncategorized",
+        formatStatus(entry.status),
+        String(entry.clicks || 0),
+        formatDateTime(entry.updatedAt || entry.createdAt),
+      ]
+        .map((value) => `"${String(value).replace(/"/g, "\"\"")}"`)
+        .join(","),
+    );
+
+    const blob = new Blob([[headers.join(","), ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "abroadways-blogs.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully.");
   };
 
   const handleCreate = () => {
@@ -110,227 +222,286 @@ export default function BlogsPage() {
   };
 
   const handleSubmit = async () => {
+    if (!formData.title.trim() || !formData.content.trim() || !formData.author.trim()) {
+      toast.error("Title, content, and author are required.");
+      return;
+    }
+
     try {
+      setSaving(true);
       const payload = { ...formData, status: formData.status || "draft" };
+
       if (editingBlog) {
         await blogsApi.update(editingBlog._id, payload);
-        toast.success("Blog updated successfully");
+        toast.success("Blog updated successfully.");
       } else {
         await blogsApi.create(payload);
-        toast.success("Blog created successfully");
+        toast.success("Blog created successfully.");
       }
+
       setIsDialogOpen(false);
-      loadBlogs();
+      await loadBlogs();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to save blog");
+      toast.error(error?.response?.data?.message || "Failed to save blog.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this blog?")) return;
+
     try {
+      setDeletingId(id);
       await blogsApi.delete(id);
-      toast.success("Blog deleted successfully");
-      loadBlogs();
+      toast.success("Blog deleted successfully.");
+      await loadBlogs();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete blog");
+      toast.error(error?.response?.data?.message || "Failed to delete blog.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const filteredBlogs = blogs.filter((blog) => {
-    const matchesSearch =
-      blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      blog.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || blog.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  if (!canManageBlogs) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Content Management</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Blogs</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Create, update, and organize public blog content from one editorial workspace.
+          </p>
+        </div>
 
-  const publishedCount = blogs.filter((blog) => blog.status === "published").length;
-  const draftCount = blogs.filter((blog) => blog.status === "draft").length;
-  const archivedCount = blogs.filter((blog) => blog.status === "archived").length;
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-
-  if (loading) {
-    return <div className="container mx-auto p-6">Loading blogs...</div>;
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <div className="flex items-center gap-3 text-amber-700">
+              <ShieldCheck className="h-5 w-5" />
+              <p className="text-sm font-medium">
+                Only admin and content-manager accounts can manage blog content.
+              </p>
+            </div>
+            <p className="text-sm text-slate-600">
+              Your current role is <span className="font-medium text-slate-900">{user?.role || "unknown"}</span>.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-6">
-            <h3 className="mb-2 text-sm text-gray-600">Total blogs</h3>
-            <p className="mb-2 text-4xl font-bold">{blogs.length}</p>
-            <div className="flex items-center gap-2 text-sm text-teal-500">
-              <TrendingUp className="h-4 w-4" />
-              <span>{blogs.length} blog posts in the system</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-6">
-            <h3 className="mb-2 text-sm text-gray-600">Draft blogs</h3>
-            <p className="mb-2 text-4xl font-bold">{draftCount}</p>
-            <div className="flex items-center gap-2 text-sm text-teal-500">
-              <TrendingUp className="h-4 w-4" />
-              <span>Waiting for review or publishing</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-6">
-            <h3 className="mb-2 text-sm text-gray-600">Published</h3>
-            <p className="mb-2 text-4xl font-bold">{publishedCount}</p>
-            <div className="flex items-center gap-2 text-sm text-teal-500">
-              <TrendingUp className="h-4 w-4" />
-              <span>Live on the public blog</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-6">
-            <h3 className="mb-2 text-sm text-gray-600">Archived</h3>
-            <p className="mb-2 text-4xl font-bold">{archivedCount}</p>
-            <div className="flex items-center gap-2 text-sm text-teal-500">
-              <TrendingUp className="h-4 w-4" />
-              <span>Stored for future reference</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-blue-800">Blogs</h1>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button className="gap-2 bg-blue-700 hover:bg-blue-800" onClick={handleCreate}>
-            <Plus className="h-4 w-4" />
-            Add Blog
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Content Management</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Blogs</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Manage editorial content, keep article statuses current, and maintain the public blog experience from one place.
+          </p>
+        </div>
+        <div className="text-sm text-slate-500">
+          Showing <span className="font-medium text-slate-900">{filteredBlogs.length}</span> of{" "}
+          <span className="font-medium text-slate-900">{blogs.length}</span> posts
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-          <Input
-            placeholder="Search blogs"
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Total blogs</p>
+            <p className="mt-2 text-3xl font-semibold">{blogs.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Published</p>
+            <p className="mt-2 text-3xl font-semibold">{publishedCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Drafts</p>
+            <p className="mt-2 text-3xl font-semibold">{draftCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Archived</p>
+            <p className="mt-2 text-3xl font-semibold">{archivedCount}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="bg-blue-50">
-            <TableRow>
-              <TableHead className="font-semibold">Title</TableHead>
-              <TableHead className="font-semibold">Category</TableHead>
-              <TableHead className="font-semibold">Clicks</TableHead>
-              <TableHead className="font-semibold">Date</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBlogs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-gray-500">
-                  No blogs found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredBlogs.map((blog) => (
-                <TableRow key={blog._id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {blog.image && (
-                        <img
-                          src={blog.image}
-                          alt={blog.title}
-                          className="h-12 w-12 rounded-lg object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "https://via.placeholder.com/48";
-                          }}
-                        />
-                      )}
-                      <span className="font-medium">{blog.title}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{blog.category || "N/A"}</TableCell>
-                  <TableCell>{blog.clicks || 0}</TableCell>
-                  <TableCell>{formatDate(blog.createdAt)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        blog.status === "published"
-                          ? "bg-teal-100 text-teal-700"
-                          : blog.status === "draft"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-700"
-                      }
-                    >
-                      {blog.status === "published" ? "Published" : blog.status === "draft" ? "Draft" : "Archived"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(blog)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(blog._id)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div className="grid gap-4 xl:grid-cols-[1fr_200px_220px_auto]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by title, author, category, or content"
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(value: BlogStatusFilter) => setStatusFilter(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={(value: SortOrder) => setSortOrder(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sort order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updated-desc">Newest updated first</SelectItem>
+                <SelectItem value="updated-asc">Oldest updated first</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={exportCsv} className="gap-2">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Blog
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-slate-500">Loading blogs...</CardContent>
+        </Card>
+      ) : loadError ? (
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm font-medium text-red-600">{loadError}</p>
+            <Button onClick={loadBlogs}>Try Again</Button>
+          </CardContent>
+        </Card>
+      ) : filteredBlogs.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
+            <div className="rounded-full bg-blue-50 p-3 text-blue-700">
+              <FileText className="h-6 w-6" />
+            </div>
+            <p className="text-lg font-medium text-slate-900">No blog posts match your current filters.</p>
+            <p className="max-w-xl text-sm text-slate-500">
+              Try a different search term, switch back to all statuses, or create a new article to get started.
+            </p>
+            <Button onClick={handleCreate} className="mt-1 gap-2">
+              <Plus className="h-4 w-4" />
+              Create Blog
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-hidden rounded-lg border">
+              <Table>
+                <TableHeader className="bg-blue-50">
+                  <TableRow>
+                    <TableHead className="font-semibold">Title</TableHead>
+                    <TableHead className="font-semibold">Category</TableHead>
+                    <TableHead className="font-semibold">Author</TableHead>
+                    <TableHead className="font-semibold">Traffic</TableHead>
+                    <TableHead className="font-semibold">Updated</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBlogs.map((blog) => (
+                    <TableRow key={blog._id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {blog.image ? (
+                            <img
+                              src={blog.image}
+                              alt={blog.title}
+                              className="h-12 w-12 rounded-lg object-cover"
+                              onError={(event) => {
+                                event.currentTarget.src = "https://via.placeholder.com/48";
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className="max-w-[360px]">
+                            <p className="font-medium text-slate-900">{blog.title}</p>
+                            <p className="line-clamp-2 text-sm text-slate-500">{blog.content}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{blog.category || "Uncategorized"}</TableCell>
+                      <TableCell>{blog.author}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <TrendingUp className="h-4 w-4 text-slate-400" />
+                          {blog.clicks || 0}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDateTime(blog.updatedAt || blog.createdAt)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={statusStyles[blog.status]}>
+                          {formatStatus(blog.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(blog)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDelete(blog._id)}
+                              disabled={deletingId === blog._id}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {deletingId === blog._id ? "Deleting..." : "Delete"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingBlog ? "Edit blog" : "Create blog"}</DialogTitle>
             <DialogDescription>
-              {editingBlog ? "Update the selected blog post." : "Add a new blog post to the Abroadways CMS."}
+              {editingBlog
+                ? "Update the selected blog post."
+                : "Add a new blog post to the Abroadways publishing workflow."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -339,7 +510,7 @@ export default function BlogsPage() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(event) => setFormData({ ...formData, title: event.target.value })}
                 placeholder="Blog title"
               />
             </div>
@@ -348,18 +519,18 @@ export default function BlogsPage() {
               <Textarea
                 id="content"
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Blog content"
+                onChange={(event) => setFormData({ ...formData, content: event.target.value })}
+                placeholder="Write the blog content here"
                 rows={10}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="author">Author</Label>
                 <Input
                   id="author"
                   value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, author: event.target.value })}
                   placeholder="Author name"
                 />
               </div>
@@ -368,26 +539,19 @@ export default function BlogsPage() {
                 <Input
                   id="category"
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Category"
+                  onChange={(event) => setFormData({ ...formData, category: event.target.value })}
+                  placeholder="Scholarships, Study Abroad, Visa Guidance..."
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="image">Image URL</Label>
                 <Input
                   id="image"
                   type="url"
                   value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  onPaste={(event) => {
-                    const pasted = event.clipboardData.getData("text");
-                    if (pasted) {
-                      event.preventDefault();
-                      setFormData({ ...formData, image: pasted });
-                    }
-                  }}
+                  onChange={(event) => setFormData({ ...formData, image: event.target.value })}
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -395,7 +559,7 @@ export default function BlogsPage() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: "draft" | "published" | "archived") =>
+                  onValueChange={(value: Blog["status"]) =>
                     setFormData((prev) => ({ ...prev, status: value }))
                   }
                 >
@@ -415,8 +579,8 @@ export default function BlogsPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-blue-700 hover:bg-blue-800">
-              {editingBlog ? "Update Blog" : "Create Blog"}
+            <Button onClick={handleSubmit} className="bg-blue-700 hover:bg-blue-800" disabled={saving}>
+              {saving ? "Saving..." : editingBlog ? "Update Blog" : "Create Blog"}
             </Button>
           </DialogFooter>
         </DialogContent>
