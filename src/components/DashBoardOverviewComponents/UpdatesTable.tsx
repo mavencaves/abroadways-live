@@ -7,18 +7,18 @@ interface Props {
 
 const UpdatesTable: React.FC<Props> = ({ updates }) => {
   return (
-    <div className="bg-white shadow-md p-5 rounded-2xl border border-gray-100">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-700">সর্বশেষ আপডেটসমূহ</h3>
-        <button className="text-sm text-indigo-600 hover:underline">সব দেখুন</button>
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-700">Latest updates</h3>
+        <button className="text-sm text-indigo-600 hover:underline">View all</button>
       </div>
-      <table className="w-full text-sm text-left border-collapse">
+      <table className="w-full border-collapse text-left text-sm">
         <thead>
           <tr className="bg-gray-100 text-gray-700">
-            <th className="p-3">প্রকার</th>
-            <th className="p-3">শিরোনাম</th>
-            <th className="p-3">তারিখ</th>
-            <th className="p-3 text-center">অবস্থা</th>
+            <th className="p-3">Type</th>
+            <th className="p-3">Title</th>
+            <th className="p-3">Date</th>
+            <th className="p-3 text-center">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -28,9 +28,7 @@ const UpdatesTable: React.FC<Props> = ({ updates }) => {
               <td className="p-3">{item.title}</td>
               <td className="p-3">{item.date}</td>
               <td className="p-3 text-center">
-                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-                  {item.status}
-                </span>
+                <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">{item.status}</span>
               </td>
             </tr>
           ))}

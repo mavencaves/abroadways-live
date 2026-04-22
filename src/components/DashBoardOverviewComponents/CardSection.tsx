@@ -11,21 +11,18 @@ const CardsSection: React.FC<Props> = ({ cards }) => {
   }
 
   const cardItems = [
-    { title: "মোট ব্যবহারকারী", value: cards.totalUsers || 0 },
-    { title: "নতুন ব্যবহারকারী", value: cards.newUsers || 0 },
-    { title: "অ্যাকটিভ ব্যবহারকারী", value: cards.activeUsers || 0 },
-    { title: "পুরষ্কারপ্রাপ্ত ব্যবহারকারী", value: cards.rewardedUsers || 0 },
+    { title: "Total users", value: cards.totalUsers || 0 },
+    { title: "New users", value: cards.newUsers || 0 },
+    { title: "Active users", value: cards.activeUsers || 0 },
+    { title: "Rewarded users", value: cards.rewardedUsers || 0 },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
       {cardItems.map((card, index) => (
-        <div
-          key={index}
-          className="bg-white shadow-md p-5 rounded-2xl border border-gray-100"
-        >
+        <div key={index} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md">
           <p className="text-sm text-gray-600">{card.title}</p>
-          <h2 className="text-2xl font-bold text-indigo-600 mt-2">{card.value}</h2>
+          <h2 className="mt-2 text-2xl font-bold text-indigo-600">{card.value}</h2>
         </div>
       ))}
     </div>
