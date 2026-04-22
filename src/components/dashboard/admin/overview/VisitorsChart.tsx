@@ -21,26 +21,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const DAY_LABEL_MAP: Record<string, string> = {
-  'রবি': 'Sun',
-  'সোম': 'Mon',
-  'মঙ্গল': 'Tue',
-  'বুধ': 'Wed',
-  'বৃহস্পতি': 'Thu',
-  'শুক্র': 'Fri',
-  'শনি': 'Sat',
-};
-
-const normalizeDayLabel = (value: string) => {
-  if (DAY_LABEL_MAP[value]) {
-    return DAY_LABEL_MAP[value];
-  }
-
-  const parsedDate = new Date(value);
-  if (!Number.isNaN(parsedDate.getTime())) {
-    return parsedDate.toLocaleDateString('en-US', { weekday: 'short' });
-  }
-
-  return value;
+  "রবি": "Sun",
+  "সোম": "Mon",
+  "মঙ্গল": "Tue",
+  "বুধ": "Wed",
+  "বৃহস্পতি": "Thu",
+  "শুক্র": "Fri",
+  "শনি": "Sat",
 };
 
 type VisitorsChartProps = {
@@ -56,6 +43,19 @@ const fallbackData = [
   { day: "Fri", count: 50000 },
   { day: "Sat", count: 35000 },
 ];
+
+const normalizeDayLabel = (value: string) => {
+  if (DAY_LABEL_MAP[value]) {
+    return DAY_LABEL_MAP[value];
+  }
+
+  const parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toLocaleDateString("en-US", { weekday: "short" });
+  }
+
+  return value;
+};
 
 export function VisitorsChart({ data }: VisitorsChartProps) {
   const chartData = (data?.length ? data : fallbackData).map((item) => ({

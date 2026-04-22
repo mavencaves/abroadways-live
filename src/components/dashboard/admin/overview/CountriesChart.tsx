@@ -15,18 +15,33 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
-  'অস্ট্রেলিয়া': 'Australia',
-  'জার্মানি': 'Germany',
-  'যুক্তরাজ্য': 'United Kingdom',
-  'আয়ারল্যান্ড': 'Ireland',
-  'কানাডা': 'Canada',
-  'যুক্তরাষ্ট্র': 'United States',
-  'মার্কিন যুক্তরাষ্ট্র': 'United States',
-  'বাংলাদেশ': 'Bangladesh',
-  'অনির্ধারিত': 'Unspecified',
+  "অস্ট্রেলিয়া": "Australia",
+  "জার্মানি": "Germany",
+  "যুক্তরাজ্য": "United Kingdom",
+  "আয়ারল্যান্ড": "Ireland",
+  "কানাডা": "Canada",
+  "যুক্তরাষ্ট্র": "United States",
+  "মার্কিন যুক্তরাষ্ট্র": "United States",
+  "বাংলাদেশ": "Bangladesh",
+  "অনির্ধারিত": "Unspecified",
+  "অন্যান্য": "Other",
+  "ভারত": "India",
 };
 
-const normalizeCountryName = (value: string) => COUNTRY_NAME_MAP[value] || value || 'Unspecified';
+type CountriesChartProps = {
+  data?: { name: string; value: number }[];
+};
+
+const fallbackCountries = [
+  { name: "Australia", value: 30, fill: "#6b7aff" },
+  { name: "Germany", value: 12, fill: "#ffb078" },
+  { name: "United Kingdom", value: 17, fill: "#5dd85d" },
+  { name: "Ireland", value: 7, fill: "#dd3333" },
+  { name: "Canada", value: 12, fill: "#ffd43d" },
+  { name: "United States", value: 22, fill: "#c969b9" },
+];
+
+const normalizeCountryName = (value: string) => COUNTRY_NAME_MAP[value] || value || "Unspecified";
 
 const renderLegend = (props: any) => {
   const { payload } = props;
@@ -44,19 +59,6 @@ const renderLegend = (props: any) => {
     </div>
   );
 };
-
-type CountriesChartProps = {
-  data?: { name: string; value: number }[];
-};
-
-const fallbackCountries = [
-  { name: "Australia", value: 30, fill: "#6b7aff" },
-  { name: "Germany", value: 12, fill: "#ffb078" },
-  { name: "United Kingdom", value: 17, fill: "#5dd85d" },
-  { name: "Ireland", value: 7, fill: "#dd3333" },
-  { name: "Canada", value: 12, fill: "#ffd43d" },
-  { name: "United States", value: 22, fill: "#c969b9" },
-];
 
 export function CountriesChart({ data }: CountriesChartProps) {
   const chartData = (data?.length ? data : fallbackCountries).map((item, index) => ({

@@ -6,15 +6,17 @@ interface Props {
 }
 
 const TYPE_LABEL_MAP: Record<string, string> = {
-  'ব্যবহারকারী': 'User',
-  'ম্যানেজার': 'Manager',
-  'কন্টেন্ট ম্যানেজার': 'Content Manager',
-  'কোর্স ম্যানেজার': 'Course Manager',
+  "ব্যবহারকারী": "User",
+  "ম্যানেজার": "Manager",
+  "কন্টেন্ট ম্যানেজার": "Content Manager",
+  "কোর্স ম্যানেজার": "Course Manager",
+  "ব্লগ": "Blog",
+  "রিপোর্ট": "Report",
 };
 
 const STATUS_LABEL_MAP: Record<string, string> = {
-  'সক্রিয়': 'Active',
-  'নিষ্ক্রিয়': 'Inactive',
+  "সক্রিয়": "Active",
+  "নিষ্ক্রিয়": "Inactive",
 };
 
 const normalizeLabel = (value: string, dictionary: Record<string, string>) => dictionary[value] || value;
@@ -41,10 +43,10 @@ const UpdatesTable: React.FC<Props> = ({ updates }) => {
               <td className="p-3">{normalizeLabel(item.type, TYPE_LABEL_MAP)}</td>
               <td className="p-3">{item.title}</td>
               <td className="p-3">
-                {new Date(item.date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
+                {new Date(item.date).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
                 })}
               </td>
               <td className="p-3 text-center">
