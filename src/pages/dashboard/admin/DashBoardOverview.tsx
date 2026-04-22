@@ -17,7 +17,7 @@ const DashboardOverview: React.FC = () => {
         const response = await adminApi.getDashboardOverview();
         setData(response.data);
       } catch (error: any) {
-        const message = error?.response?.data?.message || "ড্যাশবোর্ডের ডেটা লোড করতে ব্যর্থ হয়েছে।";
+        const message = error?.response?.data?.message || "Failed to load dashboard data.";
         toast.error(message);
       } finally {
         setLoading(false);
@@ -28,18 +28,18 @@ const DashboardOverview: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <p className="text-center text-gray-500 mt-10">ড্যাশবোর্ড লোড হচ্ছে...</p>;
+    return <p className="mt-10 text-center text-gray-500">Loading dashboard...</p>;
   }
 
   if (!data) {
-    return <p className="text-center text-red-500 mt-10">ডেটা পাওয়া যায়নি।</p>;
+    return <p className="mt-10 text-center text-red-500">Dashboard data is unavailable right now.</p>;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       <CardsSection cards={data.cards} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <VisitorsChart data={data.visitors} />
         <CountriesChart data={data.countries} />
       </div>

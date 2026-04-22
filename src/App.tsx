@@ -112,12 +112,6 @@ import UsersPage from "@/pages/dashboard/admin/UsersPage.tsx";
 import BlogsPage from "./pages/dashboard/admin/BlogsPage";
 import EventsPage from "./pages/dashboard/admin/EventsPage";
 import DashboardOverview from "./pages/dashboard/admin/DashBoardOverview";
-import AdsPage from "./components/ads-admin dashboard/AdsPage";
-import AIQueriesDashboard from "@/components/Ai_Queries-admin dashboard/AiQueriesPage.tsx";
-import General from "./pages/dashboard/admin/General";
-import IntegrationPage from "./pages/dashboard/admin/IntegrationPage";
-import SettingsPage from "@/pages/dashboard/admin/settings-page.tsx";
-import CoursesPage from "@/pages/dashboard/admin/courses-page.tsx";
 import EligibilityFirstPage from "./pages/Elegibility/ElegibilityFirstPage";
 import BookAseat from "./pages/BookAseat/BookAseat";
 import HigherEducationRegionPage from "@/pages/HigherEducationRegionPage.tsx";
@@ -194,15 +188,6 @@ function LegacyExamAliasRedirect() {
 
     return <Navigate to={getLegacyExamRedirect(pathname)} replace />;
 }
-
-function LegacyDashboardRedirect() {
-    const { pathname } = useLocation();
-    const nextPath = pathname.replace(/^\/admin\/dashboard/, "/dashboard") || "/dashboard";
-
-    return <Navigate to={nextPath} replace />;
-}
-
-
 
 function App() {
     useScrollToTop()
@@ -355,21 +340,14 @@ function App() {
                 <Route path={"/calculator/cgpa"} element={<CGPACalculatorPage/>}/>
 
             </Route>
-            <Route path={"/admin/dashboard"} element={<LegacyDashboardRedirect/>}/>
-            <Route path={"/admin/dashboard/*"} element={<LegacyDashboardRedirect/>}/>
-            <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager', 'course-manager']}/>}>
+            <Route path={"/admin/dashboard"} element={<Navigate to="/dashboard" replace/>}/>
+            <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
             <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
                 <Route index element={<DashboardOverview/>}/>
                 <Route path={"users"} element={<UsersPage/>}/>
                 <Route path={"blogs"} element={<BlogsPage/>}/>
                 <Route path={"events"} element={<EventsPage/>}/>
                 <Route path={"inquiries"} element={<InquiriesPage/>}/>
-                <Route path={"ads"} element={<AdsPage/>}/>
-                <Route path={"ai-query"} element={<AIQueriesDashboard/>}/>
-                <Route path={"courses"} element={<CoursesPage/>}/>
-                <Route path={"settings"} element={<SettingsPage/>}/>
-                <Route path={"general"} element={<General/>}/>
-                <Route path={"integration"} element={<IntegrationPage/>}/>
             </Route>
             </Route>
         </Routes>
