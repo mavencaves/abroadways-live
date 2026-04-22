@@ -1,6 +1,41 @@
-// /controllers/adminController.js
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
+
+const COUNTRY_NAME_MAP = {
+  'অস্ট্রেলিয়া': 'Australia',
+  'জার্মানি': 'Germany',
+  'যুক্তরাজ্য': 'United Kingdom',
+  'আয়ারল্যান্ড': 'Ireland',
+  'কানাডা': 'Canada',
+  'যুক্তরাষ্ট্র': 'United States',
+  'মার্কিন যুক্তরাষ্ট্র': 'United States',
+  'বাংলাদেশ': 'Bangladesh',
+  'অনির্ধারিত': 'Unspecified',
+};
+
+const STATUS_LABELS = {
+  active: 'Active',
+  inactive: 'Inactive',
+};
+
+const ROLE_TYPE_LABELS = {
+  user: 'User',
+  'content-manager': 'Content Manager',
+  'course-manager': 'Course Manager',
+  admin: 'Admin',
+};
+
+const normalizeCountryName = (value) => COUNTRY_NAME_MAP[value] || value || 'Unspecified';
+
+const toWeekdayLabel = (value) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+};
 
 // @desc    Create a new user (Course or Content Manager)
 // @route   POST /api/v1/admin/users
@@ -37,21 +72,21 @@ const createUser = asyncHandler(async (req, res) => {
     avatarUrl,
   });
 
-  if (user) {
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      country: user.country,
-      status: user.status,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-    });
-  } else {
+  if (!user) {
     res.status(400);
     throw new Error('Invalid user data');
   }
+
+  res.status(201).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    country: user.country,
+    status: user.status,
+    avatarUrl: user.avatarUrl,
+    createdAt: user.createdAt,
+  });
 });
 
 // @desc    Get all non-admin users
@@ -102,29 +137,29 @@ const getUsers = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.role = req.body.role || user.role;
-    user.country = req.body.country || user.country;
-    user.status = req.body.status || user.status;
-    user.avatarUrl = req.body.avatarUrl ?? user.avatarUrl;
-    
-    const updatedUser = await user.save();
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      country: updatedUser.country,
-      status: updatedUser.status,
-      avatarUrl: updatedUser.avatarUrl,
-      createdAt: updatedUser.createdAt,
-    });
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error('User not found');
   }
+
+  user.name = req.body.name || user.name;
+  user.email = req.body.email || user.email;
+  user.role = req.body.role || user.role;
+  user.country = req.body.country || user.country;
+  user.status = req.body.status || user.status;
+  user.avatarUrl = req.body.avatarUrl ?? user.avatarUrl;
+
+  const updatedUser = await user.save();
+  res.json({
+    _id: updatedUser._id,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    role: updatedUser.role,
+    country: updatedUser.country,
+    status: updatedUser.status,
+    avatarUrl: updatedUser.avatarUrl,
+    createdAt: updatedUser.createdAt,
+  });
 });
 
 // @desc    Delete a user
@@ -132,17 +167,19 @@ const updateUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
-  if (user) {
-    if (user.role === 'admin') {
-      res.status(400);
-      throw new Error('Cannot delete another admin account');
-    }
-    await User.deleteOne({ _id: user._id });
-    res.json({ message: 'User removed' });
-  } else {
+
+  if (!user) {
     res.status(404);
     throw new Error('User not found');
   }
+
+  if (user.role === 'admin') {
+    res.status(400);
+    throw new Error('Cannot delete another admin account');
+  }
+
+  await User.deleteOne({ _id: user._id });
+  res.json({ message: 'User removed' });
 });
 
 const getAdminDashboardOverview = asyncHandler(async (req, res) => {
@@ -180,7 +217,7 @@ const getAdminDashboardOverview = asyncHandler(async (req, res) => {
       { $match: nonAdminFilter },
       {
         $group: {
-          _id: { $ifNull: ['$country', 'অনির্ধারিত'] },
+          _id: { $ifNull: ['$country', 'Unspecified'] },
           value: { $sum: 1 },
         },
       },
@@ -194,21 +231,21 @@ const getAdminDashboardOverview = asyncHandler(async (req, res) => {
   ]);
 
   const visitors = trendData.map((item) => ({
-    day: item._id,
+    day: toWeekdayLabel(item._id),
     count: item.count,
   }));
 
   const countries = countryData.map((item) => ({
-    name: item._id,
+    name: normalizeCountryName(item._id),
     value: item.value,
   }));
 
   const updates = recentUsers.map((user, index) => ({
     id: index + 1,
-    type: user.role === 'user' ? 'ব্যবহারকারী' : 'ম্যানেজার',
+    type: ROLE_TYPE_LABELS[user.role] || 'User',
     title: user.name,
     date: user.createdAt.toISOString(),
-    status: user.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
+    status: STATUS_LABELS[user.status] || 'Unknown',
   }));
 
   res.json({
@@ -224,4 +261,10 @@ const getAdminDashboardOverview = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { createUser, getUsers, updateUser, deleteUser, getAdminDashboardOverview };
+module.exports = {
+  createUser,
+  getUsers,
+  updateUser,
+  deleteUser,
+  getAdminDashboardOverview,
+};

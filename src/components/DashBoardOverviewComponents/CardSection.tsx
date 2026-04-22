@@ -14,7 +14,7 @@ const CardsSection: React.FC<Props> = ({ cards }) => {
     { title: "Total users", value: cards.totalUsers || 0 },
     { title: "New users", value: cards.newUsers || 0 },
     { title: "Active users", value: cards.activeUsers || 0 },
-    { title: "Rewarded users", value: cards.rewardedUsers || 0 },
+    { title: "Premium users", value: cards.rewardedUsers || 0 },
   ];
 
   return (

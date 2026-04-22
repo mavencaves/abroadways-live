@@ -20,6 +20,29 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const DAY_LABEL_MAP: Record<string, string> = {
+  'রবি': 'Sun',
+  'সোম': 'Mon',
+  'মঙ্গল': 'Tue',
+  'বুধ': 'Wed',
+  'বৃহস্পতি': 'Thu',
+  'শুক্র': 'Fri',
+  'শনি': 'Sat',
+};
+
+const normalizeDayLabel = (value: string) => {
+  if (DAY_LABEL_MAP[value]) {
+    return DAY_LABEL_MAP[value];
+  }
+
+  const parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+
+  return value;
+};
+
 type VisitorsChartProps = {
   data?: { day: string; count: number }[];
 };
@@ -36,7 +59,7 @@ const fallbackData = [
 
 export function VisitorsChart({ data }: VisitorsChartProps) {
   const chartData = (data?.length ? data : fallbackData).map((item) => ({
-    day: item.day,
+    day: normalizeDayLabel(item.day),
     visitors: item.count,
   }));
 

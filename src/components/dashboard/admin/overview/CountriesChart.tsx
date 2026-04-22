@@ -14,6 +14,20 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const COUNTRY_NAME_MAP: Record<string, string> = {
+  'অস্ট্রেলিয়া': 'Australia',
+  'জার্মানি': 'Germany',
+  'যুক্তরাজ্য': 'United Kingdom',
+  'আয়ারল্যান্ড': 'Ireland',
+  'কানাডা': 'Canada',
+  'যুক্তরাষ্ট্র': 'United States',
+  'মার্কিন যুক্তরাষ্ট্র': 'United States',
+  'বাংলাদেশ': 'Bangladesh',
+  'অনির্ধারিত': 'Unspecified',
+};
+
+const normalizeCountryName = (value: string) => COUNTRY_NAME_MAP[value] || value || 'Unspecified';
+
 const renderLegend = (props: any) => {
   const { payload } = props;
 
@@ -46,7 +60,7 @@ const fallbackCountries = [
 
 export function CountriesChart({ data }: CountriesChartProps) {
   const chartData = (data?.length ? data : fallbackCountries).map((item, index) => ({
-    country: item.name,
+    country: normalizeCountryName(item.name),
     percentage: item.value,
     fill: fallbackCountries[index % fallbackCountries.length].fill,
   }));
