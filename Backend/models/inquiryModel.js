@@ -1,5 +1,31 @@
 const mongoose = require('mongoose');
 
+const inquiryNoteSchema = new mongoose.Schema(
+  {
+    body: { type: String, required: true, trim: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    createdByName: { type: String, trim: true, default: '' },
+    createdByRole: { type: String, trim: true, default: '' },
+  },
+  { _id: true, timestamps: { createdAt: true, updatedAt: false } }
+);
+
+const inquiryActivitySchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      enum: ['created', 'status', 'assignment', 'note'],
+      required: true,
+    },
+    message: { type: String, required: true, trim: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    createdByName: { type: String, trim: true, default: '' },
+    createdByRole: { type: String, trim: true, default: '' },
+    meta: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { _id: true, timestamps: { createdAt: true, updatedAt: false } }
+);
+
 const inquirySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -17,10 +43,13 @@ const inquirySchema = new mongoose.Schema(
     message: { type: String, trim: true, default: '' },
     status: {
       type: String,
-      enum: ['new', 'contacted', 'closed'],
+      enum: ['new', 'contacted', 'follow-up', 'qualified', 'closed', 'lost'],
       default: 'new',
     },
     adminNotes: { type: String, trim: true, default: '' },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    notes: { type: [inquiryNoteSchema], default: [] },
+    activity: { type: [inquiryActivitySchema], default: [] },
   },
   { timestamps: true }
 );

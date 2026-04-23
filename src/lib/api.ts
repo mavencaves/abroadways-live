@@ -103,7 +103,17 @@ export const inquiriesApi = {
     message?: string;
   }) => apiClient.post("/inquiries", data),
   getAll: () => apiClient.get("/inquiries", { params: noCacheParams() }),
-  update: (id: string, data: { status?: "new" | "contacted" | "closed"; adminNotes?: string }) =>
+  getMeta: () => apiClient.get("/inquiries/meta", { params: noCacheParams() }),
+  getMetrics: () => apiClient.get("/inquiries/metrics", { params: noCacheParams() }),
+  update: (
+    id: string,
+    data: {
+      status?: "new" | "contacted" | "follow-up" | "qualified" | "closed" | "lost";
+      adminNotes?: string;
+      note?: string;
+      assignedTo?: string | null;
+    }
+  ) =>
     apiClient.patch(`/inquiries/${id}`, data),
 };
 
