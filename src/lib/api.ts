@@ -105,6 +105,7 @@ export const inquiriesApi = {
   getAll: () => apiClient.get("/inquiries", { params: noCacheParams() }),
   getMeta: () => apiClient.get("/inquiries/meta", { params: noCacheParams() }),
   getMetrics: () => apiClient.get("/inquiries/metrics", { params: noCacheParams() }),
+  getDashboardAnalytics: () => apiClient.get("/inquiries/dashboard-analytics", { params: noCacheParams() }),
   update: (
     id: string,
     data: {

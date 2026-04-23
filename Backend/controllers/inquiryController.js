@@ -1,6 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const Inquiry = require('../models/inquiryModel');
 const User = require('../models/userModel');
+const Blog = require('../models/blogModel');
+const Event = require('../models/eventModel');
 
 const allowedStatuses = ['new', 'contacted', 'follow-up', 'qualified', 'closed', 'lost'];
 const assignableRoles = ['admin', 'content-manager'];
@@ -17,6 +19,42 @@ const normalizeSource = (value) =>
   String(value || 'other')
     .replace(/-/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getStartOfDay = (date) => {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
+const getStartOfWeek = (date) => {
+  const next = getStartOfDay(date);
+  const day = next.getDay();
+  next.setDate(next.getDate() - day);
+  return next;
+};
+
+const getStartOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const formatShortDate = (date) =>
+  date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+const formatMonthLabel = (date) =>
+  date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+const formatWeekLabel = (date) => {
+  const end = new Date(date);
+  end.setDate(end.getDate() + 6);
+  return `${formatShortDate(date)} - ${formatShortDate(end)}`;
+};
+
+const countByStatus = (records) =>
+  records.reduce(
+    (acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    },
+    { new: 0, contacted: 0, 'follow-up': 0, qualified: 0, closed: 0, lost: 0 }
+  );
 
 const createInquiry = asyncHandler(async (req, res) => {
   const {
@@ -138,6 +176,197 @@ const getInquiryMetrics = asyncHandler(async (req, res) => {
   });
 });
 
+const getInquiryDashboardAnalytics = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const inquiries = await Inquiry.find({})
+    .populate('assignedTo', '_id name email role status')
+    .sort({ createdAt: -1 });
+
+  const statusCounts = countByStatus(inquiries);
+
+  const daily = Array.from({ length: 7 }, (_, index) => {
+    const date = getStartOfDay(new Date(now));
+    date.setDate(date.getDate() - (6 - index));
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      label: formatShortDate(date),
+      total: 0,
+    };
+  });
+
+  const weekly = Array.from({ length: 8 }, (_, index) => {
+    const weekStart = getStartOfWeek(new Date(now));
+    weekStart.setDate(weekStart.getDate() - (7 * (7 - index)));
+    return {
+      key: weekStart.toISOString().slice(0, 10),
+      label: formatWeekLabel(weekStart),
+      total: 0,
+    };
+  });
+
+  const monthly = Array.from({ length: 6 }, (_, index) => {
+    const monthStart = getStartOfMonth(new Date(now.getFullYear(), now.getMonth() - (5 - index), 1));
+    return {
+      key: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`,
+      label: formatMonthLabel(monthStart),
+      total: 0,
+    };
+  });
+
+  const destinationMap = new Map();
+  const examMap = new Map();
+  const sourceMap = new Map();
+  const staffMap = new Map();
+  const uncontactedLeads = [];
+
+  inquiries.forEach((inquiry) => {
+    const createdAt = new Date(inquiry.createdAt);
+    const dailyKey = createdAt.toISOString().slice(0, 10);
+    const weekKey = getStartOfWeek(createdAt).toISOString().slice(0, 10);
+    const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+
+    const dailyBucket = daily.find((item) => item.key === dailyKey);
+    if (dailyBucket) dailyBucket.total += 1;
+
+    const weeklyBucket = weekly.find((item) => item.key === weekKey);
+    if (weeklyBucket) weeklyBucket.total += 1;
+
+    const monthlyBucket = monthly.find((item) => item.key === monthKey);
+    if (monthlyBucket) monthlyBucket.total += 1;
+
+    if (inquiry.destination) {
+      destinationMap.set(inquiry.destination, (destinationMap.get(inquiry.destination) || 0) + 1);
+    }
+
+    if (inquiry.examInterest) {
+      examMap.set(inquiry.examInterest, (examMap.get(inquiry.examInterest) || 0) + 1);
+    }
+
+    const sourceKey = inquiry.source || 'other';
+    const sourceEntry = sourceMap.get(sourceKey) || { total: 0, closed: 0, qualified: 0, lost: 0 };
+    sourceEntry.total += 1;
+    if (inquiry.status === 'closed') sourceEntry.closed += 1;
+    if (inquiry.status === 'qualified') sourceEntry.qualified += 1;
+    if (inquiry.status === 'lost') sourceEntry.lost += 1;
+    sourceMap.set(sourceKey, sourceEntry);
+
+    if (inquiry.assignedTo?._id) {
+      const staffId = String(inquiry.assignedTo._id);
+      const staffEntry = staffMap.get(staffId) || {
+        id: staffId,
+        name: inquiry.assignedTo.name,
+        role: inquiry.assignedTo.role,
+        total: 0,
+        contacted: 0,
+        qualified: 0,
+        closed: 0,
+      };
+      staffEntry.total += 1;
+      if (['contacted', 'follow-up', 'qualified', 'closed'].includes(inquiry.status)) staffEntry.contacted += 1;
+      if (inquiry.status === 'qualified') staffEntry.qualified += 1;
+      if (inquiry.status === 'closed') staffEntry.closed += 1;
+      staffMap.set(staffId, staffEntry);
+    }
+
+    const ageHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (inquiry.status === 'new' && ageHours > 48) {
+      uncontactedLeads.push({
+        id: inquiry._id,
+        name: inquiry.name,
+        source: inquiry.source,
+        ageHours: Math.round(ageHours),
+      });
+    }
+  });
+
+  const funnelOrder = ['new', 'contacted', 'follow-up', 'qualified', 'closed'];
+  const funnel = funnelOrder.map((status, index) => {
+    const count = statusCounts[status] || 0;
+    const previousCount = index === 0 ? count : statusCounts[funnelOrder[index - 1]] || 0;
+    const dropOffPercent = index === 0 || previousCount === 0 ? 0 : Number((((previousCount - count) / previousCount) * 100).toFixed(1));
+    return {
+      status,
+      count,
+      dropOffPercent,
+    };
+  });
+
+  const totalLeads = inquiries.length || 1;
+  const lostRate = Number((((statusCounts.lost || 0) / totalLeads) * 100).toFixed(1));
+  const highDropOffWarnings = funnel
+    .filter((step) => step.dropOffPercent >= 35 && step.status !== 'new')
+    .map((step) => `${normalizeSource(step.status)} drop-off is ${step.dropOffPercent}%`);
+
+  const sourceAnalytics = Array.from(sourceMap.entries())
+    .map(([source, values]) => ({
+      source,
+      label: normalizeSource(source),
+      total: values.total,
+      closed: values.closed,
+      qualified: values.qualified,
+      lost: values.lost,
+      conversionRate: values.total ? Number(((values.closed / values.total) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const topDestinations = Array.from(destinationMap.entries())
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 6);
+
+  const topExamInterests = Array.from(examMap.entries())
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 6);
+
+  const staffPerformance = Array.from(staffMap.values())
+    .map((staff) => ({
+      ...staff,
+      conversionRate: staff.total ? Number(((staff.closed / staff.total) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const [publishedBlogs, upcomingEvents] = await Promise.all([
+    Blog.countDocuments({ status: 'published' }),
+    Event.countDocuments({ date: { $gte: getStartOfDay(now) } }),
+  ]);
+
+  res.json({
+    summary: {
+      totalLeads: inquiries.length,
+      newLeads: statusCounts.new || 0,
+      contactedLeads: statusCounts.contacted || 0,
+      qualifiedLeads: statusCounts.qualified || 0,
+      closedLeads: statusCounts.closed || 0,
+      lostLeads: statusCounts.lost || 0,
+      publishedBlogs,
+      upcomingEvents,
+    },
+    leadTrends: {
+      daily,
+      weekly,
+      monthly,
+    },
+    statusBreakdown: statusCounts,
+    funnel,
+    topDestinations,
+    topExamInterests,
+    sourceAnalytics,
+    staffPerformance,
+    alerts: {
+      uncontactedOver48h: {
+        count: uncontactedLeads.length,
+        sample: uncontactedLeads.slice(0, 5),
+      },
+      highDropOffWarnings: [
+        ...highDropOffWarnings,
+        ...(lostRate >= 30 ? [`Lost lead rate is ${lostRate}%`] : []),
+      ],
+    },
+  });
+});
+
 const updateInquiry = asyncHandler(async (req, res) => {
   const { status, adminNotes, note, assignedTo } = req.body;
   const inquiry = await Inquiry.findById(req.params.id);
@@ -256,5 +485,6 @@ module.exports = {
   getInquiries,
   getInquiryMeta,
   getInquiryMetrics,
+  getInquiryDashboardAnalytics,
   updateInquiry,
 };

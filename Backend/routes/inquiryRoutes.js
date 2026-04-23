@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createInquiry,
   getInquiries,
+  getInquiryDashboardAnalytics,
   getInquiryMeta,
   getInquiryMetrics,
   updateInquiry,
@@ -21,6 +22,10 @@ router
 router
   .route('/metrics')
   .get(protect, restrictTo('admin', 'content-manager'), getInquiryMetrics);
+
+router
+  .route('/dashboard-analytics')
+  .get(protect, restrictTo('admin', 'content-manager'), getInquiryDashboardAnalytics);
 
 router
   .route('/:id')
