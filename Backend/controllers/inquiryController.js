@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Inquiry = require('../models/inquiryModel');
+const InquiryTemplate = require('../models/inquiryTemplateModel');
 const User = require('../models/userModel');
 const Blog = require('../models/blogModel');
 const Event = require('../models/eventModel');
@@ -11,53 +12,6 @@ const autoAssignableSources = ['homepage-consultation', 'contact-page'];
 const openLeadStatuses = ['new', 'contacted', 'follow-up', 'qualified'];
 const staleLeadDays = 5;
 
-const inquiryTemplates = [
-  {
-    key: 'initial-contact',
-    label: 'Initial contact',
-    channel: 'email',
-    subject: 'Your Abroadways consultation request',
-    body: `Hello {{name}},
-
-Thank you for contacting Abroadways. We have received your inquiry about {{destination}} and our team is reviewing your profile now.
-
-We will reach out shortly with the best next steps for your academic background, intake timing, and exam preparation needs.
-
-Warm regards,
-{{staffName}}
-Abroadways`,
-  },
-  {
-    key: 'documents-follow-up',
-    label: 'Documents follow-up',
-    channel: 'email',
-    subject: 'Next documents needed for your Abroadways consultation',
-    body: `Hello {{name}},
-
-To move your study-abroad application forward, please share your latest academic documents, passport, and any relevant English test information.
-
-Once we receive them, we can shortlist universities and build your next-step plan.
-
-Regards,
-{{staffName}}
-Abroadways`,
-  },
-  {
-    key: 'follow-up-reminder',
-    label: 'Follow-up reminder',
-    channel: 'whatsapp',
-    subject: '',
-    body: `Hello {{name}}, this is Abroadways checking in on your study-abroad plan for {{destination}}. Let us know when you are available for the next follow-up.`,
-  },
-  {
-    key: 'consultation-booking',
-    label: 'Consultation booking',
-    channel: 'whatsapp',
-    subject: '',
-    body: `Hello {{name}}, thank you for your interest in Abroadways. We can schedule your consultation for your {{intake}} intake planning. Please share a suitable time.`,
-  },
-];
-
 const buildActorMeta = (user) => ({
   createdBy: user?._id || null,
   createdByName: user?.name || '',
@@ -67,7 +21,8 @@ const buildActorMeta = (user) => ({
 const populateInquiryRelations = (query) =>
   query
     .populate('assignedTo', '_id name email role status')
-    .populate('tasks.assignedTo', '_id name email role status');
+    .populate('tasks.assignedTo', '_id name email role status')
+    .populate('communications.templateId', '_id name channel isActive');
 
 const toTrimmedString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -114,6 +69,12 @@ const formatWeekLabel = (date) => {
   return `${formatShortDate(date)} - ${formatShortDate(end)}`;
 };
 
+const parseDateValue = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const countByStatus = (records) =>
   records.reduce(
     (acc, item) => {
@@ -123,19 +84,10 @@ const countByStatus = (records) =>
     { new: 0, contacted: 0, 'follow-up': 0, qualified: 0, closed: 0, lost: 0 }
   );
 
-const parseDateValue = (value) => {
-  if (value === null || value === undefined || value === '') return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
 const isFollowUpOverdue = (inquiry, referenceDate = new Date()) => {
-  if (!inquiry.nextFollowUpAt) return false;
-  if (['closed', 'lost'].includes(inquiry.status)) return false;
-
+  if (!inquiry.nextFollowUpAt || ['closed', 'lost'].includes(inquiry.status)) return false;
   const followUpAt = new Date(inquiry.nextFollowUpAt);
   const completedAt = inquiry.followUpCompletedAt ? new Date(inquiry.followUpCompletedAt) : null;
-
   return followUpAt.getTime() < referenceDate.getTime() && (!completedAt || completedAt.getTime() < followUpAt.getTime());
 };
 
@@ -152,28 +104,113 @@ const isTaskDueToday = (task, referenceDate = new Date()) => {
   return dueDate >= getStartOfDay(referenceDate) && dueDate <= getEndOfDay(referenceDate);
 };
 
-const buildTemplateContent = (template, inquiry, user) => {
+const deriveNextSuggestedAction = (inquiry) => {
+  if (inquiry.status === 'new') return 'Send first response';
+  if (inquiry.status === 'contacted') return 'Request documents';
+  if (inquiry.status === 'follow-up') return 'Send follow-up';
+  if (inquiry.status === 'qualified') return 'Confirm consultation';
+  return 'Review lead record';
+};
+
+const renderTemplate = (template, inquiry, user) => {
   const replacements = {
     name: inquiry.name || 'Student',
     destination: inquiry.destination || 'your preferred destination',
-    intake: inquiry.intake || 'upcoming',
     examInterest: inquiry.examInterest || 'your exam planning',
-    qualification: inquiry.qualification || 'your profile',
-    staffName: user?.name || 'The Abroadways team',
+    intake: inquiry.intake || 'upcoming intake',
+    assignedStaff: inquiry.assignedTo?.name || user?.name || 'Abroadways team',
   };
 
-  const replaceTokens = (text) =>
+  const fill = (text) =>
     String(text || '').replace(/\{\{(\w+)\}\}/g, (_, key) => replacements[key] || '');
 
   return {
-    ...template,
-    subject: replaceTokens(template.subject),
-    body: replaceTokens(template.body),
+    subject: fill(template.subject),
+    body: fill(template.body),
   };
 };
 
-const getTemplateByKey = (templateKey, channel) =>
-  inquiryTemplates.find((template) => template.key === templateKey && (!channel || template.channel === channel));
+const buildNotificationsPayload = (inquiries, referenceDate = new Date()) => {
+  const overdueFollowUps = [];
+  const unassignedInquiries = [];
+  const staleInquiries = [];
+  const tasksDueToday = [];
+
+  inquiries.forEach((inquiry) => {
+    if (isFollowUpOverdue(inquiry, referenceDate)) {
+      overdueFollowUps.push({
+        id: String(inquiry._id),
+        name: inquiry.name,
+        status: inquiry.status,
+        nextFollowUpAt: inquiry.nextFollowUpAt,
+        assignedTo: inquiry.assignedTo
+          ? {
+              _id: String(inquiry.assignedTo._id),
+              name: inquiry.assignedTo.name,
+              role: inquiry.assignedTo.role,
+            }
+          : null,
+      });
+    }
+
+    if (!inquiry.assignedTo && !['closed', 'lost'].includes(inquiry.status)) {
+      unassignedInquiries.push({
+        id: String(inquiry._id),
+        name: inquiry.name,
+        status: inquiry.status,
+        source: inquiry.source,
+        createdAt: inquiry.createdAt,
+      });
+    }
+
+    if (isLeadStale(inquiry, referenceDate)) {
+      staleInquiries.push({
+        id: String(inquiry._id),
+        name: inquiry.name,
+        status: inquiry.status,
+        updatedAt: inquiry.updatedAt,
+      });
+    }
+
+    (inquiry.tasks || []).forEach((task) => {
+      if (!isTaskDueToday(task, referenceDate)) return;
+      tasksDueToday.push({
+        inquiryId: String(inquiry._id),
+        inquiryName: inquiry.name,
+        taskId: String(task._id),
+        title: task.title,
+        dueDate: task.dueDate,
+        status: task.status,
+        assignedTo: task.assignedTo
+          ? {
+              _id: String(task.assignedTo._id),
+              name: task.assignedTo.name,
+              role: task.assignedTo.role,
+            }
+          : null,
+      });
+    });
+  });
+
+  return {
+    overdueFollowUps: {
+      count: overdueFollowUps.length,
+      sample: overdueFollowUps.slice(0, 5),
+    },
+    unassignedInquiries: {
+      count: unassignedInquiries.length,
+      sample: unassignedInquiries.slice(0, 5),
+    },
+    staleInquiries: {
+      count: staleInquiries.length,
+      sample: staleInquiries.slice(0, 5),
+    },
+    tasksDueToday: {
+      count: tasksDueToday.length,
+      sample: tasksDueToday.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 5),
+    },
+  };
+};
 
 const findAssignableUser = async (userId) => {
   if (!userId) return null;
@@ -224,91 +261,6 @@ const findAutoAssignee = async (source) => {
   return ranked[0]?.user || null;
 };
 
-const buildNotificationsPayload = (inquiries, referenceDate = new Date()) => {
-  const overdueFollowUps = [];
-  const unassignedInquiries = [];
-  const staleInquiries = [];
-  const tasksDueToday = [];
-
-  inquiries.forEach((inquiry) => {
-    if (isFollowUpOverdue(inquiry, referenceDate)) {
-      overdueFollowUps.push({
-        id: String(inquiry._id),
-        name: inquiry.name,
-        status: inquiry.status,
-        nextFollowUpAt: inquiry.nextFollowUpAt,
-        assignedTo: inquiry.assignedTo
-          ? {
-              _id: String(inquiry.assignedTo._id),
-              name: inquiry.assignedTo.name,
-              role: inquiry.assignedTo.role,
-            }
-          : null,
-      });
-    }
-
-    if (!inquiry.assignedTo && !['closed', 'lost'].includes(inquiry.status)) {
-      unassignedInquiries.push({
-        id: String(inquiry._id),
-        name: inquiry.name,
-        status: inquiry.status,
-        source: inquiry.source,
-        createdAt: inquiry.createdAt,
-      });
-    }
-
-    if (isLeadStale(inquiry, referenceDate)) {
-      staleInquiries.push({
-        id: String(inquiry._id),
-        name: inquiry.name,
-        status: inquiry.status,
-        updatedAt: inquiry.updatedAt,
-      });
-    }
-
-    (inquiry.tasks || []).forEach((task) => {
-      if (!isTaskDueToday(task, referenceDate)) return;
-
-      tasksDueToday.push({
-        inquiryId: String(inquiry._id),
-        inquiryName: inquiry.name,
-        taskId: String(task._id),
-        title: task.title,
-        dueDate: task.dueDate,
-        status: task.status,
-        assignedTo: task.assignedTo
-          ? {
-              _id: String(task.assignedTo._id),
-              name: task.assignedTo.name,
-              role: task.assignedTo.role,
-            }
-          : null,
-      });
-    });
-  });
-
-  return {
-    overdueFollowUps: {
-      count: overdueFollowUps.length,
-      sample: overdueFollowUps.slice(0, 5),
-    },
-    unassignedInquiries: {
-      count: unassignedInquiries.length,
-      sample: unassignedInquiries.slice(0, 5),
-    },
-    staleInquiries: {
-      count: staleInquiries.length,
-      sample: staleInquiries.slice(0, 5),
-    },
-    tasksDueToday: {
-      count: tasksDueToday.length,
-      sample: tasksDueToday
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-        .slice(0, 5),
-    },
-  };
-};
-
 const createInquiry = asyncHandler(async (req, res) => {
   const {
     name,
@@ -346,13 +298,12 @@ const createInquiry = asyncHandler(async (req, res) => {
     examInterest: examInterest.trim(),
     message: trimmedMessage,
     assignedTo: autoAssignee?._id || null,
+    nextSuggestedAction: deriveNextSuggestedAction({ status: 'new' }),
     activity: [
       {
         type: 'created',
         message: `Lead created from ${normalizeSource(source)}.`,
-        meta: {
-          source,
-        },
+        meta: { source },
       },
       ...(autoAssignee
         ? [
@@ -372,9 +323,7 @@ const createInquiry = asyncHandler(async (req, res) => {
             {
               type: 'note',
               message: 'Initial lead message captured.',
-              meta: {
-                hasMessage: true,
-              },
+              meta: { hasMessage: true },
             },
           ]
         : []),
@@ -411,17 +360,13 @@ const getInquiryMeta = asyncHandler(async (req, res) => {
     sources: ['homepage-lead', 'homepage-consultation', 'contact-page', 'other'],
     statuses: allowedStatuses,
     taskStatuses,
+    suggestedActions: ['Send first response', 'Send follow-up', 'Request documents', 'Confirm consultation'],
   });
 });
 
 const getInquiryMetrics = asyncHandler(async (req, res) => {
   const counts = await Inquiry.aggregate([
-    {
-      $group: {
-        _id: '$status',
-        total: { $sum: 1 },
-      },
-    },
+    { $group: { _id: '$status', total: { $sum: 1 } } },
   ]);
 
   const metrics = counts.reduce(
@@ -455,21 +400,20 @@ const getInquiryNotifications = asyncHandler(async (req, res) => {
 });
 
 const getInquiryTemplates = asyncHandler(async (req, res) => {
-  res.json(inquiryTemplates);
+  const templates = await InquiryTemplate.find({ isActive: true }).sort({ channel: 1, updatedAt: -1 });
+  res.json(templates);
 });
 
 const getInquiryDashboardAnalytics = asyncHandler(async (req, res) => {
   const now = new Date();
   const inquiries = await populateInquiryRelations(Inquiry.find({}).sort({ createdAt: -1 }));
-
   const statusCounts = countByStatus(inquiries);
 
   const daily = Array.from({ length: 7 }, (_, index) => {
     const date = getStartOfDay(new Date(now));
     date.setDate(date.getDate() - (6 - index));
-    const key = date.toISOString().slice(0, 10);
     return {
-      key,
+      key: date.toISOString().slice(0, 10),
       label: formatShortDate(date),
       total: 0,
     };
@@ -566,11 +510,7 @@ const getInquiryDashboardAnalytics = asyncHandler(async (req, res) => {
     const previousCount = index === 0 ? count : statusCounts[funnelOrder[index - 1]] || 0;
     const dropOffPercent =
       index === 0 || previousCount === 0 ? 0 : Number((((previousCount - count) / previousCount) * 100).toFixed(1));
-    return {
-      status,
-      count,
-      dropOffPercent,
-    };
+    return { status, count, dropOffPercent };
   });
 
   const totalLeads = inquiries.length || 1;
@@ -624,11 +564,7 @@ const getInquiryDashboardAnalytics = asyncHandler(async (req, res) => {
       publishedBlogs,
       upcomingEvents,
     },
-    leadTrends: {
-      daily,
-      weekly,
-      monthly,
-    },
+    leadTrends: { daily, weekly, monthly },
     statusBreakdown: statusCounts,
     funnel,
     topDestinations,
@@ -657,8 +593,9 @@ const updateInquiry = asyncHandler(async (req, res) => {
     nextFollowUpAt,
     completeFollowUp,
     task,
-    templateAction,
+    communicationAction,
   } = req.body;
+
   const inquiry = await Inquiry.findById(req.params.id);
 
   if (!inquiry) {
@@ -683,10 +620,7 @@ const updateInquiry = asyncHandler(async (req, res) => {
         type: 'status',
         message: `Status changed from ${formatLabel(inquiry.status)} to ${formatLabel(nextStatus)}.`,
         ...actorMeta,
-        meta: {
-          from: inquiry.status,
-          to: nextStatus,
-        },
+        meta: { from: inquiry.status, to: nextStatus },
       });
       inquiry.status = nextStatus;
     }
@@ -699,15 +633,12 @@ const updateInquiry = asyncHandler(async (req, res) => {
           type: 'assignment',
           message: 'Lead assignment removed.',
           ...actorMeta,
-          meta: {
-            assignedTo: null,
-          },
+          meta: { assignedTo: null },
         });
       }
       inquiry.assignedTo = null;
     } else {
       const assignee = await findAssignableUser(normalizedAssignedTo);
-
       if (!assignee) {
         res.status(400);
         throw new Error('Assigned user must be an active admin or content manager.');
@@ -737,16 +668,13 @@ const updateInquiry = asyncHandler(async (req, res) => {
           type: 'reminder',
           message: 'Follow-up reminder cleared.',
           ...actorMeta,
-          meta: {
-            previousFollowUpAt: inquiry.nextFollowUpAt,
-          },
+          meta: { previousFollowUpAt: inquiry.nextFollowUpAt },
         });
       }
       inquiry.nextFollowUpAt = null;
       inquiry.followUpCompletedAt = null;
     } else {
       const parsedFollowUpAt = parseDateValue(nextFollowUpAt);
-
       if (!parsedFollowUpAt) {
         res.status(400);
         throw new Error('Please provide a valid follow-up date and time.');
@@ -764,9 +692,7 @@ const updateInquiry = asyncHandler(async (req, res) => {
           minute: '2-digit',
         })}.`,
         ...actorMeta,
-        meta: {
-          nextFollowUpAt: parsedFollowUpAt,
-        },
+        meta: { nextFollowUpAt: parsedFollowUpAt },
       });
     }
   }
@@ -845,9 +771,7 @@ const updateInquiry = asyncHandler(async (req, res) => {
         throw new Error('Task not found for this inquiry.');
       }
 
-      if (taskTitle) {
-        existingTask.title = taskTitle;
-      }
+      if (taskTitle) existingTask.title = taskTitle;
 
       if (taskDueDate !== undefined) {
         if (!taskDueDate) {
@@ -862,7 +786,6 @@ const updateInquiry = asyncHandler(async (req, res) => {
           res.status(400);
           throw new Error('Invalid task status.');
         }
-
         if (existingTask.status !== nextTaskStatus) {
           existingTask.status = nextTaskStatus;
           existingTask.completedAt = nextTaskStatus === 'completed' ? new Date() : null;
@@ -897,63 +820,90 @@ const updateInquiry = asyncHandler(async (req, res) => {
   }
 
   if (noteBody) {
-    inquiry.notes.push({
-      body: noteBody,
-      ...actorMeta,
-    });
+    inquiry.notes.push({ body: noteBody, ...actorMeta });
     inquiry.activity.push({
       type: 'note',
       message: 'A follow-up note was added.',
       ...actorMeta,
-      meta: {
-        notePreview: noteBody.slice(0, 120),
-      },
+      meta: { notePreview: noteBody.slice(0, 120) },
     });
     inquiry.adminNotes = noteBody;
   } else if (legacyAdminNotes && legacyAdminNotes !== inquiry.adminNotes) {
-    inquiry.notes.push({
-      body: legacyAdminNotes,
-      ...actorMeta,
-    });
+    inquiry.notes.push({ body: legacyAdminNotes, ...actorMeta });
     inquiry.activity.push({
       type: 'note',
       message: 'A follow-up note was added.',
       ...actorMeta,
-      meta: {
-        notePreview: legacyAdminNotes.slice(0, 120),
-      },
+      meta: { notePreview: legacyAdminNotes.slice(0, 120) },
     });
     inquiry.adminNotes = legacyAdminNotes;
   } else if (adminNotes !== undefined && !legacyAdminNotes) {
     inquiry.adminNotes = '';
   }
 
-  if (templateAction && typeof templateAction === 'object') {
-    const templateKey = toTrimmedString(templateAction.templateKey);
-    const channel = toTrimmedString(templateAction.channel);
-    const template = getTemplateByKey(templateKey, channel);
+  if (communicationAction && typeof communicationAction === 'object') {
+    const channel = toTrimmedString(communicationAction.channel);
+    const actionType = toTrimmedString(communicationAction.actionType);
+    const templateId = toTrimmedString(communicationAction.templateId);
+    const renderedSubject = toTrimmedString(communicationAction.renderedSubject);
+    const renderedBody = toTrimmedString(communicationAction.renderedBody);
 
-    if (!template) {
+    if (!['email', 'whatsapp'].includes(channel)) {
       res.status(400);
-      throw new Error('Template not found.');
+      throw new Error('Invalid communication channel.');
     }
+
+    if (!['copied', 'opened', 'sent-manually'].includes(actionType)) {
+      res.status(400);
+      throw new Error('Invalid communication action type.');
+    }
+
+    let template = null;
+    if (templateId) {
+      template = await InquiryTemplate.findById(templateId);
+      if (!template) {
+        res.status(400);
+        throw new Error('Communication template not found.');
+      }
+    }
+
+    inquiry.communications.push({
+      channel,
+      templateId: template?._id || null,
+      templateKey: template ? String(template._id) : '',
+      templateName: template?.name || toTrimmedString(communicationAction.templateName),
+      actionType,
+      subject: renderedSubject,
+      bodyPreview: renderedBody.slice(0, 240),
+      ...actorMeta,
+    });
+
+    inquiry.lastContactedAt = new Date();
+    inquiry.lastContactChannel = channel;
 
     inquiry.activity.push({
       type: 'template',
-      message: `${formatLabel(channel)} template opened: ${template.label}.`,
+      message: `${formatLabel(channel)} template ${actionType.replace('-', ' ')}${template?.name ? `: ${template.name}` : ''}.`,
       ...actorMeta,
       meta: {
-        templateKey,
         channel,
-        recipient: toTrimmedString(templateAction.recipient),
+        actionType,
+        templateId: template?._id || null,
+        templateName: template?.name || '',
       },
     });
   }
+
+  inquiry.nextSuggestedAction = deriveNextSuggestedAction({
+    ...inquiry.toObject(),
+    status: inquiry.status,
+  });
 
   const updatedInquiry = await inquiry.save();
   await updatedInquiry.populate([
     { path: 'assignedTo', select: '_id name email role status' },
     { path: 'tasks.assignedTo', select: '_id name email role status' },
+    { path: 'communications.templateId', select: '_id name channel isActive' },
   ]);
 
   res.json(updatedInquiry);
@@ -967,5 +917,6 @@ module.exports = {
   getInquiryNotifications,
   getInquiryTemplates,
   getInquiryDashboardAnalytics,
+  renderTemplate,
   updateInquiry,
 };

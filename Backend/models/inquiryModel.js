@@ -44,6 +44,30 @@ const inquiryTaskSchema = new mongoose.Schema(
   { _id: true, timestamps: { createdAt: true, updatedAt: true } }
 );
 
+const inquiryCommunicationSchema = new mongoose.Schema(
+  {
+    channel: {
+      type: String,
+      enum: ['email', 'whatsapp'],
+      required: true,
+    },
+    templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'InquiryTemplate', default: null },
+    templateKey: { type: String, trim: true, default: '' },
+    templateName: { type: String, trim: true, default: '' },
+    actionType: {
+      type: String,
+      enum: ['copied', 'opened', 'sent-manually'],
+      required: true,
+    },
+    subject: { type: String, trim: true, default: '' },
+    bodyPreview: { type: String, trim: true, default: '' },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    createdByName: { type: String, trim: true, default: '' },
+    createdByRole: { type: String, trim: true, default: '' },
+  },
+  { _id: true, timestamps: { createdAt: true, updatedAt: false } }
+);
+
 const inquirySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -64,12 +88,20 @@ const inquirySchema = new mongoose.Schema(
       enum: ['new', 'contacted', 'follow-up', 'qualified', 'closed', 'lost'],
       default: 'new',
     },
+    lastContactedAt: { type: Date, default: null },
+    lastContactChannel: {
+      type: String,
+      enum: ['email', 'whatsapp', 'call', 'manual', 'none'],
+      default: 'none',
+    },
+    nextSuggestedAction: { type: String, trim: true, default: '' },
     nextFollowUpAt: { type: Date, default: null },
     followUpCompletedAt: { type: Date, default: null },
     adminNotes: { type: String, trim: true, default: '' },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     notes: { type: [inquiryNoteSchema], default: [] },
     tasks: { type: [inquiryTaskSchema], default: [] },
+    communications: { type: [inquiryCommunicationSchema], default: [] },
     activity: { type: [inquiryActivitySchema], default: [] },
   },
   { timestamps: true }

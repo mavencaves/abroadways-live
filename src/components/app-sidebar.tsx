@@ -5,6 +5,7 @@ import {
   IconListDetails,
   IconMail,
   IconPhoto,
+  IconMessage2,
   IconUsers,
 } from "@tabler/icons-react";
 import { Link } from "react-router";
@@ -54,6 +55,12 @@ const navLinks = [
     title: "Inquiries",
     url: "/dashboard/inquiries",
     icon: IconMail,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Templates",
+    url: "/dashboard/templates",
+    icon: IconMessage2,
     allowedRoles: ["admin", "content-manager"],
   },
 ];

@@ -130,9 +130,41 @@ export const inquiriesApi = {
         channel: "email" | "whatsapp";
         recipient?: string;
       };
+      communicationAction?: {
+        channel: "email" | "whatsapp";
+        actionType: "copied" | "opened" | "sent-manually";
+        templateId?: string;
+        templateName?: string;
+        renderedSubject?: string;
+        renderedBody?: string;
+      };
     }
   ) =>
     apiClient.patch(`/inquiries/${id}`, data),
+};
+
+export const inquiryTemplatesApi = {
+  getAll: () => apiClient.get("/inquiry-templates", { params: noCacheParams() }),
+  create: (data: {
+    name: string;
+    channel: "email" | "whatsapp";
+    subject?: string;
+    body: string;
+    variables?: string[];
+    isActive?: boolean;
+  }) => apiClient.post("/inquiry-templates", data),
+  update: (
+    id: string,
+    data: {
+      name?: string;
+      channel?: "email" | "whatsapp";
+      subject?: string;
+      body?: string;
+      variables?: string[];
+      isActive?: boolean;
+    }
+  ) => apiClient.put(`/inquiry-templates/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/inquiry-templates/${id}`),
 };
 
 export const chatApi = {

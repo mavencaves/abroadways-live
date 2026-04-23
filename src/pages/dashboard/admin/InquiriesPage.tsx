@@ -57,6 +57,25 @@ type InquiryActivity = {
   createdByRole?: string;
 };
 
+type InquiryCommunication = {
+  _id: string;
+  channel: "email" | "whatsapp";
+  templateId?: {
+    _id: string;
+    name: string;
+    channel: "email" | "whatsapp";
+    isActive?: boolean;
+  } | null;
+  templateKey?: string;
+  templateName?: string;
+  actionType: "copied" | "opened" | "sent-manually";
+  subject?: string;
+  bodyPreview?: string;
+  createdAt: string;
+  createdByName?: string;
+  createdByRole?: string;
+};
+
 type InquiryTask = {
   _id: string;
   title: string;
@@ -84,6 +103,10 @@ type Inquiry = {
   notes?: InquiryNote[];
   activity?: InquiryActivity[];
   tasks?: InquiryTask[];
+  communications?: InquiryCommunication[];
+  lastContactedAt?: string | null;
+  lastContactChannel?: "email" | "whatsapp" | "call" | "manual" | "none";
+  nextSuggestedAction?: string;
   nextFollowUpAt?: string | null;
   followUpCompletedAt?: string | null;
   createdAt: string;
@@ -163,11 +186,13 @@ type InquiryNotifications = {
 };
 
 type InquiryTemplate = {
-  key: string;
-  label: string;
+  _id: string;
+  name: string;
   channel: "email" | "whatsapp";
   subject: string;
   body: string;
+  isActive?: boolean;
+  variables?: string[];
 };
 
 const emptyMetrics: InquiryMetrics = {
@@ -312,7 +337,7 @@ const applyTemplate = (template: InquiryTemplate, inquiry: Inquiry, staffName: s
     intake: inquiry.intake || "upcoming",
     examInterest: inquiry.examInterest || "your exam planning",
     qualification: inquiry.qualification || "your profile",
-    staffName,
+    assignedStaff: inquiry.assignedTo?.name || staffName,
   };
 
   const replaceTokens = (value: string) =>
@@ -445,8 +470,8 @@ export default function InquiriesPage() {
     setTaskTitleDraft("");
     setTaskDueDateDraft("");
     setTaskAssigneeDraft(selectedInquiry.assignedTo?._id || "unassigned");
-    setSelectedEmailTemplate(emailTemplates[0]?.key || "");
-    setSelectedWhatsAppTemplate(whatsappTemplates[0]?.key || "");
+    setSelectedEmailTemplate(emailTemplates[0]?._id || "");
+    setSelectedWhatsAppTemplate(whatsappTemplates[0]?._id || "");
   }, [selectedInquiryId, selectedInquiry?.updatedAt, emailTemplates, whatsappTemplates]);
 
   const filteredInquiries = useMemo(() => {
@@ -565,9 +590,14 @@ export default function InquiriesPage() {
   const selectedTasks = selectedInquiry
     ? (selectedInquiry.tasks || []).slice().sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     : [];
+  const selectedCommunications = selectedInquiry
+    ? (selectedInquiry.communications || [])
+        .slice()
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
 
-  const selectedEmailTemplateData = emailTemplates.find((item) => item.key === selectedEmailTemplate) || null;
-  const selectedWhatsAppTemplateData = whatsappTemplates.find((item) => item.key === selectedWhatsAppTemplate) || null;
+  const selectedEmailTemplateData = emailTemplates.find((item) => item._id === selectedEmailTemplate) || null;
+  const selectedWhatsAppTemplateData = whatsappTemplates.find((item) => item._id === selectedWhatsAppTemplate) || null;
 
   if (loading) {
     return <div className="container mx-auto p-6 text-slate-500">Loading inquiries...</div>;
@@ -949,7 +979,10 @@ export default function InquiriesPage() {
                         <p><span className="font-medium">Updated:</span> {formatDateTime(selectedInquiry.updatedAt)}</p>
                         <p><span className="font-medium">Follow-up due:</span> {formatDateTime(selectedInquiry.nextFollowUpAt)}</p>
                         <p><span className="font-medium">Follow-up completed:</span> {formatDateTime(selectedInquiry.followUpCompletedAt)}</p>
+                        <p><span className="font-medium">Last contacted:</span> {formatDateTime(selectedInquiry.lastContactedAt)}</p>
+                        <p><span className="font-medium">Last channel:</span> {selectedInquiry.lastContactChannel && selectedInquiry.lastContactChannel !== "none" ? formatStatusLabel(selectedInquiry.lastContactChannel) : "Not recorded"}</p>
                         <p className="sm:col-span-2"><span className="font-medium">Assigned user:</span> {selectedInquiry.assignedTo?.name || "Not assigned"}</p>
+                        <p className="sm:col-span-2"><span className="font-medium">Suggested action:</span> {selectedInquiry.nextSuggestedAction || "Review lead record"}</p>
                       </div>
 
                       <div className="space-y-2">
@@ -1265,6 +1298,33 @@ export default function InquiriesPage() {
                         </p>
                       </div>
 
+                      {selectedInquiry.nextSuggestedAction ? (
+                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Suggested next step</p>
+                          <p className="mt-2 text-sm font-medium text-slate-900">{selectedInquiry.nextSuggestedAction}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {["Send first response", "Send follow-up", "Request documents", "Confirm consultation"].map((action) => (
+                              <Button
+                                key={action}
+                                type="button"
+                                variant={selectedInquiry.nextSuggestedAction === action ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (action === "Send first response") {
+                                    setSelectedEmailTemplate(emailTemplates[0]?._id || "");
+                                  }
+                                  if (action === "Send follow-up") {
+                                    setSelectedWhatsAppTemplate(whatsappTemplates[0]?._id || "");
+                                  }
+                                }}
+                              >
+                                {action}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
                       <div className="grid gap-4 xl:grid-cols-2">
                         <div className="space-y-3 rounded-xl border border-slate-200 p-4">
                           <p className="text-sm font-medium text-slate-900">Email template</p>
@@ -1274,8 +1334,8 @@ export default function InquiriesPage() {
                             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                           >
                             {emailTemplates.map((template) => (
-                              <option key={template.key} value={template.key}>
-                                {template.label}
+                              <option key={template._id} value={template._id}>
+                                {template.name}
                               </option>
                             ))}
                           </select>
@@ -1296,10 +1356,13 @@ export default function InquiriesPage() {
                               const updated = await handleUpdateInquiry(
                                 selectedInquiry,
                                 {
-                                  templateAction: {
-                                    templateKey: selectedEmailTemplateData.key,
+                                  communicationAction: {
+                                    templateId: selectedEmailTemplateData._id,
+                                    templateName: selectedEmailTemplateData.name,
                                     channel: "email",
-                                    recipient: selectedInquiry.email,
+                                    actionType: "opened",
+                                    renderedSubject: prepared.subject,
+                                    renderedBody: prepared.body,
                                   },
                                 },
                                 "Email template opened."
@@ -1314,6 +1377,63 @@ export default function InquiriesPage() {
                             <Mail className="h-4 w-4" />
                             Open Email Template
                           </Button>
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            disabled={!selectedEmailTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedEmailTemplateData) return;
+                              const prepared = applyTemplate(selectedEmailTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              await handleCopy(
+                                prepared.subject ? `${prepared.subject}\n\n${prepared.body}` : prepared.body,
+                                "Email message"
+                              );
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  communicationAction: {
+                                    templateId: selectedEmailTemplateData._id,
+                                    templateName: selectedEmailTemplateData.name,
+                                    channel: "email",
+                                    actionType: "copied",
+                                    renderedSubject: prepared.subject,
+                                    renderedBody: prepared.body,
+                                  },
+                                },
+                                "Email template copied."
+                              );
+                              setSelectedInquiryId(updated._id);
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy Email
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            disabled={!selectedEmailTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedEmailTemplateData) return;
+                              const prepared = applyTemplate(selectedEmailTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  communicationAction: {
+                                    templateId: selectedEmailTemplateData._id,
+                                    templateName: selectedEmailTemplateData.name,
+                                    channel: "email",
+                                    actionType: "sent-manually",
+                                    renderedSubject: prepared.subject,
+                                    renderedBody: prepared.body,
+                                  },
+                                },
+                                "Email communication marked as sent manually."
+                              );
+                              setSelectedInquiryId(updated._id);
+                            }}
+                          >
+                            Mark as Sent Manually
+                          </Button>
                         </div>
 
                         <div className="space-y-3 rounded-xl border border-slate-200 p-4">
@@ -1324,8 +1444,8 @@ export default function InquiriesPage() {
                             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                           >
                             {whatsappTemplates.map((template) => (
-                              <option key={template.key} value={template.key}>
-                                {template.label}
+                              <option key={template._id} value={template._id}>
+                                {template.name}
                               </option>
                             ))}
                           </select>
@@ -1344,10 +1464,12 @@ export default function InquiriesPage() {
                               const updated = await handleUpdateInquiry(
                                 selectedInquiry,
                                 {
-                                  templateAction: {
-                                    templateKey: selectedWhatsAppTemplateData.key,
+                                  communicationAction: {
+                                    templateId: selectedWhatsAppTemplateData._id,
+                                    templateName: selectedWhatsAppTemplateData.name,
                                     channel: "whatsapp",
-                                    recipient: selectedInquiry.phone,
+                                    actionType: "opened",
+                                    renderedBody: prepared.body,
                                   },
                                 },
                                 "WhatsApp template opened."
@@ -1362,7 +1484,90 @@ export default function InquiriesPage() {
                             <MessageCircle className="h-4 w-4" />
                             Open WhatsApp Template
                           </Button>
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            disabled={!selectedWhatsAppTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedWhatsAppTemplateData) return;
+                              const prepared = applyTemplate(selectedWhatsAppTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              await handleCopy(prepared.body, "WhatsApp message");
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  communicationAction: {
+                                    templateId: selectedWhatsAppTemplateData._id,
+                                    templateName: selectedWhatsAppTemplateData.name,
+                                    channel: "whatsapp",
+                                    actionType: "copied",
+                                    renderedBody: prepared.body,
+                                  },
+                                },
+                                "WhatsApp template copied."
+                              );
+                              setSelectedInquiryId(updated._id);
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy WhatsApp
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            disabled={!selectedWhatsAppTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedWhatsAppTemplateData) return;
+                              const prepared = applyTemplate(selectedWhatsAppTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  communicationAction: {
+                                    templateId: selectedWhatsAppTemplateData._id,
+                                    templateName: selectedWhatsAppTemplateData.name,
+                                    channel: "whatsapp",
+                                    actionType: "sent-manually",
+                                    renderedBody: prepared.body,
+                                  },
+                                },
+                                "WhatsApp communication marked as sent manually."
+                              );
+                              setSelectedInquiryId(updated._id);
+                            }}
+                          >
+                            Mark as Sent Manually
+                          </Button>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="space-y-4 p-5">
+                      <p className="text-sm font-medium text-slate-900">Communication history</p>
+                      <div className="space-y-3">
+                        {selectedCommunications.length === 0 ? (
+                          <p className="text-sm text-slate-500">No communication actions have been recorded yet.</p>
+                        ) : (
+                          selectedCommunications.map((entry) => (
+                            <div key={entry._id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                <span className="font-medium uppercase tracking-[0.16em] text-slate-700">
+                                  {entry.channel}
+                                </span>
+                                <span>&bull; {entry.actionType.replace("-", " ")}</span>
+                                {entry.createdByName ? <span>&bull; {entry.createdByName}</span> : null}
+                                <span>&bull; {formatDateTime(entry.createdAt)}</span>
+                              </div>
+                              <p className="mt-2 text-sm font-medium text-slate-900">
+                                {entry.templateName || entry.templateId?.name || "Ad hoc communication"}
+                              </p>
+                              {entry.subject ? <p className="mt-2 text-sm text-slate-700">{entry.subject}</p> : null}
+                              {entry.bodyPreview ? (
+                                <p className="mt-2 text-sm leading-7 text-slate-600">{entry.bodyPreview}</p>
+                              ) : null}
+                            </div>
+                          ))
+                        )}
                       </div>
                     </CardContent>
                   </Card>

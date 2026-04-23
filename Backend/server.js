@@ -24,6 +24,7 @@ const adminPanelRoutes = require('./routes/adminPanelRoutes');
 const chatRoutes = require('./routes/chatRoutes'); 
 const inquiryRoutes = require('./routes/inquiryRoutes');
 const mediaRoutes = require('./routes/mediaRoutes');
+const inquiryTemplateRoutes = require('./routes/inquiryTemplateRoutes');
 
 const app = express();
 connectDB();
@@ -75,6 +76,7 @@ app.use('/api/v1/event-bookings', eventBookingRoutes);
 app.use('/api/v1/admin-panel', adminPanelRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/inquiries', inquiryRoutes);
+app.use('/api/v1/inquiry-templates', inquiryTemplateRoutes);
 app.use('/api/v1/media', mediaRoutes);
 
 app.get('/', (req, res) => res.send('MAVENCAVE API is running'));
