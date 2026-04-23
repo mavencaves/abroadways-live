@@ -31,6 +31,25 @@ const supportedDocumentTypes = [
 
 const reviewableDocumentStatuses = ['under-review', 'approved', 'rejected', 'needs-resubmission'];
 
+const inferDocumentResourceType = ({ mimetype = '', fileName = '' } = {}) => {
+  const lowerMimeType = String(mimetype).toLowerCase();
+  const lowerFileName = String(fileName).toLowerCase();
+
+  if (lowerMimeType.startsWith('image/')) return 'image';
+  if (lowerMimeType === 'application/pdf') return 'raw';
+  if (/\.(png|jpe?g|webp|heic|gif|bmp|svg)$/.test(lowerFileName)) return 'image';
+  return 'raw';
+};
+
+const buildCloudinaryAssetUrl = (publicId, resourceType) => {
+  if (!publicId) return '';
+
+  return cloudinary.url(publicId, {
+    resource_type: resourceType || 'raw',
+    secure: true,
+  });
+};
+
 const computeProfileCompleteness = (profile) => {
   const checks = [
     Boolean(profile.fullName),
@@ -130,6 +149,33 @@ const normalizeProfileDocuments = (profile) => {
       document.originalFileName = document.fileName;
       touched = true;
     }
+
+    const inferredResourceType = inferDocumentResourceType({
+      mimetype: document.mimeType,
+      fileName: document.originalFileName || document.fileName,
+    });
+
+    if (!document.resourceType) {
+      document.resourceType = inferredResourceType;
+      touched = true;
+    }
+
+    if (document.storagePublicId) {
+      const shouldRewriteUrl =
+        !document.fileUrl ||
+        (inferredResourceType === 'raw' && document.fileUrl.includes('/image/upload/')) ||
+        (inferredResourceType === 'image' && document.fileUrl.includes('/raw/upload/'));
+
+      if (document.resourceType !== inferredResourceType) {
+        document.resourceType = inferredResourceType;
+        touched = true;
+      }
+
+      if (shouldRewriteUrl) {
+        document.fileUrl = buildCloudinaryAssetUrl(document.storagePublicId, inferredResourceType);
+        touched = true;
+      }
+    }
   });
 
   return touched;
@@ -156,11 +202,30 @@ const getStudentDocumentFolder = (userId) =>
 const uploadDocumentToCloudinary = async (file, userId) => {
   ensureCloudinary();
 
-  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-  const uploaded = await cloudinary.uploader.upload(dataUri, {
-    folder: getStudentDocumentFolder(userId),
-    resource_type: 'auto',
-    overwrite: false,
+  const resourceType = inferDocumentResourceType({
+    mimetype: file.mimetype,
+    fileName: file.originalname,
+  });
+  const uploaded = await new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: getStudentDocumentFolder(userId),
+        resource_type: resourceType,
+        overwrite: false,
+        use_filename: true,
+        unique_filename: true,
+        filename_override: file.originalname,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(result);
+      }
+    );
+
+    uploadStream.end(file.buffer);
   });
 
   return {
@@ -479,6 +544,13 @@ const listAllStudentDocuments = asyncHandler(async (req, res) => {
     .populate('user', '_id name email')
     .populate('documents.reviewedBy', '_id name email role')
     .sort({ updatedAt: -1 });
+
+  for (const profile of profiles) {
+    if (normalizeProfileDocuments(profile)) {
+      await profile.save();
+      await profile.populate('documents.reviewedBy', '_id name email role');
+    }
+  }
 
   const rawItems = profiles.flatMap((profile) =>
     (profile.documents || []).map((document) => ({

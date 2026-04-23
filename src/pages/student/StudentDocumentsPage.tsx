@@ -14,6 +14,7 @@ type StudentDocument = {
   originalFileName?: string;
   fileName?: string;
   fileUrl?: string;
+  resourceType?: string;
   status: string;
   notes?: string;
   reviewNotes?: string;
@@ -55,6 +56,24 @@ const formatFileSize = (bytes?: number) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getDocumentLinkMeta = (document: StudentDocument) => {
+  const mimeType = String(document.mimeType || "").toLowerCase();
+  const fileName = String(document.originalFileName || document.fileName || "").toLowerCase();
+  const resourceType = String(document.resourceType || "").toLowerCase();
+  const isImage = resourceType === "image" || mimeType.startsWith("image/");
+  const isPdf = mimeType === "application/pdf" || fileName.endsWith(".pdf");
+
+  if (isImage) {
+    return { label: "Open image", shouldDownload: false };
+  }
+
+  if (isPdf) {
+    return { label: "Open PDF", shouldDownload: false };
+  }
+
+  return { label: "Download file", shouldDownload: true };
 };
 
 export default function StudentDocumentsPage() {
@@ -301,52 +320,57 @@ export default function StudentDocumentsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                documents.map((doc) => (
-                  <TableRow key={doc._id}>
-                    <TableCell className="align-top">
-                      <div className="space-y-1">
-                        <p className="font-medium text-slate-900">{doc.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {doc.originalFileName || doc.fileName || "Uploaded file"} · {formatFileSize(doc.bytes)}
-                        </p>
-                        {doc.fileUrl ? (
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm font-medium text-blue-700 underline underline-offset-2"
-                          >
-                            Open file
-                          </a>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top">{formatLabel(doc.type)}</TableCell>
-                    <TableCell className="align-top">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[doc.status] || "bg-slate-100 text-slate-700"}`}>
-                        {formatLabel(doc.status)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="space-y-1 text-sm text-slate-600">
-                        <p>{doc.reviewNotes || "No review notes yet."}</p>
-                        {doc.reviewedAt ? (
-                          <p className="text-xs text-slate-500">Reviewed {formatDateTime(doc.reviewedAt)}</p>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top text-sm text-slate-600">{formatDateTime(doc.uploadedAt)}</TableCell>
-                    <TableCell className="align-top text-right">
-                      {["rejected", "needs-resubmission"].includes(doc.status) ? (
-                        <Button variant="outline" size="sm" onClick={() => openReplaceModal(doc)}>
-                          Replace / Resubmit
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-slate-400">No action needed</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+                documents.map((doc) => {
+                  const linkMeta = getDocumentLinkMeta(doc);
+
+                  return (
+                    <TableRow key={doc._id}>
+                      <TableCell className="align-top">
+                        <div className="space-y-1">
+                          <p className="font-medium text-slate-900">{doc.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {doc.originalFileName || doc.fileName || "Uploaded file"} - {formatFileSize(doc.bytes)}
+                          </p>
+                          {doc.fileUrl ? (
+                            <a
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={linkMeta.shouldDownload ? (doc.originalFileName || doc.fileName || true) : undefined}
+                              className="text-sm font-medium text-blue-700 underline underline-offset-2"
+                            >
+                              {linkMeta.label}
+                            </a>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">{formatLabel(doc.type)}</TableCell>
+                      <TableCell className="align-top">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[doc.status] || "bg-slate-100 text-slate-700"}`}>
+                          {formatLabel(doc.status)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="space-y-1 text-sm text-slate-600">
+                          <p>{doc.reviewNotes || "No review notes yet."}</p>
+                          {doc.reviewedAt ? (
+                            <p className="text-xs text-slate-500">Reviewed {formatDateTime(doc.reviewedAt)}</p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top text-sm text-slate-600">{formatDateTime(doc.uploadedAt)}</TableCell>
+                      <TableCell className="align-top text-right">
+                        {["rejected", "needs-resubmission"].includes(doc.status) ? (
+                          <Button variant="outline" size="sm" onClick={() => openReplaceModal(doc)}>
+                            Replace / Resubmit
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-400">No action needed</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

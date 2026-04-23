@@ -29,6 +29,8 @@ type AdminDocumentItem = {
     fileUrl?: string;
     originalFileName?: string;
     fileName?: string;
+    resourceType?: string;
+    mimeType?: string;
     uploadedAt?: string | null;
     reviewedAt?: string | null;
     reviewedBy?: {
@@ -65,6 +67,18 @@ const formatDateTime = (value?: string | null) =>
         minute: "2-digit",
       })
     : "Not available";
+
+const getDocumentLinkMeta = (document: AdminDocumentItem["document"]) => {
+  const mimeType = String(document.mimeType || "").toLowerCase();
+  const fileName = String(document.originalFileName || document.fileName || "").toLowerCase();
+  const resourceType = String(document.resourceType || "").toLowerCase();
+  const isImage = resourceType === "image" || mimeType.startsWith("image/");
+  const isPdf = mimeType === "application/pdf" || fileName.endsWith(".pdf");
+
+  if (isImage) return { label: "Open image", shouldDownload: false };
+  if (isPdf) return { label: "Open PDF", shouldDownload: false };
+  return { label: "Download file", shouldDownload: true };
+};
 
 export default function DocumentsPage() {
   const { user } = useAuth();
@@ -262,46 +276,56 @@ export default function DocumentsPage() {
                       </td>
                     </tr>
                   ) : (
-                    items.map((item) => (
-                      <tr key={item.documentId} className="border-b bg-white hover:bg-slate-50">
-                        <td className="px-4 py-3 align-top">
-                          <p className="font-medium text-slate-900">{item.student.name}</p>
-                          <p className="text-xs text-slate-500">{item.student.email}</p>
-                          <p className="mt-1 text-xs text-slate-400">{formatLabel(item.applicationStage)}</p>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <p className="font-medium text-slate-900">{item.document.title}</p>
-                          <p className="text-xs text-slate-500">{item.document.originalFileName || item.document.fileName || "Uploaded file"}</p>
-                          {item.document.fileUrl ? (
-                            <a href={item.document.fileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs font-medium text-blue-700 underline underline-offset-2">
-                              Open file
-                            </a>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3 align-top">{formatLabel(item.document.type)}</td>
-                        <td className="px-4 py-3 align-top">
-                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[item.document.status] || "bg-slate-100 text-slate-700"}`}>
-                            {formatLabel(item.document.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-slate-700">{formatDateTime(item.document.uploadedAt)}</td>
-                        <td className="px-4 py-3 align-top text-slate-700">
-                          {item.document.reviewedAt ? (
-                            <div className="space-y-1">
-                              <p>{formatDateTime(item.document.reviewedAt)}</p>
-                              <p className="text-xs text-slate-500">{item.document.reviewedBy?.name || "Reviewer recorded"}</p>
-                            </div>
-                          ) : (
-                            "Not reviewed yet"
-                          )}
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedItem(item)}>
-                            Review
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                    items.map((item) => {
+                      const linkMeta = getDocumentLinkMeta(item.document);
+
+                      return (
+                        <tr key={item.documentId} className="border-b bg-white hover:bg-slate-50">
+                          <td className="px-4 py-3 align-top">
+                            <p className="font-medium text-slate-900">{item.student.name}</p>
+                            <p className="text-xs text-slate-500">{item.student.email}</p>
+                            <p className="mt-1 text-xs text-slate-400">{formatLabel(item.applicationStage)}</p>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <p className="font-medium text-slate-900">{item.document.title}</p>
+                            <p className="text-xs text-slate-500">{item.document.originalFileName || item.document.fileName || "Uploaded file"}</p>
+                            {item.document.fileUrl ? (
+                              <a
+                                href={item.document.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={linkMeta.shouldDownload ? (item.document.originalFileName || item.document.fileName || true) : undefined}
+                                className="mt-1 inline-block text-xs font-medium text-blue-700 underline underline-offset-2"
+                              >
+                                {linkMeta.label}
+                              </a>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3 align-top">{formatLabel(item.document.type)}</td>
+                          <td className="px-4 py-3 align-top">
+                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[item.document.status] || "bg-slate-100 text-slate-700"}`}>
+                              {formatLabel(item.document.status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 align-top text-slate-700">{formatDateTime(item.document.uploadedAt)}</td>
+                          <td className="px-4 py-3 align-top text-slate-700">
+                            {item.document.reviewedAt ? (
+                              <div className="space-y-1">
+                                <p>{formatDateTime(item.document.reviewedAt)}</p>
+                                <p className="text-xs text-slate-500">{item.document.reviewedBy?.name || "Reviewer recorded"}</p>
+                              </div>
+                            ) : (
+                              "Not reviewed yet"
+                            )}
+                          </td>
+                          <td className="px-4 py-3 align-top text-right">
+                            <Button variant="outline" size="sm" onClick={() => setSelectedItem(item)}>
+                              Review
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -318,7 +342,7 @@ export default function DocumentsPage() {
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Document Review</p>
               <h2 className="text-2xl font-semibold text-slate-950">{selectedItem.document.title}</h2>
               <p className="text-sm text-slate-600">
-                {selectedItem.student.name} · {selectedItem.student.email}
+                {selectedItem.student.name} - {selectedItem.student.email}
               </p>
             </div>
 
@@ -360,8 +384,18 @@ export default function DocumentsPage() {
                   <div>
                     <p className="font-medium text-slate-900">Open file</p>
                     {selectedItem.document.fileUrl ? (
-                      <a href={selectedItem.document.fileUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline underline-offset-2">
-                        View uploaded file
+                      <a
+                        href={selectedItem.document.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={
+                          getDocumentLinkMeta(selectedItem.document).shouldDownload
+                            ? (selectedItem.document.originalFileName || selectedItem.document.fileName || true)
+                            : undefined
+                        }
+                        className="text-blue-700 underline underline-offset-2"
+                      >
+                        {getDocumentLinkMeta(selectedItem.document).label}
                       </a>
                     ) : (
                       <p className="text-slate-600">No file link available.</p>
