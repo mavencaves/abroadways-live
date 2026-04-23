@@ -105,6 +105,8 @@ export const inquiriesApi = {
   getAll: () => apiClient.get("/inquiries", { params: noCacheParams() }),
   getMeta: () => apiClient.get("/inquiries/meta", { params: noCacheParams() }),
   getMetrics: () => apiClient.get("/inquiries/metrics", { params: noCacheParams() }),
+  getNotifications: () => apiClient.get("/inquiries/notifications", { params: noCacheParams() }),
+  getTemplates: () => apiClient.get("/inquiries/templates", { params: noCacheParams() }),
   getDashboardAnalytics: () => apiClient.get("/inquiries/dashboard-analytics", { params: noCacheParams() }),
   update: (
     id: string,
@@ -113,6 +115,21 @@ export const inquiriesApi = {
       adminNotes?: string;
       note?: string;
       assignedTo?: string | null;
+      nextFollowUpAt?: string | null;
+      completeFollowUp?: boolean;
+      task?: {
+        action: "create" | "update";
+        taskId?: string;
+        title?: string;
+        dueDate?: string;
+        status?: "pending" | "in-progress" | "completed" | "cancelled";
+        assignedTo?: string | null;
+      };
+      templateAction?: {
+        templateKey: string;
+        channel: "email" | "whatsapp";
+        recipient?: string;
+      };
     }
   ) =>
     apiClient.patch(`/inquiries/${id}`, data),

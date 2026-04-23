@@ -6,6 +6,8 @@ const {
   getInquiryDashboardAnalytics,
   getInquiryMeta,
   getInquiryMetrics,
+  getInquiryNotifications,
+  getInquiryTemplates,
   updateInquiry,
 } = require('../controllers/inquiryController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
@@ -22,6 +24,14 @@ router
 router
   .route('/metrics')
   .get(protect, restrictTo('admin', 'content-manager'), getInquiryMetrics);
+
+router
+  .route('/notifications')
+  .get(protect, restrictTo('admin', 'content-manager'), getInquiryNotifications);
+
+router
+  .route('/templates')
+  .get(protect, restrictTo('admin', 'content-manager'), getInquiryTemplates);
 
 router
   .route('/dashboard-analytics')

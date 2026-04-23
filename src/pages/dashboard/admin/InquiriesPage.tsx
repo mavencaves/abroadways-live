@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
+  BellRing,
+  CalendarClock,
+  CheckCheck,
+  ClipboardList,
   Copy,
   ExternalLink,
   Mail,
@@ -26,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 
 type InquiryStatus = "new" | "contacted" | "follow-up" | "qualified" | "closed" | "lost";
+type TaskStatus = "pending" | "in-progress" | "completed" | "cancelled";
 
 type AssignedUser = {
   _id: string;
@@ -45,11 +50,21 @@ type InquiryNote = {
 
 type InquiryActivity = {
   _id: string;
-  type: "created" | "status" | "assignment" | "note";
+  type: "created" | "status" | "assignment" | "note" | "reminder" | "task" | "template";
   message: string;
   createdAt: string;
   createdByName?: string;
   createdByRole?: string;
+};
+
+type InquiryTask = {
+  _id: string;
+  title: string;
+  dueDate: string;
+  status: TaskStatus;
+  assignedTo?: AssignedUser | null;
+  completedAt?: string | null;
+  createdAt: string;
 };
 
 type Inquiry = {
@@ -68,6 +83,9 @@ type Inquiry = {
   assignedTo?: AssignedUser | null;
   notes?: InquiryNote[];
   activity?: InquiryActivity[];
+  tasks?: InquiryTask[];
+  nextFollowUpAt?: string | null;
+  followUpCompletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -78,6 +96,7 @@ type InquiryMeta = {
   examInterests: string[];
   sources: string[];
   statuses: InquiryStatus[];
+  taskStatuses: TaskStatus[];
 };
 
 type InquiryMetrics = {
@@ -88,17 +107,88 @@ type InquiryMetrics = {
   qualified: number;
   closed: number;
   lost: number;
+  overdueFollowUps: number;
+  unassigned: number;
+  tasksDueToday: number;
 };
 
-const calculateMetrics = (records: Inquiry[]): InquiryMetrics => ({
-  total: records.length,
-  new: records.filter((item) => item.status === "new").length,
-  contacted: records.filter((item) => item.status === "contacted").length,
-  followUp: records.filter((item) => item.status === "follow-up").length,
-  qualified: records.filter((item) => item.status === "qualified").length,
-  closed: records.filter((item) => item.status === "closed").length,
-  lost: records.filter((item) => item.status === "lost").length,
-});
+type InquiryNotificationAssignee = {
+  _id: string;
+  name: string;
+  role: string;
+};
+
+type InquiryNotifications = {
+  overdueFollowUps: {
+    count: number;
+    sample: {
+      id: string;
+      name: string;
+      status: string;
+      nextFollowUpAt: string;
+      assignedTo: InquiryNotificationAssignee | null;
+    }[];
+  };
+  unassignedInquiries: {
+    count: number;
+    sample: {
+      id: string;
+      name: string;
+      status: string;
+      source: string;
+      createdAt: string;
+    }[];
+  };
+  staleInquiries: {
+    count: number;
+    sample: {
+      id: string;
+      name: string;
+      status: string;
+      updatedAt: string;
+    }[];
+  };
+  tasksDueToday: {
+    count: number;
+    sample: {
+      inquiryId: string;
+      inquiryName: string;
+      taskId: string;
+      title: string;
+      dueDate: string;
+      status: string;
+      assignedTo: InquiryNotificationAssignee | null;
+    }[];
+  };
+};
+
+type InquiryTemplate = {
+  key: string;
+  label: string;
+  channel: "email" | "whatsapp";
+  subject: string;
+  body: string;
+};
+
+const emptyMetrics: InquiryMetrics = {
+  total: 0,
+  new: 0,
+  contacted: 0,
+  followUp: 0,
+  qualified: 0,
+  closed: 0,
+  lost: 0,
+  overdueFollowUps: 0,
+  unassigned: 0,
+  tasksDueToday: 0,
+};
+
+const emptyNotifications: InquiryNotifications = {
+  overdueFollowUps: { count: 0, sample: [] },
+  unassignedInquiries: { count: 0, sample: [] },
+  staleInquiries: { count: 0, sample: [] },
+  tasksDueToday: { count: 0, sample: [] },
+};
 
 const statusClasses: Record<InquiryStatus, string> = {
   new: "bg-blue-100 text-blue-700",
@@ -107,6 +197,13 @@ const statusClasses: Record<InquiryStatus, string> = {
   qualified: "bg-emerald-100 text-emerald-700",
   closed: "bg-slate-200 text-slate-700",
   lost: "bg-rose-100 text-rose-700",
+};
+
+const taskStatusClasses: Record<TaskStatus, string> = {
+  pending: "bg-blue-100 text-blue-700",
+  "in-progress": "bg-amber-100 text-amber-700",
+  completed: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-slate-200 text-slate-700",
 };
 
 const statusOptions = [
@@ -124,30 +221,107 @@ const sortOptions = [
   { value: "oldest", label: "Oldest first" },
 ] as const;
 
+const notificationCards = [
+  {
+    key: "overdueFollowUps",
+    title: "Overdue follow-ups",
+    description: "Leads needing immediate action",
+  },
+  {
+    key: "unassignedInquiries",
+    title: "Unassigned leads",
+    description: "Leads waiting for owner assignment",
+  },
+  {
+    key: "staleInquiries",
+    title: "Stale leads",
+    description: "Records with no recent CRM activity",
+  },
+  {
+    key: "tasksDueToday",
+    title: "Tasks due today",
+    description: "Operational actions due before day-end",
+  },
+] as const;
+
 const formatSource = (source: string) =>
   source
     .replace(/-/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const formatStatusLabel = (value: InquiryStatus) =>
+const formatStatusLabel = (value: string) =>
   value
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const formatDateTime = (value?: string | null) =>
+  value
+    ? new Date(value).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "Not scheduled";
 
-const buildWhatsAppLink = (phone?: string) => {
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const buildWhatsAppLink = (phone?: string, message?: string) => {
   if (!phone) return null;
   const digits = phone.replace(/[^\d]/g, "");
-  return digits ? `https://wa.me/${digits}` : null;
+  if (!digits) return null;
+  const encoded = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${digits}${encoded}`;
+};
+
+const getInquiryOverdueState = (inquiry: Inquiry) => {
+  if (!inquiry.nextFollowUpAt) return false;
+  if (["closed", "lost"].includes(inquiry.status)) return false;
+  const followUpAt = new Date(inquiry.nextFollowUpAt);
+  const completedAt = inquiry.followUpCompletedAt ? new Date(inquiry.followUpCompletedAt) : null;
+  return followUpAt.getTime() < Date.now() && (!completedAt || completedAt.getTime() < followUpAt.getTime());
+};
+
+const buildLeadSummary = (inquiry: Inquiry) =>
+  [
+    `Lead: ${inquiry.name}`,
+    `Email: ${inquiry.email || "Not provided"}`,
+    `Phone: ${inquiry.phone || "Not provided"}`,
+    `Source: ${formatSource(inquiry.source)}`,
+    `Destination: ${inquiry.destination || "Not provided"}`,
+    `Qualification: ${inquiry.qualification || "Not provided"}`,
+    `Intake: ${inquiry.intake || "Not provided"}`,
+    `Exam interest: ${inquiry.examInterest || "Not provided"}`,
+    `Status: ${formatStatusLabel(inquiry.status)}`,
+    `Assigned to: ${inquiry.assignedTo?.name || "Not assigned"}`,
+    `Message: ${inquiry.message || "No additional message provided."}`,
+  ].join("\n");
+
+const applyTemplate = (template: InquiryTemplate, inquiry: Inquiry, staffName: string) => {
+  const replacements: Record<string, string> = {
+    name: inquiry.name || "Student",
+    destination: inquiry.destination || "your preferred destination",
+    intake: inquiry.intake || "upcoming",
+    examInterest: inquiry.examInterest || "your exam planning",
+    qualification: inquiry.qualification || "your profile",
+    staffName,
+  };
+
+  const replaceTokens = (value: string) =>
+    value.replace(/\{\{(\w+)\}\}/g, (_, key) => replacements[key] || "");
+
+  return {
+    subject: replaceTokens(template.subject),
+    body: replaceTokens(template.body),
+  };
 };
 
 export default function InquiriesPage() {
@@ -159,16 +333,11 @@ export default function InquiriesPage() {
     examInterests: [],
     sources: ["homepage-lead", "homepage-consultation", "contact-page", "other"],
     statuses: ["new", "contacted", "follow-up", "qualified", "closed", "lost"],
+    taskStatuses: ["pending", "in-progress", "completed", "cancelled"],
   });
-  const [metrics, setMetrics] = useState<InquiryMetrics>({
-    total: 0,
-    new: 0,
-    contacted: 0,
-    followUp: 0,
-    qualified: 0,
-    closed: 0,
-    lost: 0,
-  });
+  const [metrics, setMetrics] = useState<InquiryMetrics>(emptyMetrics);
+  const [notifications, setNotifications] = useState<InquiryNotifications>(emptyNotifications);
+  const [templates, setTemplates] = useState<InquiryTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -181,10 +350,38 @@ export default function InquiriesPage() {
   const [sortOrder, setSortOrder] = useState<(typeof sortOptions)[number]["value"]>("newest");
   const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
-  const canManageInquiries = user ? ["admin", "content-manager"].includes(user.role) : false;
+  const [followUpDraft, setFollowUpDraft] = useState("");
+  const [taskTitleDraft, setTaskTitleDraft] = useState("");
+  const [taskDueDateDraft, setTaskDueDateDraft] = useState("");
+  const [taskAssigneeDraft, setTaskAssigneeDraft] = useState("unassigned");
+  const [selectedEmailTemplate, setSelectedEmailTemplate] = useState("");
+  const [selectedWhatsAppTemplate, setSelectedWhatsAppTemplate] = useState("");
 
-  const selectedInquiry =
-    inquiries.find((item) => item._id === selectedInquiryId) || null;
+  const canManageInquiries = user ? ["admin", "content-manager"].includes(user.role) : false;
+  const selectedInquiry = inquiries.find((item) => item._id === selectedInquiryId) || null;
+  const emailTemplates = templates.filter((item) => item.channel === "email");
+  const whatsappTemplates = templates.filter((item) => item.channel === "whatsapp");
+
+  const refreshOperationalData = async () => {
+    const [metricsResponse, notificationsResponse] = await Promise.all([
+      inquiriesApi.getMetrics(),
+      inquiriesApi.getNotifications(),
+    ]);
+
+    setMetrics({
+      total: metricsResponse.data?.total || 0,
+      new: metricsResponse.data?.new || 0,
+      contacted: metricsResponse.data?.contacted || 0,
+      followUp: metricsResponse.data?.followUp || 0,
+      qualified: metricsResponse.data?.qualified || 0,
+      closed: metricsResponse.data?.closed || 0,
+      lost: metricsResponse.data?.lost || 0,
+      overdueFollowUps: metricsResponse.data?.overdueFollowUps || 0,
+      unassigned: metricsResponse.data?.unassigned || 0,
+      tasksDueToday: metricsResponse.data?.tasksDueToday || 0,
+    });
+    setNotifications(notificationsResponse.data || emptyNotifications);
+  };
 
   const loadInquiries = async () => {
     if (!canManageInquiries) {
@@ -195,10 +392,10 @@ export default function InquiriesPage() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [inquiriesResponse, metaResponse, metricsResponse] = await Promise.all([
+      const [inquiriesResponse, metaResponse, templatesResponse] = await Promise.all([
         inquiriesApi.getAll(),
         inquiriesApi.getMeta(),
-        inquiriesApi.getMetrics(),
+        inquiriesApi.getTemplates(),
       ]);
 
       setInquiries(Array.isArray(inquiriesResponse.data) ? inquiriesResponse.data : []);
@@ -208,16 +405,10 @@ export default function InquiriesPage() {
         examInterests: Array.isArray(metaResponse.data?.examInterests) ? metaResponse.data.examInterests : [],
         sources: Array.isArray(metaResponse.data?.sources) ? metaResponse.data.sources : [],
         statuses: Array.isArray(metaResponse.data?.statuses) ? metaResponse.data.statuses : [],
+        taskStatuses: Array.isArray(metaResponse.data?.taskStatuses) ? metaResponse.data.taskStatuses : [],
       });
-      setMetrics({
-        total: metricsResponse.data?.total || 0,
-        new: metricsResponse.data?.new || 0,
-        contacted: metricsResponse.data?.contacted || 0,
-        followUp: metricsResponse.data?.followUp || 0,
-        qualified: metricsResponse.data?.qualified || 0,
-        closed: metricsResponse.data?.closed || 0,
-        lost: metricsResponse.data?.lost || 0,
-      });
+      setTemplates(Array.isArray(templatesResponse.data) ? templatesResponse.data : []);
+      await refreshOperationalData();
     } catch (error: any) {
       const status = error?.response?.status;
       const message =
@@ -241,10 +432,16 @@ export default function InquiriesPage() {
   }, [canManageInquiries]);
 
   useEffect(() => {
-    if (selectedInquiry) {
-      setNoteDraft("");
-    }
-  }, [selectedInquiryId]);
+    if (!selectedInquiry) return;
+
+    setNoteDraft("");
+    setFollowUpDraft(toDateTimeLocalValue(selectedInquiry.nextFollowUpAt));
+    setTaskTitleDraft("");
+    setTaskDueDateDraft("");
+    setTaskAssigneeDraft(selectedInquiry.assignedTo?._id || "unassigned");
+    setSelectedEmailTemplate(emailTemplates[0]?.key || "");
+    setSelectedWhatsAppTemplate(whatsappTemplates[0]?.key || "");
+  }, [selectedInquiryId, selectedInquiry?.updatedAt, emailTemplates, whatsappTemplates]);
 
   const filteredInquiries = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -308,29 +505,26 @@ export default function InquiriesPage() {
     assignedFilter,
   ]);
 
-  const refreshWithUpdatedInquiry = (updated: Inquiry) => {
-    setInquiries((prev) => {
-      const updatedList = prev.map((item) => (item._id === updated._id ? updated : item));
-      setMetrics(calculateMetrics(updatedList));
-      return updatedList;
-    });
+  const refreshWithUpdatedInquiry = async (updatedInquiry: Inquiry) => {
+    setInquiries((prev) => prev.map((item) => (item._id === updatedInquiry._id ? updatedInquiry : item)));
+    await refreshOperationalData();
   };
 
   const handleUpdateInquiry = async (
     inquiry: Inquiry,
-    payload: {
-      status?: InquiryStatus;
-      note?: string;
-      assignedTo?: string | null;
-    }
+    payload: Parameters<typeof inquiriesApi.update>[1],
+    successMessage = "Inquiry updated."
   ) => {
     try {
       setSavingId(inquiry._id);
       const response = await inquiriesApi.update(inquiry._id, payload);
-      refreshWithUpdatedInquiry(response.data);
-      toast.success("Inquiry updated.");
+      await refreshWithUpdatedInquiry(response.data);
+      toast.success(successMessage);
+      return response.data as Inquiry;
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to update inquiry.");
+      const message = error?.response?.data?.message || "Failed to update inquiry.";
+      toast.error(message);
+      throw error;
     } finally {
       setSavingId(null);
     }
@@ -347,20 +541,27 @@ export default function InquiriesPage() {
   };
 
   const selectedNotes = selectedInquiry
-    ? (selectedInquiry.notes && selectedInquiry.notes.length > 0
-        ? selectedInquiry.notes
-        : selectedInquiry.adminNotes
-          ? [
-              {
-                _id: `${selectedInquiry._id}-legacy-note`,
-                body: selectedInquiry.adminNotes,
-                createdAt: selectedInquiry.updatedAt || selectedInquiry.createdAt,
-                createdByName: "Legacy note",
-                createdByRole: "",
-              },
-            ]
-          : [])
+    ? selectedInquiry.notes && selectedInquiry.notes.length > 0
+      ? selectedInquiry.notes
+      : selectedInquiry.adminNotes
+        ? [
+            {
+              _id: `${selectedInquiry._id}-legacy-note`,
+              body: selectedInquiry.adminNotes,
+              createdAt: selectedInquiry.updatedAt || selectedInquiry.createdAt,
+              createdByName: "Legacy note",
+              createdByRole: "",
+            },
+          ]
+        : []
     : [];
+
+  const selectedTasks = selectedInquiry
+    ? (selectedInquiry.tasks || []).slice().sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    : [];
+
+  const selectedEmailTemplateData = emailTemplates.find((item) => item.key === selectedEmailTemplate) || null;
+  const selectedWhatsAppTemplateData = whatsappTemplates.find((item) => item.key === selectedWhatsAppTemplate) || null;
 
   if (loading) {
     return <div className="container mx-auto p-6 text-slate-500">Loading inquiries...</div>;
@@ -424,7 +625,7 @@ export default function InquiriesPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Lead CRM</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Inquiries</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Manage consultation leads with a clearer CRM pipeline, assignment, and follow-up workflow.
+            Manage consultation leads with reminders, task ownership, reusable templates, and cleaner operational follow-up.
           </p>
         </div>
         <div className="text-sm text-slate-500">
@@ -433,14 +634,84 @@ export default function InquiriesPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Total</p><p className="mt-2 text-3xl font-semibold">{metrics.total}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">New</p><p className="mt-2 text-3xl font-semibold">{metrics.new}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Contacted</p><p className="mt-2 text-3xl font-semibold">{metrics.contacted}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Follow-up</p><p className="mt-2 text-3xl font-semibold">{metrics.followUp}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Qualified</p><p className="mt-2 text-3xl font-semibold">{metrics.qualified}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Closed</p><p className="mt-2 text-3xl font-semibold">{metrics.closed}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Lost</p><p className="mt-2 text-3xl font-semibold">{metrics.lost}</p></CardContent></Card>
+      <div className="grid gap-4 md:grid-cols-5 xl:grid-cols-10">
+        <MetricCard title="Total" value={metrics.total} />
+        <MetricCard title="New" value={metrics.new} />
+        <MetricCard title="Contacted" value={metrics.contacted} />
+        <MetricCard title="Follow-up" value={metrics.followUp} />
+        <MetricCard title="Qualified" value={metrics.qualified} />
+        <MetricCard title="Closed" value={metrics.closed} />
+        <MetricCard title="Lost" value={metrics.lost} />
+        <MetricCard title="Overdue" value={metrics.overdueFollowUps} variant="warning" />
+        <MetricCard title="Unassigned" value={metrics.unassigned} variant="warning" />
+        <MetricCard title="Tasks due" value={metrics.tasksDueToday} variant="warning" />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-4">
+        {notificationCards.map((card) => {
+          const bucket = notifications[card.key];
+          return (
+            <Card key={card.key} className="border-slate-200 shadow-sm">
+              <CardContent className="space-y-2 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{card.title}</p>
+                    <p className="mt-1 text-xs text-slate-500">{card.description}</p>
+                  </div>
+                  <BellRing className="h-4 w-4 text-blue-700" />
+                </div>
+                <p className="text-3xl font-semibold text-slate-950">{bucket.count}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-4">
+        <NotificationListCard
+          title="Overdue follow-ups"
+          items={notifications.overdueFollowUps.sample}
+          renderItem={(item) => (
+            <div className="text-sm text-slate-700">
+              <p className="font-medium text-slate-900">{item.name}</p>
+              <p>{formatDateTime(item.nextFollowUpAt)}</p>
+              <p>{item.assignedTo?.name || "Unassigned"}</p>
+            </div>
+          )}
+        />
+        <NotificationListCard
+          title="Unassigned inquiries"
+          items={notifications.unassignedInquiries.sample}
+          renderItem={(item) => (
+            <div className="text-sm text-slate-700">
+              <p className="font-medium text-slate-900">{item.name}</p>
+              <p>{formatSource(item.source)}</p>
+              <p>{formatDateTime(item.createdAt)}</p>
+            </div>
+          )}
+        />
+        <NotificationListCard
+          title="Stale inquiries"
+          items={notifications.staleInquiries.sample}
+          renderItem={(item) => (
+            <div className="text-sm text-slate-700">
+              <p className="font-medium text-slate-900">{item.name}</p>
+              <p>{formatStatusLabel(item.status)}</p>
+              <p>Updated {formatDateTime(item.updatedAt)}</p>
+            </div>
+          )}
+        />
+        <NotificationListCard
+          title="Tasks due today"
+          items={notifications.tasksDueToday.sample}
+          renderItem={(item) => (
+            <div className="text-sm text-slate-700">
+              <p className="font-medium text-slate-900">{item.title}</p>
+              <p>{item.inquiryName}</p>
+              <p>{formatDateTime(item.dueDate)}</p>
+            </div>
+          )}
+        />
       </div>
 
       <Card>
@@ -548,6 +819,8 @@ export default function InquiriesPage() {
         ) : (
           filteredInquiries.map((inquiry) => {
             const whatsappLink = buildWhatsAppLink(inquiry.phone);
+            const isOverdue = getInquiryOverdueState(inquiry);
+            const pendingTasks = (inquiry.tasks || []).filter((task) => !["completed", "cancelled"].includes(task.status)).length;
 
             return (
               <Card key={inquiry._id} className="border-slate-200 shadow-sm">
@@ -566,6 +839,10 @@ export default function InquiriesPage() {
                         ) : (
                           <Badge variant="outline" className="text-slate-500">Unassigned</Badge>
                         )}
+                        {isOverdue ? <Badge className="bg-rose-100 text-rose-700">Follow-up overdue</Badge> : null}
+                        {pendingTasks > 0 ? (
+                          <Badge className="bg-slate-100 text-slate-700">{pendingTasks} active task{pendingTasks > 1 ? "s" : ""}</Badge>
+                        ) : null}
                       </div>
                       <p className="text-sm text-slate-500">{formatDateTime(inquiry.createdAt)}</p>
                     </div>
@@ -613,7 +890,7 @@ export default function InquiriesPage() {
                     <p><span className="font-medium">Qualification:</span> {inquiry.qualification || "Not provided"}</p>
                     <p><span className="font-medium">Expected intake:</span> {inquiry.intake || "Not provided"}</p>
                     <p><span className="font-medium">Exam interest:</span> {inquiry.examInterest || "Not provided"}</p>
-                    <p><span className="font-medium">Assigned to:</span> {inquiry.assignedTo?.name || "Not assigned"}</p>
+                    <p><span className="font-medium">Follow-up:</span> {formatDateTime(inquiry.nextFollowUpAt)}</p>
                     <p><span className="font-medium">Updated:</span> {formatDateTime(inquiry.updatedAt)}</p>
                   </div>
 
@@ -631,13 +908,13 @@ export default function InquiriesPage() {
       </div>
 
       <Dialog open={Boolean(selectedInquiry)} onOpenChange={(open) => !open && setSelectedInquiryId(null)}>
-        <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
           {selectedInquiry ? (
             <>
               <DialogHeader>
                 <DialogTitle>{selectedInquiry.name}</DialogTitle>
                 <DialogDescription>
-                  Review the full lead profile, update pipeline status, assign staff, and keep the CRM timeline current.
+                  Review the full lead profile, schedule follow-ups, assign staff, manage tasks, and keep the CRM activity timeline current.
                 </DialogDescription>
               </DialogHeader>
 
@@ -650,6 +927,9 @@ export default function InquiriesPage() {
                           {formatStatusLabel(selectedInquiry.status)}
                         </Badge>
                         <Badge variant="outline">{formatSource(selectedInquiry.source)}</Badge>
+                        {getInquiryOverdueState(selectedInquiry) ? (
+                          <Badge className="bg-rose-100 text-rose-700">Overdue follow-up</Badge>
+                        ) : null}
                       </div>
 
                       <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
@@ -661,6 +941,8 @@ export default function InquiriesPage() {
                         <p><span className="font-medium">Exam interest:</span> {selectedInquiry.examInterest || "Not provided"}</p>
                         <p><span className="font-medium">Created:</span> {formatDateTime(selectedInquiry.createdAt)}</p>
                         <p><span className="font-medium">Updated:</span> {formatDateTime(selectedInquiry.updatedAt)}</p>
+                        <p><span className="font-medium">Follow-up due:</span> {formatDateTime(selectedInquiry.nextFollowUpAt)}</p>
+                        <p><span className="font-medium">Follow-up completed:</span> {formatDateTime(selectedInquiry.followUpCompletedAt)}</p>
                         <p className="sm:col-span-2"><span className="font-medium">Assigned user:</span> {selectedInquiry.assignedTo?.name || "Not assigned"}</p>
                       </div>
 
@@ -669,6 +951,33 @@ export default function InquiriesPage() {
                         <p className="rounded-lg bg-slate-50 p-4 text-sm leading-7 text-slate-600">
                           {selectedInquiry.message || "No additional message provided."}
                         </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => handleCopy(buildLeadSummary(selectedInquiry), "Lead summary")}
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy Lead Summary
+                        </Button>
+                        {selectedInquiry.email ? (
+                          <Button asChild variant="outline" className="gap-2">
+                            <a href={`mailto:${selectedInquiry.email}`}>
+                              <Mail className="h-4 w-4" />
+                              Email Lead
+                            </a>
+                          </Button>
+                        ) : null}
+                        {selectedInquiry.phone ? (
+                          <Button asChild variant="outline" className="gap-2">
+                            <a href={buildWhatsAppLink(selectedInquiry.phone) || "#"} target="_blank" rel="noreferrer">
+                              <MessageCircle className="h-4 w-4" />
+                              Open WhatsApp
+                            </a>
+                          </Button>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -680,9 +989,13 @@ export default function InquiriesPage() {
                         <select
                           value={selectedInquiry.status}
                           onChange={(event) =>
-                            handleUpdateInquiry(selectedInquiry, {
-                              status: event.target.value as InquiryStatus,
-                            })
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              {
+                                status: event.target.value as InquiryStatus,
+                              },
+                              "Pipeline status updated."
+                            )
                           }
                           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                           disabled={savingId === selectedInquiry._id}
@@ -700,9 +1013,13 @@ export default function InquiriesPage() {
                         <select
                           value={selectedInquiry.assignedTo?._id || "unassigned"}
                           onChange={(event) =>
-                            handleUpdateInquiry(selectedInquiry, {
-                              assignedTo: event.target.value === "unassigned" ? null : event.target.value,
-                            })
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              {
+                                assignedTo: event.target.value === "unassigned" ? null : event.target.value,
+                              },
+                              "Assignee updated."
+                            )
                           }
                           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                           disabled={savingId === selectedInquiry._id}
@@ -719,6 +1036,70 @@ export default function InquiriesPage() {
                       {savingId === selectedInquiry._id ? (
                         <p className="text-xs text-slate-500">Saving update...</p>
                       ) : null}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="space-y-4 p-5">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Follow-up reminder</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Schedule the next contact point and mark it complete once the conversation is done.
+                        </p>
+                      </div>
+                      <Input
+                        type="datetime-local"
+                        value={followUpDraft}
+                        onChange={(event) => setFollowUpDraft(event.target.value)}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          className="gap-2"
+                          onClick={() => {
+                            if (!followUpDraft) {
+                              toast.error("Please choose a follow-up date and time.");
+                              return;
+                            }
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              { nextFollowUpAt: new Date(followUpDraft).toISOString() },
+                              "Follow-up scheduled."
+                            );
+                          }}
+                          disabled={savingId === selectedInquiry._id}
+                        >
+                          <CalendarClock className="h-4 w-4" />
+                          Schedule Follow-up
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() =>
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              { completeFollowUp: true },
+                              "Follow-up marked as completed."
+                            )
+                          }
+                          disabled={savingId === selectedInquiry._id || !selectedInquiry.nextFollowUpAt}
+                        >
+                          <CheckCheck className="h-4 w-4" />
+                          Mark Completed
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              { nextFollowUpAt: null },
+                              "Follow-up reminder cleared."
+                            )
+                          }
+                          disabled={savingId === selectedInquiry._id || !selectedInquiry.nextFollowUpAt}
+                        >
+                          Clear Reminder
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -745,7 +1126,7 @@ export default function InquiriesPage() {
                               toast.error("Please write a note before saving.");
                               return;
                             }
-                            handleUpdateInquiry(selectedInquiry, { note: noteDraft.trim() }).then(() => {
+                            handleUpdateInquiry(selectedInquiry, { note: noteDraft.trim() }, "CRM note saved.").then(() => {
                               setNoteDraft("");
                             });
                           }}
@@ -753,6 +1134,229 @@ export default function InquiriesPage() {
                         >
                           Save Note
                         </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="space-y-4 p-5">
+                      <div className="flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-blue-700" />
+                        <p className="text-sm font-medium text-slate-900">Tasks</p>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-[1.2fr_0.95fr_0.85fr]">
+                        <Input
+                          value={taskTitleDraft}
+                          onChange={(event) => setTaskTitleDraft(event.target.value)}
+                          placeholder="Task title"
+                        />
+                        <Input
+                          type="datetime-local"
+                          value={taskDueDateDraft}
+                          onChange={(event) => setTaskDueDateDraft(event.target.value)}
+                        />
+                        <select
+                          value={taskAssigneeDraft}
+                          onChange={(event) => setTaskAssigneeDraft(event.target.value)}
+                          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="unassigned">Unassigned</option>
+                          {meta.assignableUsers.map((staff) => (
+                            <option key={staff._id} value={staff._id}>
+                              {staff.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={() => {
+                            if (!taskTitleDraft.trim() || !taskDueDateDraft) {
+                              toast.error("Please add a task title and due date.");
+                              return;
+                            }
+
+                            handleUpdateInquiry(
+                              selectedInquiry,
+                              {
+                                task: {
+                                  action: "create",
+                                  title: taskTitleDraft.trim(),
+                                  dueDate: new Date(taskDueDateDraft).toISOString(),
+                                  assignedTo: taskAssigneeDraft === "unassigned" ? null : taskAssigneeDraft,
+                                },
+                              },
+                              "Task created."
+                            ).then(() => {
+                              setTaskTitleDraft("");
+                              setTaskDueDateDraft("");
+                              setTaskAssigneeDraft(selectedInquiry.assignedTo?._id || "unassigned");
+                            });
+                          }}
+                          disabled={savingId === selectedInquiry._id}
+                        >
+                          Create Task
+                        </Button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {selectedTasks.length === 0 ? (
+                          <p className="text-sm text-slate-500">No tasks are linked to this inquiry yet.</p>
+                        ) : (
+                          selectedTasks.map((task) => (
+                            <div key={task._id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-medium text-slate-900">{task.title}</p>
+                                    <Badge className={taskStatusClasses[task.status]}>{formatStatusLabel(task.status)}</Badge>
+                                  </div>
+                                  <p className="text-sm text-slate-600">Due {formatDateTime(task.dueDate)}</p>
+                                  <p className="text-sm text-slate-500">
+                                    Assigned to {task.assignedTo?.name || "Unassigned"}
+                                  </p>
+                                </div>
+                                <select
+                                  value={task.status}
+                                  onChange={(event) =>
+                                    handleUpdateInquiry(
+                                      selectedInquiry,
+                                      {
+                                        task: {
+                                          action: "update",
+                                          taskId: task._id,
+                                          status: event.target.value as TaskStatus,
+                                        },
+                                      },
+                                      "Task updated."
+                                    )
+                                  }
+                                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                  disabled={savingId === selectedInquiry._id}
+                                >
+                                  {meta.taskStatuses.map((status) => (
+                                    <option key={status} value={status}>
+                                      {formatStatusLabel(status)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="space-y-4 p-5">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Communication templates</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Open reusable email or WhatsApp templates and log the action in the CRM timeline.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+                          <p className="text-sm font-medium text-slate-900">Email template</p>
+                          <select
+                            value={selectedEmailTemplate}
+                            onChange={(event) => setSelectedEmailTemplate(event.target.value)}
+                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                          >
+                            {emailTemplates.map((template) => (
+                              <option key={template.key} value={template.key}>
+                                {template.label}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedEmailTemplateData ? (
+                            <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                              <p className="font-medium text-slate-900">
+                                {applyTemplate(selectedEmailTemplateData, selectedInquiry, user?.name || "Abroadways").subject}
+                              </p>
+                            </div>
+                          ) : null}
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            disabled={!selectedInquiry.email || !selectedEmailTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedInquiry.email || !selectedEmailTemplateData) return;
+                              const prepared = applyTemplate(selectedEmailTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  templateAction: {
+                                    templateKey: selectedEmailTemplateData.key,
+                                    channel: "email",
+                                    recipient: selectedInquiry.email,
+                                  },
+                                },
+                                "Email template opened."
+                              );
+                              setSelectedInquiryId(updated._id);
+                              window.open(
+                                `mailto:${selectedInquiry.email}?subject=${encodeURIComponent(prepared.subject)}&body=${encodeURIComponent(prepared.body)}`,
+                                "_blank"
+                              );
+                            }}
+                          >
+                            <Mail className="h-4 w-4" />
+                            Open Email Template
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+                          <p className="text-sm font-medium text-slate-900">WhatsApp template</p>
+                          <select
+                            value={selectedWhatsAppTemplate}
+                            onChange={(event) => setSelectedWhatsAppTemplate(event.target.value)}
+                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                          >
+                            {whatsappTemplates.map((template) => (
+                              <option key={template.key} value={template.key}>
+                                {template.label}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedWhatsAppTemplateData ? (
+                            <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                              {applyTemplate(selectedWhatsAppTemplateData, selectedInquiry, user?.name || "Abroadways").body}
+                            </div>
+                          ) : null}
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            disabled={!selectedInquiry.phone || !selectedWhatsAppTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedInquiry.phone || !selectedWhatsAppTemplateData) return;
+                              const prepared = applyTemplate(selectedWhatsAppTemplateData, selectedInquiry, user?.name || "Abroadways");
+                              const updated = await handleUpdateInquiry(
+                                selectedInquiry,
+                                {
+                                  templateAction: {
+                                    templateKey: selectedWhatsAppTemplateData.key,
+                                    channel: "whatsapp",
+                                    recipient: selectedInquiry.phone,
+                                  },
+                                },
+                                "WhatsApp template opened."
+                              );
+                              setSelectedInquiryId(updated._id);
+                              const whatsappUrl = buildWhatsAppLink(selectedInquiry.phone, prepared.body);
+                              if (whatsappUrl) {
+                                window.open(whatsappUrl, "_blank");
+                              }
+                            }}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Open WhatsApp Template
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -771,8 +1375,8 @@ export default function InquiriesPage() {
                               <div key={note._id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                   <span>{note.createdByName || "Team"}</span>
-                                  {note.createdByRole ? <span>• {note.createdByRole}</span> : null}
-                                  <span>• {formatDateTime(note.createdAt)}</span>
+                                  {note.createdByRole ? <span>&bull; {note.createdByRole}</span> : null}
+                                  <span>&bull; {formatDateTime(note.createdAt)}</span>
                                 </div>
                                 <p className="mt-2 text-sm leading-7 text-slate-700">{note.body}</p>
                               </div>
@@ -798,8 +1402,8 @@ export default function InquiriesPage() {
                                   <span className="font-medium uppercase tracking-[0.16em] text-slate-700">
                                     {activity.type}
                                   </span>
-                                  {activity.createdByName ? <span>• {activity.createdByName}</span> : null}
-                                  <span>• {formatDateTime(activity.createdAt)}</span>
+                                  {activity.createdByName ? <span>&bull; {activity.createdByName}</span> : null}
+                                  <span>&bull; {formatDateTime(activity.createdAt)}</span>
                                 </div>
                                 <p className="mt-2 text-sm text-slate-700">{activity.message}</p>
                               </div>
@@ -815,5 +1419,55 @@ export default function InquiriesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  variant = "default",
+}: {
+  title: string;
+  value: number;
+  variant?: "default" | "warning";
+}) {
+  return (
+    <Card className="border-slate-200 shadow-sm">
+      <CardContent className="space-y-2 p-5">
+        <p className="text-sm text-slate-500">{title}</p>
+        <p className={`text-3xl font-semibold ${variant === "warning" ? "text-amber-700" : "text-slate-950"}`}>
+          {value}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NotificationListCard<T>({
+  title,
+  items,
+  renderItem,
+}: {
+  title: string;
+  items: T[];
+  renderItem: (item: T) => ReactNode;
+}) {
+  return (
+    <Card className="border-slate-200 shadow-sm">
+      <CardContent className="space-y-4 p-5">
+        <p className="text-sm font-medium text-slate-900">{title}</p>
+        {items.length === 0 ? (
+          <p className="text-sm text-slate-500">No items right now.</p>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item, index) => (
+              <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                {renderItem(item)}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

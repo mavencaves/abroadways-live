@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  BellRing,
   BookOpenText,
   CalendarClock,
   Funnel,
@@ -20,7 +21,11 @@ import {
   YAxis,
 } from "recharts";
 import { inquiriesApi } from "@/lib/api";
-import type { InquiryDashboardAnalytics, LeadTrendPoint } from "@/types/DashBoardTypes";
+import type {
+  InquiryDashboardAnalytics,
+  InquiryNotificationsPayload,
+  LeadTrendPoint,
+} from "@/types/DashBoardTypes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -54,14 +59,19 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export default function DashboardOverview() {
   const [data, setData] = useState<InquiryDashboardAnalytics | null>(null);
+  const [notifications, setNotifications] = useState<InquiryNotificationsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendView, setTrendView] = useState<(typeof TREND_OPTIONS)[number]["value"]>("daily");
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await inquiriesApi.getDashboardAnalytics();
-        setData(response.data);
+        const [analyticsResponse, notificationsResponse] = await Promise.all([
+          inquiriesApi.getDashboardAnalytics(),
+          inquiriesApi.getNotifications(),
+        ]);
+        setData(analyticsResponse.data);
+        setNotifications(notificationsResponse.data);
       } catch (error: any) {
         const message = error?.response?.data?.message || "Failed to load dashboard analytics.";
         toast.error(message);
@@ -149,7 +159,7 @@ export default function DashboardOverview() {
                 <div className="mt-3 space-y-2 text-sm text-amber-900">
                   {data.alerts.uncontactedOver48h.sample.map((lead) => (
                     <p key={lead.id}>
-                      {lead.name} • {lead.ageHours}h • {formatStatusLabel(lead.source)}
+                      {lead.name} &bull; {lead.ageHours}h &bull; {formatStatusLabel(lead.source)}
                     </p>
                   ))}
                 </div>
@@ -163,11 +173,35 @@ export default function DashboardOverview() {
               {data.alerts.highDropOffWarnings.length ? (
                 <ul className="space-y-2 text-sm text-rose-900">
                   {data.alerts.highDropOffWarnings.map((warning) => (
-                    <li key={warning}>• {warning}</li>
+                    <li key={warning}>&bull; {warning}</li>
                   ))}
                 </ul>
               ) : (
                 <p className="text-sm text-rose-800">No major drop-off warnings detected.</p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <div className="flex items-center gap-2 text-blue-900">
+                <BellRing className="h-4 w-4" />
+                <p className="text-sm font-medium">Operational notifications</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <NotificationMiniCard title="Overdue follow-ups" value={notifications?.overdueFollowUps.count || 0} />
+                <NotificationMiniCard title="Unassigned leads" value={notifications?.unassignedInquiries.count || 0} />
+                <NotificationMiniCard title="Stale leads" value={notifications?.staleInquiries.count || 0} />
+                <NotificationMiniCard title="Tasks due today" value={notifications?.tasksDueToday.count || 0} />
+              </div>
+              {notifications?.overdueFollowUps.sample?.length ? (
+                <div className="space-y-2 text-sm text-blue-900">
+                  {notifications.overdueFollowUps.sample.slice(0, 3).map((item) => (
+                    <p key={item.id}>
+                      {item.name} &bull; {formatStatusLabel(item.status)} &bull; {item.assignedTo?.name || "Unassigned"}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-blue-800">No urgent follow-up notifications right now.</p>
               )}
             </div>
           </CardContent>
@@ -227,7 +261,7 @@ export default function DashboardOverview() {
                       <div>
                         <p className="font-medium text-slate-900">{source.label}</p>
                         <p className="text-sm text-slate-500">
-                          {source.total} leads • {source.closed} closed • {source.qualified} qualified
+                          {source.total} leads &bull; {source.closed} closed &bull; {source.qualified} qualified
                         </p>
                       </div>
                       <div className="text-right">
@@ -319,6 +353,15 @@ function MetricCard({
         {icon ? <div className="text-blue-700">{icon}</div> : null}
       </div>
       <h2 className="mt-2 text-2xl font-bold text-blue-700">{value}</h2>
+    </div>
+  );
+}
+
+function NotificationMiniCard({ title, value }: { title: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-blue-200 bg-white/80 p-3">
+      <p className="text-xs uppercase tracking-[0.14em] text-blue-700">{title}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
     </div>
   );
 }

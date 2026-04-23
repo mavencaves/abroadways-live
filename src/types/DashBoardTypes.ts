@@ -92,6 +92,64 @@ export interface DashboardAlerts {
   highDropOffWarnings: string[];
 }
 
+export interface NotificationAssignee {
+  _id: string;
+  name: string;
+  role: string;
+}
+
+export interface OverdueFollowUpNotification {
+  id: string;
+  name: string;
+  status: string;
+  nextFollowUpAt: string;
+  assignedTo: NotificationAssignee | null;
+}
+
+export interface UnassignedInquiryNotification {
+  id: string;
+  name: string;
+  status: string;
+  source: string;
+  createdAt: string;
+}
+
+export interface StaleInquiryNotification {
+  id: string;
+  name: string;
+  status: string;
+  updatedAt: string;
+}
+
+export interface TaskDueTodayNotification {
+  inquiryId: string;
+  inquiryName: string;
+  taskId: string;
+  title: string;
+  dueDate: string;
+  status: string;
+  assignedTo: NotificationAssignee | null;
+}
+
+export interface InquiryNotificationsPayload {
+  overdueFollowUps: {
+    count: number;
+    sample: OverdueFollowUpNotification[];
+  };
+  unassignedInquiries: {
+    count: number;
+    sample: UnassignedInquiryNotification[];
+  };
+  staleInquiries: {
+    count: number;
+    sample: StaleInquiryNotification[];
+  };
+  tasksDueToday: {
+    count: number;
+    sample: TaskDueTodayNotification[];
+  };
+}
+
 export interface InquiryDashboardAnalytics {
   summary: AnalyticsSummary;
   leadTrends: {
