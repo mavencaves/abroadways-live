@@ -46,6 +46,7 @@ const buildCloudinaryAssetUrl = (publicId, resourceType) => {
 
   return cloudinary.url(publicId, {
     resource_type: resourceType || 'raw',
+    type: 'upload',
     secure: true,
   });
 };
@@ -164,7 +165,9 @@ const normalizeProfileDocuments = (profile) => {
       const shouldRewriteUrl =
         !document.fileUrl ||
         (inferredResourceType === 'raw' && document.fileUrl.includes('/image/upload/')) ||
-        (inferredResourceType === 'image' && document.fileUrl.includes('/raw/upload/'));
+        (inferredResourceType === 'image' && document.fileUrl.includes('/raw/upload/')) ||
+        document.fileUrl.includes('/authenticated/') ||
+        document.fileUrl.includes('/private/');
 
       if (document.resourceType !== inferredResourceType) {
         document.resourceType = inferredResourceType;
@@ -211,6 +214,8 @@ const uploadDocumentToCloudinary = async (file, userId) => {
       {
         folder: getStudentDocumentFolder(userId),
         resource_type: resourceType,
+        type: 'upload',
+        access_mode: 'public',
         overwrite: false,
         use_filename: true,
         unique_filename: true,
@@ -229,7 +234,7 @@ const uploadDocumentToCloudinary = async (file, userId) => {
   });
 
   return {
-    url: uploaded.secure_url || uploaded.url,
+    url: buildCloudinaryAssetUrl(uploaded.public_id, uploaded.resource_type),
     publicId: uploaded.public_id,
     folder: uploaded.folder,
     resourceType: uploaded.resource_type,
@@ -244,6 +249,7 @@ const destroyCloudinaryAsset = async (publicId, resourceType) => {
   try {
     await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType || 'raw',
+      type: 'upload',
     });
   } catch (error) {
     console.error('Failed to delete previous student document asset', error);
