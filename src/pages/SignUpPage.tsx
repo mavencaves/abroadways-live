@@ -28,8 +28,8 @@ export default function SignUpPage() {
         setSubmitting(true);
         try {
             if (!agree) return;
-            await register(name, email, password);
-            navigate("/", { replace: true });
+            const nextUser = await register(name, email, password);
+            navigate(nextUser.role === "user" ? "/student/dashboard" : "/dashboard", { replace: true });
         } finally {
             setSubmitting(false);
         }

@@ -20,8 +20,8 @@ export default function SignInPage() {
     const { login, token, user, isLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation() as any;
-    const from = location.state?.from?.pathname || "/dashboard";
-    const targetAfterLogin = from.startsWith("/dashboard") ? from : "/dashboard";
+    const from = location.state?.from?.pathname || null;
+    const getDefaultRouteForRole = (role?: string) => (role === "user" ? "/student/dashboard" : "/dashboard");
     const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
     const debugState = useMemo(
         () => ({
@@ -37,9 +37,12 @@ export default function SignInPage() {
 
     useEffect(() => {
         if (!isLoading && token && user) {
-            navigate("/dashboard", { replace: true });
+            const target = from && (from.startsWith("/dashboard") || from.startsWith("/student"))
+                ? from
+                : getDefaultRouteForRole(user.role);
+            navigate(target, { replace: true });
         }
-    }, [isLoading, navigate, token, user]);
+    }, [from, isLoading, navigate, token, user]);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,8 +56,12 @@ export default function SignInPage() {
 
         setSubmitting(true);
         try {
-            await login(email.trim(), password);
-            navigate(targetAfterLogin, { replace: true });
+            const nextUser = await login(email.trim(), password);
+            const target =
+                from && (from.startsWith("/dashboard") || from.startsWith("/student"))
+                    ? from
+                    : getDefaultRouteForRole(nextUser.role);
+            navigate(target, { replace: true });
         } catch (error: any) {
             const status = error?.response?.status;
             const message =

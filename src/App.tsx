@@ -123,6 +123,11 @@ import CoursesLandingPage from "@/pages/CoursesLandingPage.tsx";
 import BlogDetailPage from "@/pages/BlogDetailPage.tsx";
 import InquiriesPage from "@/pages/dashboard/admin/InquiriesPage.tsx";
 import TemplatesPage from "@/pages/dashboard/admin/TemplatesPage.tsx";
+import StudentPortalLayout from "@/layout/StudentPortalLayout.tsx";
+import StudentDashboardPage from "@/pages/student/StudentDashboardPage.tsx";
+import StudentProfilePage from "@/pages/student/StudentProfilePage.tsx";
+import StudentApplicationsPage from "@/pages/student/StudentApplicationsPage.tsx";
+import StudentDocumentsPage from "@/pages/student/StudentDocumentsPage.tsx";
 
 function getLegacyExamRedirect(pathname: string) {
     const normalizedPath = pathname.toLowerCase();
@@ -359,6 +364,15 @@ function App() {
                 <Route path={"templates"} element={<TemplatesPage/>}/>
                 <Route path={"inquiries"} element={<InquiriesPage/>}/>
             </Route>
+            </Route>
+            <Route element={<ProtectedRoute requiredRoles={['user']}/>}>
+                <Route path={"/student"} element={<StudentPortalLayout/>}>
+                    <Route index element={<Navigate to="/student/dashboard" replace/>}/>
+                    <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
+                    <Route path={"profile"} element={<StudentProfilePage/>}/>
+                    <Route path={"applications"} element={<StudentApplicationsPage/>}/>
+                    <Route path={"documents"} element={<StudentDocumentsPage/>}/>
+                </Route>
             </Route>
         </Routes>
     )

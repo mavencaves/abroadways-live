@@ -183,3 +183,41 @@ export const adminApi = {
   updateUser: (id: string, payload: any) => apiClient.put(`/admin/users/${id}`, payload),
   deleteUser: (id: string) => apiClient.delete(`/admin/users/${id}`),
 };
+
+export const studentApi = {
+  getPortal: () => apiClient.get("/student/portal", { params: noCacheParams() }),
+  getProfile: () => apiClient.get("/student/profile", { params: noCacheParams() }),
+  updateProfile: (payload: {
+    fullName?: string;
+    phone?: string;
+    destinationInterests?: string[];
+    preferredCountry?: string;
+    intake?: string;
+    qualification?: string;
+    examInterest?: string;
+    budget?: string;
+    academicBackground?: string;
+    notes?: string;
+  }) => apiClient.put("/student/profile", payload),
+  getApplications: () => apiClient.get("/student/applications", { params: noCacheParams() }),
+  updateApplications: (payload: { applicationStage: string }) => apiClient.put("/student/applications", payload),
+  getDocuments: () => apiClient.get("/student/documents", { params: noCacheParams() }),
+  addDocument: (payload: {
+    title: string;
+    type?: string;
+    fileName?: string;
+    fileUrl?: string;
+    notes?: string;
+  }) => apiClient.post("/student/documents", payload),
+  updateDocument: (
+    documentId: string,
+    payload: {
+      title?: string;
+      type?: string;
+      fileName?: string;
+      fileUrl?: string;
+      notes?: string;
+      status?: string;
+    }
+  ) => apiClient.patch(`/student/documents/${documentId}`, payload),
+};

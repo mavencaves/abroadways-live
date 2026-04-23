@@ -29,8 +29,8 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (name: string, email: string, password: string) => Promise<User>;
   logout: () => void;
   refreshMe: () => Promise<void>;
 };
@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const me = await authApi.me();
     setUser(me.data);
     persistAuthState(newToken, me.data);
+    return me.data;
   };
 
   const register = async (name: string, email: string, password: string) => {
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const me = await authApi.me();
     setUser(me.data);
     persistAuthState(newToken, me.data);
+    return me.data;
   };
 
   const logout = () => {
