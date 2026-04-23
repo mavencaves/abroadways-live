@@ -128,6 +128,7 @@ import StudentDashboardPage from "@/pages/student/StudentDashboardPage.tsx";
 import StudentProfilePage from "@/pages/student/StudentProfilePage.tsx";
 import StudentApplicationsPage from "@/pages/student/StudentApplicationsPage.tsx";
 import StudentDocumentsPage from "@/pages/student/StudentDocumentsPage.tsx";
+import DocumentsPage from "@/pages/dashboard/admin/DocumentsPage.tsx";
 
 function getLegacyExamRedirect(pathname: string) {
     const normalizedPath = pathname.toLowerCase();
@@ -360,6 +361,7 @@ function App() {
                 <Route path={"events"} element={<EventsPage/>}/>
                 <Route path={"events/new"} element={<EventEditorPage/>}/>
                 <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
+                <Route path={"documents"} element={<DocumentsPage/>}/>
                 <Route path={"media"} element={<MediaLibraryPage/>}/>
                 <Route path={"templates"} element={<TemplatesPage/>}/>
                 <Route path={"inquiries"} element={<InquiriesPage/>}/>

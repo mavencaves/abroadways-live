@@ -205,19 +205,58 @@ export const studentApi = {
   addDocument: (payload: {
     title: string;
     type?: string;
-    fileName?: string;
-    fileUrl?: string;
     notes?: string;
-  }) => apiClient.post("/student/documents", payload),
+    file: File;
+  }) => {
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    formData.append("type", payload.type || "other");
+    formData.append("notes", payload.notes || "");
+    formData.append("file", payload.file);
+
+    return apiClient.post("/student/documents", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  resubmitDocument: (
+    documentId: string,
+    payload: {
+      title?: string;
+      type?: string;
+      notes?: string;
+      file: File;
+    }
+  ) => {
+    const formData = new FormData();
+    if (payload.title !== undefined) formData.append("title", payload.title);
+    if (payload.type !== undefined) formData.append("type", payload.type);
+    if (payload.notes !== undefined) formData.append("notes", payload.notes);
+    formData.append("file", payload.file);
+
+    return apiClient.post(`/student/documents/${documentId}/resubmit`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
   updateDocument: (
     documentId: string,
     payload: {
       title?: string;
       type?: string;
-      fileName?: string;
-      fileUrl?: string;
       notes?: string;
-      status?: string;
     }
   ) => apiClient.patch(`/student/documents/${documentId}`, payload),
+  getAdminDocuments: (params?: Record<string, any>) =>
+    apiClient.get("/student/admin/documents", { params: { ...params, ...noCacheParams() } }),
+  reviewAdminDocument: (
+    profileId: string,
+    documentId: string,
+    payload: {
+      status: "under-review" | "approved" | "rejected" | "needs-resubmission";
+      reviewNotes?: string;
+    }
+  ) => apiClient.patch(`/student/admin/documents/${profileId}/${documentId}/review`, payload),
 };

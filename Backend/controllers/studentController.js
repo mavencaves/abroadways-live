@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const StudentProfile = require('../models/studentProfileModel');
 const Inquiry = require('../models/inquiryModel');
+const { cloudinary, isCloudinaryConfigured } = require('../lib/cloudinary');
 
 const applicationStages = [
   'profile-submitted',
@@ -12,7 +13,23 @@ const applicationStages = [
   'visa-preparation',
 ];
 
-const documentStatuses = ['pending-upload', 'submitted', 'under-review', 'approved', 'rejected'];
+const documentStatuses = ['uploaded', 'under-review', 'approved', 'rejected', 'needs-resubmission'];
+const legacyDocumentStatusMap = {
+  'pending-upload': 'needs-resubmission',
+  submitted: 'uploaded',
+};
+
+const supportedDocumentTypes = [
+  'passport',
+  'transcript',
+  'certificate',
+  'cv',
+  'sop',
+  'lor',
+  'other',
+];
+
+const reviewableDocumentStatuses = ['under-review', 'approved', 'rejected', 'needs-resubmission'];
 
 const computeProfileCompleteness = (profile) => {
   const checks = [
@@ -44,18 +61,23 @@ const buildPendingActions = (profile, inquiry) => {
   if (!profile.phone) actions.push('Add your phone number to complete your profile.');
   if (!profile.preferredCountry) actions.push('Choose your preferred study destination.');
   if (!profile.academicBackground) actions.push('Add your academic background for counseling readiness.');
-  if (!profile.documents.length) actions.push('Add your first document record to start your vault.');
-  if (profile.documents.some((doc) => ['pending-upload', 'rejected'].includes(doc.status))) {
-    actions.push('Review your document vault for pending or rejected files.');
+  if (!profile.documents.length) actions.push('Upload your first document to start review.');
+  if (profile.documents.some((doc) => ['needs-resubmission', 'rejected'].includes(doc.status))) {
+    actions.push('Replace or resubmit any documents that were rejected or marked for resubmission.');
+  }
+  if (profile.documents.some((doc) => doc.status === 'uploaded')) {
+    actions.push('Your uploaded documents are waiting for review.');
   }
   if (inquiry?.nextFollowUpAt) {
-    actions.push(`Prepare for your upcoming follow-up on ${new Date(inquiry.nextFollowUpAt).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })}.`);
+    actions.push(
+      `Prepare for your upcoming follow-up on ${new Date(inquiry.nextFollowUpAt).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })}.`
+    );
   }
 
   return actions.slice(0, 5);
@@ -92,6 +114,77 @@ const syncProfileFromInquiry = (profile, inquiry) => {
   return touched;
 };
 
+const normalizeDocumentStatus = (value) => legacyDocumentStatusMap[value] || value || 'uploaded';
+
+const normalizeProfileDocuments = (profile) => {
+  let touched = false;
+
+  (profile.documents || []).forEach((document) => {
+    const normalizedStatus = normalizeDocumentStatus(document.status);
+    if (document.status !== normalizedStatus) {
+      document.status = normalizedStatus;
+      touched = true;
+    }
+
+    if (!document.originalFileName && document.fileName) {
+      document.originalFileName = document.fileName;
+      touched = true;
+    }
+  });
+
+  return touched;
+};
+
+const sortDocumentsNewestFirst = (documents = []) =>
+  [...documents].sort((left, right) => {
+    const leftDate = new Date(left.uploadedAt || left.createdAt || 0).getTime();
+    const rightDate = new Date(right.uploadedAt || right.createdAt || 0).getTime();
+    return rightDate - leftDate;
+  });
+
+const ensureCloudinary = () => {
+  if (!isCloudinaryConfigured()) {
+    const error = new Error('Cloudinary is not configured on the server.');
+    error.statusCode = 500;
+    throw error;
+  }
+};
+
+const getStudentDocumentFolder = (userId) =>
+  `${process.env.CLOUDINARY_FOLDER || 'abroadways'}/student-documents/${userId}`;
+
+const uploadDocumentToCloudinary = async (file, userId) => {
+  ensureCloudinary();
+
+  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  const uploaded = await cloudinary.uploader.upload(dataUri, {
+    folder: getStudentDocumentFolder(userId),
+    resource_type: 'auto',
+    overwrite: false,
+  });
+
+  return {
+    url: uploaded.secure_url || uploaded.url,
+    publicId: uploaded.public_id,
+    folder: uploaded.folder,
+    resourceType: uploaded.resource_type,
+    bytes: uploaded.bytes,
+    format: uploaded.format,
+  };
+};
+
+const destroyCloudinaryAsset = async (publicId, resourceType) => {
+  if (!publicId || !isCloudinaryConfigured()) return;
+
+  try {
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType || 'raw',
+    });
+  } catch (error) {
+    console.error('Failed to delete previous student document asset', error);
+  }
+};
+
 const ensureStudentProfile = async (user) => {
   let profile = await StudentProfile.findOne({ user: user._id }).populate({
     path: 'linkedInquiry',
@@ -124,8 +217,9 @@ const ensureStudentProfile = async (user) => {
     : null;
 
   const touched = syncProfileFromInquiry(profile, latestInquiry);
+  const docsTouched = normalizeProfileDocuments(profile);
 
-  if (profile.isModified() || touched) {
+  if (profile.isModified() || touched || docsTouched) {
     await profile.save();
     await profile.populate({
       path: 'linkedInquiry',
@@ -133,6 +227,11 @@ const ensureStudentProfile = async (user) => {
     });
   }
 
+  return profile;
+};
+
+const populateStudentDocumentReviewers = async (profile) => {
+  await profile.populate('documents.reviewedBy', '_id name email role');
   return profile;
 };
 
@@ -166,13 +265,11 @@ const serializePortalData = (profile) => {
 
 const getStudentPortal = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
-  await profile.populate('linkedInquiry');
   res.json(serializePortalData(profile));
 });
 
 const getStudentProfile = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
-  await profile.populate('linkedInquiry');
   res.json(profile);
 });
 
@@ -194,9 +291,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
   if (fullName !== undefined) profile.fullName = String(fullName).trim();
   if (phone !== undefined) profile.phone = String(phone).trim();
   if (Array.isArray(destinationInterests)) {
-    profile.destinationInterests = destinationInterests
-      .map((item) => String(item).trim())
-      .filter(Boolean);
+    profile.destinationInterests = destinationInterests.map((item) => String(item).trim()).filter(Boolean);
   }
   if (preferredCountry !== undefined) profile.preferredCountry = String(preferredCountry).trim();
   if (intake !== undefined) profile.intake = String(intake).trim();
@@ -207,13 +302,15 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
   if (notes !== undefined) profile.notes = String(notes).trim();
 
   await profile.save();
-  await profile.populate('linkedInquiry');
+  await profile.populate({
+    path: 'linkedInquiry',
+    populate: { path: 'assignedTo', select: '_id name role' },
+  });
   res.json(profile);
 });
 
 const getStudentApplications = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
-  await profile.populate('linkedInquiry');
   res.json({
     applicationStage: profile.applicationStage,
     applicationStages,
@@ -233,7 +330,6 @@ const updateStudentApplications = asyncHandler(async (req, res) => {
 
   profile.applicationStage = applicationStage;
   await profile.save();
-  await profile.populate('linkedInquiry');
 
   res.json({
     applicationStage: profile.applicationStage,
@@ -245,35 +341,105 @@ const updateStudentApplications = asyncHandler(async (req, res) => {
 
 const getStudentDocuments = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
+  await populateStudentDocumentReviewers(profile);
   res.json({
-    documents: profile.documents,
+    documents: sortDocumentsNewestFirst(profile.documents),
     statuses: documentStatuses,
+    documentTypes: supportedDocumentTypes,
   });
 });
 
 const addStudentDocument = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
-  const { title, type = '', fileName = '', fileUrl = '', notes = '' } = req.body;
+  const { title, type = 'other', notes = '' } = req.body;
 
   if (!title || !String(title).trim()) {
     res.status(400);
     throw new Error('Document title is required.');
   }
 
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Please choose a document file to upload.');
+  }
+
+  if (!supportedDocumentTypes.includes(String(type).trim() || 'other')) {
+    res.status(400);
+    throw new Error('Invalid document type.');
+  }
+
+  const uploaded = await uploadDocumentToCloudinary(req.file, req.user._id);
+
   profile.documents.push({
     title: String(title).trim(),
-    type: String(type).trim(),
-    fileName: String(fileName).trim(),
-    fileUrl: String(fileUrl).trim(),
-    status: fileUrl ? 'submitted' : 'pending-upload',
+    type: String(type).trim() || 'other',
+    originalFileName: req.file.originalname,
+    fileName: req.file.originalname,
+    fileUrl: uploaded.url,
+    storagePublicId: uploaded.publicId,
+    storageFolder: uploaded.folder,
+    resourceType: uploaded.resourceType,
+    mimeType: req.file.mimetype,
+    bytes: uploaded.bytes || req.file.size,
+    status: 'uploaded',
     notes: String(notes).trim(),
-    uploadedAt: fileUrl ? new Date() : null,
+    reviewNotes: '',
+    reviewedBy: null,
+    reviewedAt: null,
+    uploadedAt: new Date(),
   });
 
   await profile.save();
+  await populateStudentDocumentReviewers(profile);
   res.status(201).json({
-    documents: profile.documents,
+    documents: sortDocumentsNewestFirst(profile.documents),
     statuses: documentStatuses,
+    documentTypes: supportedDocumentTypes,
+  });
+});
+
+const resubmitStudentDocument = asyncHandler(async (req, res) => {
+  const profile = await ensureStudentProfile(req.user);
+  const document = profile.documents.id(req.params.documentId);
+
+  if (!document) {
+    res.status(404);
+    throw new Error('Document not found.');
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Please choose a replacement document file.');
+  }
+
+  const uploaded = await uploadDocumentToCloudinary(req.file, req.user._id);
+  await destroyCloudinaryAsset(document.storagePublicId, document.resourceType);
+
+  document.originalFileName = req.file.originalname;
+  document.fileName = req.file.originalname;
+  document.fileUrl = uploaded.url;
+  document.storagePublicId = uploaded.publicId;
+  document.storageFolder = uploaded.folder;
+  document.resourceType = uploaded.resourceType;
+  document.mimeType = req.file.mimetype;
+  document.bytes = uploaded.bytes || req.file.size;
+  document.status = 'uploaded';
+  document.reviewNotes = '';
+  document.reviewedBy = null;
+  document.reviewedAt = null;
+  document.uploadedAt = new Date();
+  if (req.body?.title !== undefined) document.title = String(req.body.title).trim();
+  if (req.body?.type !== undefined && supportedDocumentTypes.includes(String(req.body.type).trim() || 'other')) {
+    document.type = String(req.body.type).trim() || 'other';
+  }
+  if (req.body?.notes !== undefined) document.notes = String(req.body.notes).trim();
+
+  await profile.save();
+  await populateStudentDocumentReviewers(profile);
+  res.json({
+    documents: sortDocumentsNewestFirst(profile.documents),
+    statuses: documentStatuses,
+    documentTypes: supportedDocumentTypes,
   });
 });
 
@@ -286,30 +452,120 @@ const updateStudentDocument = asyncHandler(async (req, res) => {
     throw new Error('Document not found.');
   }
 
-  const { title, type, fileName, fileUrl, notes, status } = req.body;
+  const { title, type, notes } = req.body;
 
   if (title !== undefined) document.title = String(title).trim();
-  if (type !== undefined) document.type = String(type).trim();
-  if (fileName !== undefined) document.fileName = String(fileName).trim();
-  if (fileUrl !== undefined) {
-    document.fileUrl = String(fileUrl).trim();
-    if (document.fileUrl && !document.uploadedAt) {
-      document.uploadedAt = new Date();
+  if (type !== undefined) {
+    const nextType = String(type).trim() || 'other';
+    if (!supportedDocumentTypes.includes(nextType)) {
+      res.status(400);
+      throw new Error('Invalid document type.');
     }
+    document.type = nextType;
   }
   if (notes !== undefined) document.notes = String(notes).trim();
-  if (status !== undefined) {
-    if (!documentStatuses.includes(status)) {
-      res.status(400);
-      throw new Error('Invalid document status.');
-    }
-    document.status = status;
-  }
 
   await profile.save();
+  await populateStudentDocumentReviewers(profile);
   res.json({
-    documents: profile.documents,
+    documents: sortDocumentsNewestFirst(profile.documents),
     statuses: documentStatuses,
+    documentTypes: supportedDocumentTypes,
+  });
+});
+
+const listAllStudentDocuments = asyncHandler(async (req, res) => {
+  const profiles = await StudentProfile.find({})
+    .populate('user', '_id name email')
+    .populate('documents.reviewedBy', '_id name email role')
+    .sort({ updatedAt: -1 });
+
+  const rawItems = profiles.flatMap((profile) =>
+    (profile.documents || []).map((document) => ({
+      profileId: profile._id,
+      documentId: document._id,
+      student: {
+        userId: profile.user?._id || null,
+        name: profile.fullName || profile.user?.name || 'Student',
+        email: profile.email || profile.user?.email || '',
+      },
+      document,
+      applicationStage: profile.applicationStage,
+    }))
+  );
+
+  const query = String(req.query.q || '').trim().toLowerCase();
+  const statusFilter = String(req.query.status || '').trim();
+  const typeFilter = String(req.query.type || '').trim();
+  const studentFilter = String(req.query.student || '').trim().toLowerCase();
+
+  const items = rawItems
+    .filter((item) => {
+      if (statusFilter && item.document.status !== statusFilter) return false;
+      if (typeFilter && item.document.type !== typeFilter) return false;
+      if (
+        studentFilter &&
+        !`${item.student.name} ${item.student.email}`.toLowerCase().includes(studentFilter)
+      ) {
+        return false;
+      }
+      if (
+        query &&
+        !`${item.student.name} ${item.student.email} ${item.document.title} ${item.document.originalFileName || ''}`
+          .toLowerCase()
+          .includes(query)
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((left, right) => {
+      const leftDate = new Date(left.document.uploadedAt || left.document.createdAt || 0).getTime();
+      const rightDate = new Date(right.document.uploadedAt || right.document.createdAt || 0).getTime();
+      return rightDate - leftDate;
+    });
+
+  res.json({
+    items,
+    statuses: documentStatuses,
+    documentTypes: supportedDocumentTypes,
+  });
+});
+
+const reviewStudentDocument = asyncHandler(async (req, res) => {
+  const profile = await StudentProfile.findById(req.params.profileId).populate('documents.reviewedBy', '_id name email role');
+
+  if (!profile) {
+    res.status(404);
+    throw new Error('Student profile not found.');
+  }
+
+  const document = profile.documents.id(req.params.documentId);
+
+  if (!document) {
+    res.status(404);
+    throw new Error('Document not found.');
+  }
+
+  const { status, reviewNotes = '' } = req.body;
+
+  if (!reviewableDocumentStatuses.includes(status)) {
+    res.status(400);
+    throw new Error('Invalid review status.');
+  }
+
+  document.status = status;
+  document.reviewNotes = String(reviewNotes).trim();
+  document.reviewedBy = req.user._id;
+  document.reviewedAt = new Date();
+
+  await profile.save();
+  await profile.populate('documents.reviewedBy', '_id name email role');
+
+  res.json({
+    profileId: profile._id,
+    documentId: document._id,
+    document,
   });
 });
 
@@ -321,5 +577,8 @@ module.exports = {
   updateStudentApplications,
   getStudentDocuments,
   addStudentDocument,
+  resubmitStudentDocument,
   updateStudentDocument,
+  listAllStudentDocuments,
+  reviewStudentDocument,
 };

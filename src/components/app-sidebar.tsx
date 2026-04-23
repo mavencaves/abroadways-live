@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   IconCalendar,
   IconDashboard,
+  IconFolder,
   IconListDetails,
   IconMail,
   IconPhoto,
@@ -43,6 +44,12 @@ const navLinks = [
     title: "Events",
     url: "/dashboard/events",
     icon: IconCalendar,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Documents",
+    url: "/dashboard/documents",
+    icon: IconFolder,
     allowedRoles: ["admin", "content-manager"],
   },
   {
