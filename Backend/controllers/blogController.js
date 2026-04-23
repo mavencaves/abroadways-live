@@ -48,6 +48,8 @@ const buildBlogPayload = (body, existingBlog) => {
     featuredImage,
     category,
     tags,
+    seoTitle,
+    metaDescription,
     status,
   } = body;
 
@@ -73,6 +75,8 @@ const buildBlogPayload = (body, existingBlog) => {
     featuredImage: resolvedImage !== undefined ? resolvedImage : existingBlog?.featuredImage,
     category: category || existingBlog?.category || 'general',
     tags: normalizeTags(tags),
+    seoTitle: seoTitle || existingBlog?.seoTitle || '',
+    metaDescription: metaDescription || existingBlog?.metaDescription || '',
     status: normalizedStatus,
   };
 };
@@ -112,6 +116,8 @@ const updateBlog = asyncHandler(async (req, res) => {
     blog.featuredImage = payload.featuredImage;
     blog.category = payload.category;
     blog.tags = payload.tags;
+    blog.seoTitle = payload.seoTitle;
+    blog.metaDescription = payload.metaDescription;
     blog.status = payload.status;
     const updatedBlog = await blog.save();
     res.json(updatedBlog);

@@ -1,6 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bold,
+  Heading1,
+  Heading2,
+  Heading3,
+  ImageUp,
   Italic,
   Link2,
   List,
@@ -17,6 +21,7 @@ type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onImageUpload?: (file: File) => Promise<string>;
 };
 
 const toolbarButtonClass = "h-9 px-3";
@@ -25,8 +30,11 @@ export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Start writing...",
+  onImageUpload,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -47,7 +55,7 @@ export default function RichTextEditor({
     syncContent();
   };
 
-  const applyBlock = (blockTag: "P" | "H2" | "H3" | "BLOCKQUOTE") => {
+  const applyBlock = (blockTag: "P" | "H1" | "H2" | "H3" | "BLOCKQUOTE") => {
     runCommand("formatBlock", blockTag);
   };
 
@@ -57,18 +65,43 @@ export default function RichTextEditor({
     runCommand("createLink", url);
   };
 
+  const insertImage = async (file?: File) => {
+    if (!file || !onImageUpload) return;
+
+    try {
+      setUploadingImage(true);
+      const imageUrl = await onImageUpload(file);
+      runCommand("insertImage", imageUrl);
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => insertImage(event.target.files?.[0])}
+      />
       <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 p-3">
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => applyBlock("P")}>
           <Pilcrow className="mr-2 h-4 w-4" />
           Paragraph
         </Button>
+        <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => applyBlock("H1")}>
+          <Heading1 className="h-4 w-4" />
+        </Button>
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => applyBlock("H2")}>
-          H2
+          <Heading2 className="h-4 w-4" />
         </Button>
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => applyBlock("H3")}>
-          H3
+          <Heading3 className="h-4 w-4" />
         </Button>
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => runCommand("bold")}>
           <Bold className="h-4 w-4" />
@@ -90,6 +123,17 @@ export default function RichTextEditor({
         </Button>
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={createLink}>
           <Link2 className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={toolbarButtonClass}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!onImageUpload || uploadingImage}
+        >
+          <ImageUp className="mr-2 h-4 w-4" />
+          {uploadingImage ? "Uploading..." : "Image"}
         </Button>
         <Button type="button" variant="outline" size="sm" className={toolbarButtonClass} onClick={() => runCommand("undo")}>
           <Undo2 className="h-4 w-4" />

@@ -114,6 +114,7 @@ import EventsPage from "./pages/dashboard/admin/EventsPage";
 import DashboardOverview from "./pages/dashboard/admin/DashBoardOverview";
 import BlogEditorPage from "./pages/dashboard/admin/BlogEditorPage";
 import EventEditorPage from "./pages/dashboard/admin/EventEditorPage";
+import MediaLibraryPage from "./pages/dashboard/admin/MediaLibraryPage";
 import EligibilityFirstPage from "./pages/Elegibility/ElegibilityFirstPage";
 import BookAseat from "./pages/BookAseat/BookAseat";
 import HigherEducationRegionPage from "@/pages/HigherEducationRegionPage.tsx";
@@ -353,6 +354,7 @@ function App() {
                 <Route path={"events"} element={<EventsPage/>}/>
                 <Route path={"events/new"} element={<EventEditorPage/>}/>
                 <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
+                <Route path={"media"} element={<MediaLibraryPage/>}/>
                 <Route path={"inquiries"} element={<InquiriesPage/>}/>
             </Route>
             </Route>

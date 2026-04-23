@@ -1,8 +1,19 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Calendar, Clock3, ImagePlus, MapPin, Save, ShieldCheck, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock3,
+  Copy,
+  ImagePlus,
+  LoaderCircle,
+  MapPin,
+  Save,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { eventsApi } from "@/lib/api";
+import { eventsApi, mediaApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,13 +55,14 @@ export default function EventEditorPage() {
   const navigate = useNavigate();
   const isEditing = Boolean(eventId);
   const canManageEvents = user ? ["admin", "content-manager"].includes(user.role) : false;
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!isEditing || !eventId || !canManageEvents) {
@@ -93,6 +105,35 @@ export default function EventEditorPage() {
       isMounted = false;
     };
   }, [canManageEvents, eventId, isEditing]);
+
+  const handleImageUpload = async (file?: File) => {
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const response = await mediaApi.upload(file);
+      const media = response.data;
+      setForm((prev) => ({ ...prev, image: media.secureUrl || media.url }));
+      toast.success("Event image uploaded successfully.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to upload the event image.");
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleCopyUrl = async () => {
+    if (!form.image) return;
+    try {
+      await navigator.clipboard.writeText(form.image);
+      toast.success("Event image URL copied.");
+    } catch {
+      toast.error("Unable to copy the image URL.");
+    }
+  };
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.description.trim() || !form.date || !form.time || !form.location.trim()) {
@@ -183,7 +224,7 @@ export default function EventEditorPage() {
             {isEditing ? "Edit Event" : "Create Event"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Manage event details, timing, venue, and imagery from one clean publishing workspace.
+            Manage event details, timing, venue, and Cloudinary-hosted imagery from one clean publishing workspace.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -275,41 +316,51 @@ export default function EventEditorPage() {
 
           <Card>
             <CardContent className="space-y-5 p-6">
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  type="url"
-                  value={form.image}
-                  onChange={(event) => setForm((prev) => ({ ...prev, image: event.target.value }))}
-                  placeholder="https://example.com/event-cover.jpg"
-                />
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => handleImageUpload(event.target.files?.[0])}
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="gap-2"
+                >
+                  {uploadingImage ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" />
+                  )}
+                  {uploadingImage ? "Uploading..." : "Upload Event Image"}
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/dashboard/media">Open Media Library</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCopyUrl}
+                  disabled={!form.image}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy URL
+                </Button>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="upload">Future Upload Slot</Label>
-                <Input
-                  id="upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) {
-                      setUploadPreview(null);
-                      return;
-                    }
-                    setUploadPreview(URL.createObjectURL(file));
-                  }}
-                />
-                <p className="text-xs text-slate-500">
-                  Upload persistence is not wired yet. Use the hosted image URL above for saved events.
-                </p>
+                <Label>Image URL</Label>
+                <Input value={form.image} readOnly placeholder="Upload an image to store it in Cloudinary" />
               </div>
 
-              {(form.image || uploadPreview) ? (
+              {form.image ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <img
-                    src={uploadPreview || form.image}
+                    src={form.image}
                     alt="Event preview"
                     className="h-56 w-full object-cover"
                   />
@@ -317,7 +368,7 @@ export default function EventEditorPage() {
               ) : (
                 <div className="flex h-44 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500">
                   <ImagePlus className="mb-3 h-6 w-6 text-slate-400" />
-                  Add an image URL to preview the event cover.
+                  Upload an event image to store it in Cloudinary and reuse it later.
                 </div>
               )}
             </CardContent>

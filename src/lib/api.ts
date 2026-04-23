@@ -69,6 +69,23 @@ export const eventsApi = {
   delete: (id: string) => apiClient.delete(`/events/${id}`),
 };
 
+export const mediaApi = {
+  getAll: () => apiClient.get("/media", { params: noCacheParams() }),
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post("/media", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  delete: (publicId: string) =>
+    apiClient.delete("/media", {
+      data: { publicId },
+    }),
+};
+
 export const aboutApi = {
   getAll: () => apiClient.get("/about-us", { params: noCacheParams() }),
 };

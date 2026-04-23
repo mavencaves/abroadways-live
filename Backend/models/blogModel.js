@@ -10,6 +10,8 @@ const blogSchema = new mongoose.Schema({
   featuredImage: { type: String },
   category: { type: String, default: 'general' },
   tags: [{ type: String }],
+  seoTitle: { type: String },
+  metaDescription: { type: String },
   status: { type: String, enum: ['published', 'draft', 'archived'], default: 'draft' },
   clicks: { type: Number, default: 0 },
 }, { timestamps: true });

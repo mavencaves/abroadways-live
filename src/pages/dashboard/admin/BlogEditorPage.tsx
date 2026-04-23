@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ImagePlus, Save, Send, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Copy, ImagePlus, LoaderCircle, Save, Send, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { blogsApi } from "@/lib/api";
+import { blogsApi, mediaApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { htmlToPlainText, parseTags, slugify, stringifyTags } from "@/lib/admin-content";
 import RichTextEditor from "@/components/dashboard/admin/RichTextEditor";
@@ -32,6 +32,8 @@ type BlogRecord = {
   featuredImage?: string;
   category?: string;
   tags?: string[];
+  seoTitle?: string;
+  metaDescription?: string;
   status: BlogStatus;
 };
 
@@ -44,7 +46,8 @@ type FormState = {
   status: BlogStatus;
   featuredImage: string;
   contentHtml: string;
-  excerpt: string;
+  seoTitle: string;
+  metaDescription: string;
 };
 
 const DEFAULT_FORM: FormState = {
@@ -56,7 +59,8 @@ const DEFAULT_FORM: FormState = {
   status: "draft",
   featuredImage: "",
   contentHtml: "<p></p>",
-  excerpt: "",
+  seoTitle: "",
+  metaDescription: "",
 };
 
 export default function BlogEditorPage() {
@@ -65,13 +69,14 @@ export default function BlogEditorPage() {
   const navigate = useNavigate();
   const isEditing = Boolean(blogId);
   const canManageBlogs = user ? ["admin", "content-manager"].includes(user.role) : false;
+  const featureImageInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadingFeaturedImage, setUploadingFeaturedImage] = useState(false);
 
   useEffect(() => {
     if (!isEditing || !blogId || !canManageBlogs) {
@@ -99,7 +104,8 @@ export default function BlogEditorPage() {
           status: blog.status || "draft",
           featuredImage: blog.featuredImage || blog.image || "",
           contentHtml: blog.contentHtml || `<p>${(blog.content || "").replace(/\n/g, "</p><p>")}</p>`,
-          excerpt: blog.content || "",
+          seoTitle: blog.seoTitle || "",
+          metaDescription: blog.metaDescription || "",
         });
         setSlugTouched(Boolean(blog.slug));
       } catch (error: any) {
@@ -120,16 +126,55 @@ export default function BlogEditorPage() {
   }, [blogId, canManageBlogs, isEditing]);
 
   const plainTextPreview = useMemo(
-    () => htmlToPlainText(form.contentHtml || "").slice(0, 220),
+    () => htmlToPlainText(form.contentHtml || "").slice(0, 320),
     [form.contentHtml],
   );
+
+  const resolvedSeoTitle = form.seoTitle.trim() || form.title.trim();
+  const resolvedMetaDescription =
+    form.metaDescription.trim() || plainTextPreview.slice(0, 160);
 
   const handleTitleChange = (value: string) => {
     setForm((prev) => ({
       ...prev,
       title: value,
       slug: slugTouched ? prev.slug : slugify(value),
+      seoTitle: prev.seoTitle || value,
     }));
+  };
+
+  const uploadImage = async (file: File) => {
+    const response = await mediaApi.upload(file);
+    const media = response.data;
+    return media.secureUrl || media.url;
+  };
+
+  const handleFeaturedImageUpload = async (file?: File) => {
+    if (!file) return;
+
+    try {
+      setUploadingFeaturedImage(true);
+      const url = await uploadImage(file);
+      setForm((prev) => ({ ...prev, featuredImage: url }));
+      toast.success("Featured image uploaded successfully.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to upload the featured image.");
+    } finally {
+      setUploadingFeaturedImage(false);
+      if (featureImageInputRef.current) {
+        featureImageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleCopyUrl = async () => {
+    if (!form.featuredImage) return;
+    try {
+      await navigator.clipboard.writeText(form.featuredImage);
+      toast.success("Featured image URL copied.");
+    } catch {
+      toast.error("Unable to copy the image URL.");
+    }
   };
 
   const handleSave = async (nextStatus?: BlogStatus) => {
@@ -152,6 +197,8 @@ export default function BlogEditorPage() {
       image: form.featuredImage.trim(),
       contentHtml: form.contentHtml,
       content: derivedPlainText,
+      seoTitle: resolvedSeoTitle,
+      metaDescription: resolvedMetaDescription,
     };
 
     try {
@@ -222,7 +269,7 @@ export default function BlogEditorPage() {
             {isEditing ? "Edit Blog" : "Create Blog"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Build rich editorial content with structured metadata, draft controls, and future-ready media fields.
+            Build rich editorial content with structured metadata, Cloudinary-backed media, and draft publishing controls.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -263,7 +310,7 @@ export default function BlogEditorPage() {
                   placeholder="study-abroad-scholarship-guide"
                 />
                 <p className="text-xs text-slate-500">
-                  This is ready for future SEO-friendly public blog routes.
+                  Auto-generated from the title, but still editable for editorial control.
                 </p>
               </div>
 
@@ -272,7 +319,8 @@ export default function BlogEditorPage() {
                 <RichTextEditor
                   value={form.contentHtml}
                   onChange={(value) => setForm((prev) => ({ ...prev, contentHtml: value }))}
-                  placeholder="Write your article with headings, lists, links, and emphasis..."
+                  onImageUpload={uploadImage}
+                  placeholder="Write your article with headings, lists, links, and inserted images..."
                 />
               </div>
 
@@ -282,7 +330,7 @@ export default function BlogEditorPage() {
                   id="excerpt"
                   value={plainTextPreview}
                   readOnly
-                  rows={5}
+                  rows={6}
                   className="bg-slate-50"
                 />
                 <p className="text-xs text-slate-500">
@@ -348,41 +396,78 @@ export default function BlogEditorPage() {
           <Card>
             <CardContent className="space-y-5 p-6">
               <div className="space-y-2">
-                <Label htmlFor="featuredImage">Featured Image URL</Label>
+                <Label htmlFor="seoTitle">SEO Title</Label>
                 <Input
-                  id="featuredImage"
-                  type="url"
-                  value={form.featuredImage}
-                  onChange={(event) => setForm((prev) => ({ ...prev, featuredImage: event.target.value }))}
-                  placeholder="https://example.com/blog-cover.jpg"
+                  id="seoTitle"
+                  value={form.seoTitle}
+                  onChange={(event) => setForm((prev) => ({ ...prev, seoTitle: event.target.value }))}
+                  placeholder="Optional SEO title"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mediaUpload">Future Upload Slot</Label>
-                <Input
-                  id="mediaUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) {
-                      setUploadPreview(null);
-                      return;
-                    }
-
-                    setUploadPreview(URL.createObjectURL(file));
-                  }}
+                <Label htmlFor="metaDescription">Meta Description</Label>
+                <Textarea
+                  id="metaDescription"
+                  value={form.metaDescription}
+                  onChange={(event) => setForm((prev) => ({ ...prev, metaDescription: event.target.value }))}
+                  placeholder="Optional meta description for future public SEO usage"
+                  rows={4}
                 />
                 <p className="text-xs text-slate-500">
-                  Upload persistence is not wired yet. For now, paste a hosted image URL above. This file picker prepares the future media flow.
+                  Current preview: {resolvedMetaDescription.length}/160 characters
                 </p>
               </div>
+            </CardContent>
+          </Card>
 
-              {(form.featuredImage || uploadPreview) ? (
+          <Card>
+            <CardContent className="space-y-5 p-6">
+              <input
+                ref={featureImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => handleFeaturedImageUpload(event.target.files?.[0])}
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => featureImageInputRef.current?.click()}
+                  disabled={uploadingFeaturedImage}
+                  className="gap-2"
+                >
+                  {uploadingFeaturedImage ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" />
+                  )}
+                  {uploadingFeaturedImage ? "Uploading..." : "Upload Featured Image"}
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/dashboard/media">Open Media Library</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCopyUrl}
+                  disabled={!form.featuredImage}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy URL
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Featured Image URL</Label>
+                <Input value={form.featuredImage} readOnly placeholder="Upload an image to generate the Cloudinary URL" />
+              </div>
+
+              {form.featuredImage ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <img
-                    src={uploadPreview || form.featuredImage}
+                    src={form.featuredImage}
                     alt="Featured preview"
                     className="h-56 w-full object-cover"
                   />
@@ -390,7 +475,7 @@ export default function BlogEditorPage() {
               ) : (
                 <div className="flex h-44 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500">
                   <ImagePlus className="mb-3 h-6 w-6 text-slate-400" />
-                  Add a featured image URL to preview the article cover.
+                  Upload a featured image to store it in Cloudinary and reuse it across the CMS.
                 </div>
               )}
             </CardContent>

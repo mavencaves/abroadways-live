@@ -4,6 +4,7 @@ import {
   IconDashboard,
   IconListDetails,
   IconMail,
+  IconPhoto,
   IconUsers,
 } from "@tabler/icons-react";
 import { Link } from "react-router";
@@ -41,6 +42,12 @@ const navLinks = [
     title: "Events",
     url: "/dashboard/events",
     icon: IconCalendar,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Media",
+    url: "/dashboard/media",
+    icon: IconPhoto,
     allowedRoles: ["admin", "content-manager"],
   },
   {
