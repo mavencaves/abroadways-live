@@ -359,8 +359,14 @@ export default function InquiriesPage() {
 
   const canManageInquiries = user ? ["admin", "content-manager"].includes(user.role) : false;
   const selectedInquiry = inquiries.find((item) => item._id === selectedInquiryId) || null;
-  const emailTemplates = templates.filter((item) => item.channel === "email");
-  const whatsappTemplates = templates.filter((item) => item.channel === "whatsapp");
+  const emailTemplates = useMemo(
+    () => templates.filter((item) => item.channel === "email"),
+    [templates]
+  );
+  const whatsappTemplates = useMemo(
+    () => templates.filter((item) => item.channel === "whatsapp"),
+    [templates]
+  );
 
   const refreshOperationalData = async () => {
     const [metricsResponse, notificationsResponse] = await Promise.all([
