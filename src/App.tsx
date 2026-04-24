@@ -137,6 +137,8 @@ import OrdersPage from "@/pages/dashboard/admin/OrdersPage.tsx";
 import PaymentsPage from "@/pages/dashboard/admin/PaymentsPage.tsx";
 import NotificationsPage from "@/pages/dashboard/admin/NotificationsPage.tsx";
 import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage.tsx";
+import StudentAbroadAiPage from "@/pages/student/StudentAbroadAiPage.tsx";
+import AiMonitoringPage from "@/pages/dashboard/admin/AiMonitoringPage.tsx";
 
 function getLegacyExamRedirect(pathname: string) {
     const normalizedPath = pathname.toLowerCase();
@@ -371,6 +373,8 @@ function App() {
                 <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
                 <Route path={"appointments"} element={<AppointmentsPage/>}/>
                 <Route path={"notifications"} element={<NotificationsPage/>}/>
+                <Route path={"ai"} element={<AiMonitoringPage/>}/>
+                <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
                 <Route path={"orders"} element={<OrdersPage/>}/>
                 <Route path={"payments"} element={<PaymentsPage/>}/>
                 <Route path={"documents"} element={<DocumentsPage/>}/>
@@ -384,6 +388,8 @@ function App() {
                     <Route index element={<Navigate to="/student/dashboard" replace/>}/>
                     <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
                     <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
+                    <Route path={"abroadai"} element={<StudentAbroadAiPage/>}/>
+                    <Route path={"ai"} element={<Navigate to="/student/abroadai" replace/>}/>
                     <Route path={"profile"} element={<StudentProfilePage/>}/>
                     <Route path={"applications"} element={<StudentApplicationsPage/>}/>
                     <Route path={"services"} element={<StudentServicesPage/>}/>

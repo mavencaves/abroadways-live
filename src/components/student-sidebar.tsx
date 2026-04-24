@@ -6,6 +6,7 @@ import {
   IconFileText,
   IconFolder,
   IconReceipt,
+  IconMessages,
   IconSparkles,
   IconUserCircle,
 } from "@tabler/icons-react";
@@ -29,6 +30,11 @@ const navLinks = [
     title: "Notifications",
     url: "/student/notifications",
     icon: IconBell,
+  },
+  {
+    title: "AbroadAI",
+    url: "/student/abroadai",
+    icon: IconMessages,
   },
   {
     title: "Profile",

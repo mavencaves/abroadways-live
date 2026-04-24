@@ -170,12 +170,21 @@ export const inquiryTemplatesApi = {
 };
 
 export const chatApi = {
+  sendDemoMessage: (data: {
+    prompt: string;
+    history?: Array<{
+      role: "user" | "assistant";
+      content: string;
+    }>;
+  }) => apiClient.post("/chat/demo", data),
   getSessions: () => apiClient.get("/chat/sessions", { params: noCacheParams() }),
-  createSession: (data: { title?: string } = {}) => apiClient.post("/chat/sessions", data),
+  createSession: (data: { title?: string; assistantMode?: "general" | "student-portal" } = {}) =>
+    apiClient.post("/chat/sessions", data),
   getSessionById: (id: string) => apiClient.get(`/chat/sessions/${id}`, { params: noCacheParams() }),
   updateSessionTitle: (id: string, data: { title: string }) => apiClient.patch(`/chat/sessions/${id}`, data),
   deleteSession: (id: string) => apiClient.delete(`/chat/sessions/${id}`),
   sendMessage: (id: string, data: { prompt: string }) => apiClient.post(`/chat/sessions/${id}/messages`, data),
+  getAdminInsights: () => apiClient.get("/chat/admin/insights", { params: noCacheParams() }),
 };
 
 export const adminApi = {

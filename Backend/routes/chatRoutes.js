@@ -7,10 +7,16 @@ const {
   updateChatSessionTitle,
   deleteChatSession,
   sendChatMessage,
+  sendDemoMessage,
+  getChatAdminInsights,
 } = require('../controllers/chatController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
+
+router.post('/demo', sendDemoMessage);
 
 router.use(protect);
+
+router.get('/admin/insights', restrictTo('admin', 'content-manager'), getChatAdminInsights);
 
 router
   .route('/sessions')

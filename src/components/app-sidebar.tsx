@@ -7,6 +7,7 @@ import {
   IconFolder,
   IconListDetails,
   IconMail,
+  IconMessages,
   IconPhoto,
   IconMessage2,
   IconReceipt,
@@ -96,6 +97,12 @@ const navLinks = [
     title: "Templates",
     url: "/dashboard/templates",
     icon: IconMessage2,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "AbroadAI",
+    url: "/dashboard/ai",
+    icon: IconMessages,
     allowedRoles: ["admin", "content-manager"],
   },
 ];
