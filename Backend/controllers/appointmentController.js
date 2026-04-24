@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Appointment = require('../models/appointmentModel');
 const StudentProfile = require('../models/studentProfileModel');
 const User = require('../models/userModel');
+const { createNotification } = require('../lib/notifications');
 
 const APPOINTMENT_SLOTS = ['10:00', '11:00', '12:00', '14:00', '15:00', '16:00'];
 const APPOINTMENT_STATUSES = ['requested', 'confirmed', 'completed', 'cancelled', 'no-show'];
@@ -286,6 +287,22 @@ const createStudentAppointment = asyncHandler(async (req, res) => {
     notes: String(notes || '').trim(),
   });
 
+  if (assignedStaff?._id) {
+    await createNotification({
+      recipient: assignedStaff._id,
+      type: 'appointment-requested',
+      title: 'New appointment request',
+      message: `${profile.fullName || req.user.name || 'A student'} requested an appointment on ${date} at ${time}.`,
+      link: '/dashboard/appointments',
+      priority: 'medium',
+      eventKey: `appointment:${appointment._id}:requested:${assignedStaff._id}`,
+      metadata: {
+        appointmentId: appointment._id,
+        studentId: profile._id,
+      },
+    });
+  }
+
   const populatedAppointment = await populateAppointmentQuery(
     Appointment.findById(appointment._id)
   );
@@ -312,6 +329,21 @@ const cancelStudentAppointment = asyncHandler(async (req, res) => {
 
   appointment.status = 'cancelled';
   await appointment.save();
+
+  if (appointment.assignedStaff) {
+    await createNotification({
+      recipient: appointment.assignedStaff,
+      type: 'appointment-cancelled',
+      title: 'Appointment cancelled',
+      message: `${profile.fullName || req.user.name || 'A student'} cancelled the appointment scheduled for ${appointment.date} at ${appointment.time}.`,
+      link: '/dashboard/appointments',
+      priority: 'medium',
+      eventKey: `appointment:${appointment._id}:cancelled:student`,
+      metadata: {
+        appointmentId: appointment._id,
+      },
+    });
+  }
 
   const populatedAppointment = await populateAppointmentQuery(
     Appointment.findById(appointment._id)
@@ -372,6 +404,10 @@ const updateAdminAppointment = asyncHandler(async (req, res) => {
   const nextTime = req.body.time !== undefined ? String(req.body.time).trim() : appointment.time;
   const nextType = req.body.type !== undefined ? String(req.body.type).trim() : appointment.type;
   const nextStatus = req.body.status !== undefined ? String(req.body.status).trim() : appointment.status;
+  const previousDate = appointment.date;
+  const previousTime = appointment.time;
+  const previousStatus = appointment.status;
+  const previousAssignedStaffId = appointment.assignedStaff ? String(appointment.assignedStaff) : null;
   const requestedStaffId =
     req.body.assignedStaff !== undefined
       ? req.body.assignedStaff
@@ -425,6 +461,64 @@ const updateAdminAppointment = asyncHandler(async (req, res) => {
   appointment.notes = req.body.notes !== undefined ? String(req.body.notes).trim() : appointment.notes;
   appointment.assignedStaff = finalAssignedStaffId;
   await appointment.save();
+
+  const studentProfile = await StudentProfile.findById(appointment.studentId).select('user fullName email').lean();
+  const studentRecipientId = studentProfile?.user || null;
+  const appointmentMoved = previousDate !== nextDate || previousTime !== nextTime;
+  const statusChanged = previousStatus !== nextStatus;
+  const assignedStaffChanged = previousAssignedStaffId !== String(finalAssignedStaffId || '');
+
+  if (studentRecipientId && (appointmentMoved || statusChanged)) {
+    let type = 'appointment-updated';
+    let title = 'Appointment updated';
+    let message = `Your appointment is now scheduled for ${nextDate} at ${nextTime}.`;
+    let priority = 'medium';
+
+    if (nextStatus === 'confirmed') {
+      type = 'appointment-confirmed';
+      title = 'Appointment confirmed';
+      message = `Your appointment for ${nextDate} at ${nextTime} has been confirmed.`;
+    } else if (nextStatus === 'cancelled') {
+      type = 'appointment-cancelled';
+      title = 'Appointment cancelled';
+      message = `Your appointment for ${nextDate} at ${nextTime} has been cancelled.`;
+      priority = 'high';
+    } else if (appointmentMoved) {
+      type = 'appointment-rescheduled';
+      title = 'Appointment rescheduled';
+      message = `Your appointment has been moved to ${nextDate} at ${nextTime}.`;
+    }
+
+    await createNotification({
+      recipient: studentRecipientId,
+      type,
+      title,
+      message,
+      link: '/student/appointments',
+      priority,
+      eventKey: `appointment:${appointment._id}:${type}:${nextDate}:${nextTime}:${nextStatus}`,
+      metadata: {
+        appointmentId: appointment._id,
+        status: nextStatus,
+      },
+    });
+  }
+
+  if (finalAssignedStaffId && (assignedStaffChanged || statusChanged || appointmentMoved)) {
+    await createNotification({
+      recipient: finalAssignedStaffId,
+      type: 'appointment-updated',
+      title: 'Appointment update',
+      message: `${studentProfile?.fullName || 'A student'} has an appointment update for ${nextDate} at ${nextTime} (${formatLabel(nextStatus)}).`,
+      link: '/dashboard/appointments',
+      priority: nextStatus === 'cancelled' ? 'high' : 'medium',
+      eventKey: `appointment:${appointment._id}:staff-update:${finalAssignedStaffId}:${nextDate}:${nextTime}:${nextStatus}`,
+      metadata: {
+        appointmentId: appointment._id,
+        status: nextStatus,
+      },
+    });
+  }
 
   const populatedAppointment = await populateAppointmentQuery(
     Appointment.findById(appointment._id)

@@ -3,6 +3,7 @@ const StudentProfile = require('../models/studentProfileModel');
 const Inquiry = require('../models/inquiryModel');
 const Appointment = require('../models/appointmentModel');
 const { cloudinary, isCloudinaryConfigured } = require('../lib/cloudinary');
+const { createNotification } = require('../lib/notifications');
 
 const applicationStages = [
   'profile-submitted',
@@ -656,7 +657,9 @@ const listAllStudentDocuments = asyncHandler(async (req, res) => {
 });
 
 const reviewStudentDocument = asyncHandler(async (req, res) => {
-  const profile = await StudentProfile.findById(req.params.profileId).populate('documents.reviewedBy', '_id name email role');
+  const profile = await StudentProfile.findById(req.params.profileId)
+    .populate('documents.reviewedBy', '_id name email role')
+    .populate('user', '_id name email role');
 
   if (!profile) {
     res.status(404);
@@ -684,6 +687,33 @@ const reviewStudentDocument = asyncHandler(async (req, res) => {
 
   await profile.save();
   await profile.populate('documents.reviewedBy', '_id name email role');
+
+  if (profile.user?._id && ['approved', 'rejected', 'needs-resubmission'].includes(status)) {
+    const titleMap = {
+      approved: 'Document approved',
+      rejected: 'Document rejected',
+      'needs-resubmission': 'Document needs resubmission',
+    };
+    const messageMap = {
+      approved: `${document.title} was approved by the Abroadways team.`,
+      rejected: `${document.title} was rejected. Please review the notes and upload a new file if needed.`,
+      'needs-resubmission': `${document.title} needs to be resubmitted. Please review the team notes.`,
+    };
+
+    await createNotification({
+      recipient: profile.user._id,
+      type: `document-${status}`,
+      title: titleMap[status],
+      message: messageMap[status],
+      link: '/student/documents',
+      priority: status === 'approved' ? 'medium' : 'high',
+      eventKey: `document:${document._id}:${status}:${document.reviewedAt.toISOString()}`,
+      metadata: {
+        documentId: document._id,
+        profileId: profile._id,
+      },
+    });
+  }
 
   res.json({
     profileId: profile._id,

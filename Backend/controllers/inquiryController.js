@@ -4,6 +4,7 @@ const InquiryTemplate = require('../models/inquiryTemplateModel');
 const User = require('../models/userModel');
 const Blog = require('../models/blogModel');
 const Event = require('../models/eventModel');
+const { createNotification } = require('../lib/notifications');
 
 const allowedStatuses = ['new', 'contacted', 'follow-up', 'qualified', 'closed', 'lost'];
 const assignableRoles = ['admin', 'content-manager'];
@@ -330,6 +331,22 @@ const createInquiry = asyncHandler(async (req, res) => {
     ],
   });
 
+  if (autoAssignee?._id) {
+    await createNotification({
+      recipient: autoAssignee._id,
+      type: 'inquiry-assigned',
+      title: 'New inquiry assigned',
+      message: `${inquiry.name} has been assigned to you from ${normalizeSource(source)}.`,
+      link: '/dashboard/inquiries',
+      priority: 'high',
+      eventKey: `inquiry:${inquiry._id}:assigned:${autoAssignee._id}`,
+      metadata: {
+        inquiryId: inquiry._id,
+        source,
+      },
+    });
+  }
+
   res.status(201).json({
     _id: inquiry._id,
     message: 'Your inquiry has been received successfully.',
@@ -653,6 +670,20 @@ const updateInquiry = asyncHandler(async (req, res) => {
           meta: {
             assignedTo: assignee._id,
             assignedName: assignee.name,
+          },
+        });
+
+        await createNotification({
+          recipient: assignee._id,
+          type: 'inquiry-assigned',
+          title: 'Inquiry assigned',
+          message: `${inquiry.name} has been assigned to you.`,
+          link: '/dashboard/inquiries',
+          priority: 'high',
+          eventKey: `inquiry:${inquiry._id}:assigned:${assignee._id}:${Date.now()}`,
+          metadata: {
+            inquiryId: inquiry._id,
+            assignedBy: req.user?._id || null,
           },
         });
       }

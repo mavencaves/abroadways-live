@@ -3,6 +3,7 @@ import {
   IconCalendar,
   IconCalendarTime,
   IconDashboard,
+  IconBell,
   IconFolder,
   IconListDetails,
   IconMail,
@@ -29,6 +30,12 @@ const navLinks = [
     title: "Dashboard",
     url: "/dashboard",
     icon: IconDashboard,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Notifications",
+    url: "/dashboard/notifications",
+    icon: IconBell,
     allowedRoles: ["admin", "content-manager"],
   },
   {

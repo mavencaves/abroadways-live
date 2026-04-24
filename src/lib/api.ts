@@ -325,3 +325,10 @@ export const studentApi = {
     }
   ) => apiClient.patch(`/student/admin/documents/${profileId}/${documentId}/review`, payload),
 };
+
+export const notificationsApi = {
+  list: (params?: { read?: "all" | "read" | "unread"; priority?: "" | "low" | "medium" | "high"; limit?: number }) =>
+    apiClient.get("/notifications", { params: { ...params, ...noCacheParams() } }),
+  markRead: (id: string) => apiClient.patch(`/notifications/${id}/read`),
+  markAllRead: () => apiClient.patch("/notifications/read-all"),
+};

@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   IconCalendarTime,
   IconDashboard,
+  IconBell,
   IconFileText,
   IconFolder,
   IconReceipt,
@@ -23,6 +24,11 @@ const navLinks = [
     title: "Dashboard",
     url: "/student/dashboard",
     icon: IconDashboard,
+  },
+  {
+    title: "Notifications",
+    url: "/student/notifications",
+    icon: IconBell,
   },
   {
     title: "Profile",

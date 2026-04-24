@@ -135,6 +135,8 @@ import StudentServicesPage from "@/pages/student/StudentServicesPage.tsx";
 import StudentPaymentsPage from "@/pages/student/StudentPaymentsPage.tsx";
 import OrdersPage from "@/pages/dashboard/admin/OrdersPage.tsx";
 import PaymentsPage from "@/pages/dashboard/admin/PaymentsPage.tsx";
+import NotificationsPage from "@/pages/dashboard/admin/NotificationsPage.tsx";
+import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage.tsx";
 
 function getLegacyExamRedirect(pathname: string) {
     const normalizedPath = pathname.toLowerCase();
@@ -368,6 +370,7 @@ function App() {
                 <Route path={"events/new"} element={<EventEditorPage/>}/>
                 <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
                 <Route path={"appointments"} element={<AppointmentsPage/>}/>
+                <Route path={"notifications"} element={<NotificationsPage/>}/>
                 <Route path={"orders"} element={<OrdersPage/>}/>
                 <Route path={"payments"} element={<PaymentsPage/>}/>
                 <Route path={"documents"} element={<DocumentsPage/>}/>
@@ -380,6 +383,7 @@ function App() {
                 <Route path={"/student"} element={<StudentPortalLayout/>}>
                     <Route index element={<Navigate to="/student/dashboard" replace/>}/>
                     <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
+                    <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
                     <Route path={"profile"} element={<StudentProfilePage/>}/>
                     <Route path={"applications"} element={<StudentApplicationsPage/>}/>
                     <Route path={"services"} element={<StudentServicesPage/>}/>

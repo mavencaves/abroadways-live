@@ -3,6 +3,7 @@ const ServiceOrder = require('../models/serviceOrderModel');
 const StudentProfile = require('../models/studentProfileModel');
 const User = require('../models/userModel');
 const { initiateSslPayment, validateSslPayment } = require('../lib/sslcommerz');
+const { createNotification, notifyAdmins, notifyStudentProfile } = require('../lib/notifications');
 
 const ORDER_STATUSES = ['draft', 'pending-payment', 'paid', 'cancelled', 'refunded'];
 const PAYMENT_METHODS = ['bank-transfer', 'cash', 'bkash', 'nagad', 'rocket', 'other'];
@@ -225,6 +226,34 @@ const requestStudentService = asyncHandler(async (req, res) => {
   });
 
   const populated = await populateOrders(ServiceOrder.findById(order._id));
+
+  await Promise.all([
+    notifyStudentProfile(profile, {
+      type: 'order-created',
+      title: 'Service order created',
+      message: `${service.name} has been added to your account and is now waiting for payment.`,
+      link: '/student/payments',
+      priority: 'medium',
+      eventKey: `order:${order._id}:created:student`,
+      metadata: {
+        orderId: order._id,
+        serviceType: service.serviceType,
+      },
+    }),
+    notifyAdmins({
+      type: 'order-created',
+      title: 'New service order',
+      message: `${profile.fullName || req.user.name || 'A student'} requested ${service.name}.`,
+      link: '/dashboard/orders',
+      priority: 'medium',
+      eventKey: `order:${order._id}:created:admin`,
+      metadata: {
+        orderId: order._id,
+        studentId: profile._id,
+      },
+    }),
+  ]);
+
   res.status(201).json(populated);
 });
 
@@ -383,6 +412,20 @@ const createAdminOrder = asyncHandler(async (req, res) => {
   }
 
   const populated = await populateOrders(ServiceOrder.findById(order._id));
+
+  await notifyStudentProfile(student, {
+    type: 'order-created',
+    title: 'New service order',
+    message: `${service.name} has been created for your account by the Abroadways team.`,
+    link: '/student/payments',
+    priority: 'medium',
+    eventKey: `order:${order._id}:created:student-admin`,
+    metadata: {
+      orderId: order._id,
+      serviceType: service.serviceType,
+    },
+  });
+
   res.status(201).json(populated);
 });
 
@@ -416,6 +459,7 @@ const updateAdminOrder = asyncHandler(async (req, res) => {
     order.currency = String(req.body.currency || DEFAULT_CURRENCY).trim() || DEFAULT_CURRENCY;
   }
 
+  const previousStatus = order.status;
   if (req.body.status !== undefined) {
     order.status = normalizeStatus(req.body.status);
     if (order.status === 'paid') {
@@ -455,6 +499,22 @@ const updateAdminOrder = asyncHandler(async (req, res) => {
   await order.save();
 
   const populated = await populateOrders(ServiceOrder.findById(order._id));
+
+  if (req.body.status !== undefined && previousStatus !== order.status) {
+    await notifyStudentProfile(order.studentId, {
+      type: 'order-status-updated',
+      title: 'Order status updated',
+      message: `${formatLabel(order.serviceType)} is now ${formatLabel(order.status)}.`,
+      link: '/student/payments',
+      priority: ['cancelled', 'refunded'].includes(order.status) ? 'high' : 'medium',
+      eventKey: `order:${order._id}:status:${order.status}:${order.updatedAt?.toISOString?.() || Date.now()}`,
+      metadata: {
+        orderId: order._id,
+        status: order.status,
+      },
+    });
+  }
+
   res.json(populated);
 });
 
@@ -586,6 +646,32 @@ const handleGatewaySuccess = async (req, res) => {
     });
     await order.save();
 
+    await Promise.all([
+      notifyStudentProfile(order.studentId, {
+        type: 'payment-paid',
+        title: 'Payment received',
+        message: `${formatLabel(order.serviceType)} has been paid successfully.`,
+        link: '/student/payments',
+        priority: 'medium',
+        eventKey: `order:${order._id}:payment-success:${valId}`,
+        metadata: {
+          orderId: order._id,
+          validationId: valId,
+        },
+      }),
+      notifyAdmins({
+        type: 'payment-paid',
+        title: 'Payment received',
+        message: `${formatLabel(order.serviceType)} was paid successfully through SSLCommerz.`,
+        link: '/dashboard/payments',
+        priority: 'medium',
+        eventKey: `order:${order._id}:payment-success-admin:${valId}`,
+        metadata: {
+          orderId: order._id,
+        },
+      }),
+    ]);
+
     return res.redirect(buildStudentRedirectUrl(req, order, 'success', 'Payment completed successfully.'));
   } catch (error) {
     appendPaymentLog(order, {
@@ -599,6 +685,31 @@ const handleGatewaySuccess = async (req, res) => {
       },
     });
     await order.save();
+
+    await Promise.all([
+      notifyStudentProfile(order.studentId, {
+        type: 'payment-failed',
+        title: 'Payment failed',
+        message: error.message || 'Your online payment could not be completed.',
+        link: '/student/payments',
+        priority: 'high',
+        eventKey: `order:${order._id}:payment-failed:${valId || Date.now()}`,
+        metadata: {
+          orderId: order._id,
+        },
+      }),
+      notifyAdmins({
+        type: 'payment-failed',
+        title: 'Payment failed',
+        message: `${formatLabel(order.serviceType)} failed gateway validation.`,
+        link: '/dashboard/payments',
+        priority: 'high',
+        eventKey: `order:${order._id}:payment-failed-admin:${valId || Date.now()}`,
+        metadata: {
+          orderId: order._id,
+        },
+      }),
+    ]);
     return res.redirect(buildStudentRedirectUrl(req, order, 'failed', error.message || 'Payment validation failed.'));
   }
 };
@@ -624,6 +735,31 @@ const paymentFailCallback = asyncHandler(async (req, res) => {
     },
   });
   await order.save();
+
+  await Promise.all([
+    notifyStudentProfile(order.studentId, {
+      type: 'payment-failed',
+      title: 'Payment failed',
+      message: 'Your online payment failed or was declined.',
+      link: '/student/payments',
+      priority: 'high',
+      eventKey: `order:${order._id}:payment-failed-callback:${Date.now()}`,
+      metadata: {
+        orderId: order._id,
+      },
+    }),
+    notifyAdmins({
+      type: 'payment-failed',
+      title: 'Payment failed',
+      message: `${formatLabel(order.serviceType)} failed during the payment process.`,
+      link: '/dashboard/payments',
+      priority: 'high',
+      eventKey: `order:${order._id}:payment-failed-admin-callback:${Date.now()}`,
+      metadata: {
+        orderId: order._id,
+      },
+    }),
+  ]);
 
   return res.redirect(buildStudentRedirectUrl(req, order, 'failed', 'Payment failed or was declined.'));
 });
