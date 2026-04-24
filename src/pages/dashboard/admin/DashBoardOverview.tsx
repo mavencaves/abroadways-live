@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BellRing,
   BookOpenText,
+  CalendarDays,
   CalendarClock,
   Funnel,
   MailQuestion,
@@ -20,7 +21,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { inquiriesApi } from "@/lib/api";
+import { appointmentsApi, inquiriesApi } from "@/lib/api";
 import type {
   InquiryDashboardAnalytics,
   InquiryNotificationsPayload,
@@ -60,18 +61,45 @@ const CustomTooltip = ({ active, payload }: any) => {
 export default function DashboardOverview() {
   const [data, setData] = useState<InquiryDashboardAnalytics | null>(null);
   const [notifications, setNotifications] = useState<InquiryNotificationsPayload | null>(null);
+  const [appointmentsSummary, setAppointmentsSummary] = useState<{
+    summary: {
+      total: number;
+      today: number;
+      requested: number;
+      confirmed: number;
+      completed: number;
+    };
+    upcoming: Array<{
+      _id: string;
+      date: string;
+      time: string;
+      status: string;
+      studentId?: { fullName?: string } | null;
+      assignedStaff?: { name?: string } | null;
+    }>;
+    todaysSchedule: Array<{
+      _id: string;
+      date: string;
+      time: string;
+      status: string;
+      studentId?: { fullName?: string } | null;
+      assignedStaff?: { name?: string } | null;
+    }>;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendView, setTrendView] = useState<(typeof TREND_OPTIONS)[number]["value"]>("daily");
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [analyticsResponse, notificationsResponse] = await Promise.all([
+        const [analyticsResponse, notificationsResponse, appointmentsResponse] = await Promise.all([
           inquiriesApi.getDashboardAnalytics(),
           inquiriesApi.getNotifications(),
+          appointmentsApi.getAdminSummary(),
         ]);
         setData(analyticsResponse.data);
         setNotifications(notificationsResponse.data);
+        setAppointmentsSummary(appointmentsResponse.data);
       } catch (error: any) {
         const message = error?.response?.data?.message || "Failed to load dashboard analytics.";
         toast.error(message);
@@ -204,6 +232,77 @@ export default function DashboardOverview() {
                 <p className="text-sm text-blue-800">No urgent follow-up notifications right now.</p>
               )}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-blue-700" />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Appointments</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-950">Today&apos;s schedule</h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <NotificationMiniCard title="Today" value={appointmentsSummary?.summary.today || 0} />
+              <NotificationMiniCard title="Requested" value={appointmentsSummary?.summary.requested || 0} />
+              <NotificationMiniCard title="Confirmed" value={appointmentsSummary?.summary.confirmed || 0} />
+            </div>
+
+            {appointmentsSummary?.todaysSchedule?.length ? (
+              <div className="space-y-3">
+                {appointmentsSummary.todaysSchedule.map((item) => (
+                  <div key={item._id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-slate-900">{item.studentId?.fullName || "Student"}</p>
+                        <p className="text-sm text-slate-500">{item.time} • {formatStatusLabel(item.status)}</p>
+                      </div>
+                      <p className="text-sm text-slate-600">{item.assignedStaff?.name || "Unassigned"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No appointments scheduled for today.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-blue-700" />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Next Up</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-950">Upcoming appointments</h2>
+              </div>
+            </div>
+
+            {appointmentsSummary?.upcoming?.length ? (
+              <div className="space-y-3">
+                {appointmentsSummary.upcoming.map((item) => (
+                  <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-slate-900">{item.studentId?.fullName || "Student"}</p>
+                        <p className="text-sm text-slate-500">{item.date} • {item.time}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-600">{item.assignedStaff?.name || "Unassigned"}</p>
+                        <p className="text-xs text-slate-500">{formatStatusLabel(item.status)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No upcoming appointments scheduled yet.</p>
+            )}
           </CardContent>
         </Card>
       </div>

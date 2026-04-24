@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  IconCalendarTime,
   IconDashboard,
   IconFileText,
   IconFolder,
@@ -30,6 +31,11 @@ const navLinks = [
     title: "Applications",
     url: "/student/applications",
     icon: IconFileText,
+  },
+  {
+    title: "Appointments",
+    url: "/student/appointments",
+    icon: IconCalendarTime,
   },
   {
     title: "Documents",

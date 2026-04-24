@@ -20,6 +20,17 @@ type PortalData = {
   };
   pendingActions: string[];
   upcoming: {
+    appointment?: {
+      _id: string;
+      date: string;
+      time: string;
+      type: string;
+      status: string;
+      assignedStaff?: {
+        name: string;
+        role: string;
+      } | null;
+    } | null;
     followUpAt?: string | null;
     consultationNote?: string;
     assignedStaff?: {
@@ -72,7 +83,7 @@ export default function StudentDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card><CardContent className="space-y-2 p-5"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">Profile completeness</p><UserRound className="h-4 w-4 text-blue-700" /></div><p className="text-3xl font-semibold text-slate-950">{data.profileCompleteness}%</p><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-700" style={{ width: `${data.profileCompleteness}%` }} /></div></CardContent></Card>
         <Card><CardContent className="space-y-2 p-5"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">Application stage</p><FileText className="h-4 w-4 text-blue-700" /></div><p className="text-lg font-semibold text-slate-950">{data.application.currentStageLabel}</p><p className="text-sm text-slate-500">{data.application.linkedInquiryStatus ? `CRM status: ${data.application.linkedInquiryStatus}` : "Awaiting counselor progress"}</p></CardContent></Card>
-        <Card><CardContent className="space-y-2 p-5"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">Upcoming follow-up</p><CalendarClock className="h-4 w-4 text-blue-700" /></div><p className="text-lg font-semibold text-slate-950">{data.upcoming.followUpAt ? new Date(data.upcoming.followUpAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not scheduled"}</p><p className="text-sm text-slate-500">{data.upcoming.assignedStaff ? `${data.upcoming.assignedStaff.name} (${data.upcoming.assignedStaff.role})` : "No staff assigned yet"}</p></CardContent></Card>
+        <Card><CardContent className="space-y-2 p-5"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">Upcoming consultation</p><CalendarClock className="h-4 w-4 text-blue-700" /></div><p className="text-lg font-semibold text-slate-950">{data.upcoming.appointment ? `${new Date(`${data.upcoming.appointment.date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${data.upcoming.appointment.time}` : data.upcoming.followUpAt ? new Date(data.upcoming.followUpAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not scheduled"}</p><p className="text-sm text-slate-500">{data.upcoming.appointment?.assignedStaff ? `${data.upcoming.appointment.assignedStaff.name} (${data.upcoming.appointment.assignedStaff.role})` : data.upcoming.assignedStaff ? `${data.upcoming.assignedStaff.name} (${data.upcoming.assignedStaff.role})` : "No staff assigned yet"}</p></CardContent></Card>
         <Card><CardContent className="space-y-2 p-5"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">Pending actions</p><CircleAlert className="h-4 w-4 text-amber-600" /></div><p className="text-3xl font-semibold text-slate-950">{data.pendingActions.length}</p><p className="text-sm text-slate-500">{data.pendingActions.length ? "Complete the next steps below" : "You are on track right now"}</p></CardContent></Card>
       </div>
 
@@ -111,7 +122,7 @@ export default function StudentDashboardPage() {
             <div className="grid gap-3 text-sm text-slate-700">
               <p><span className="font-medium">Preferred country:</span> {data.profile.preferredCountry || "Not added yet"}</p>
               <p><span className="font-medium">Exam interest:</span> {data.profile.examInterest || "Not added yet"}</p>
-              <p><span className="font-medium">Upcoming support:</span> {data.upcoming.consultationNote || "Your counselor will share next-step guidance soon."}</p>
+              <p><span className="font-medium">Upcoming support:</span> {data.upcoming.appointment ? `${data.upcoming.appointment.type} consultation is ${data.upcoming.appointment.status}.` : data.upcoming.consultationNote || "Your counselor will share next-step guidance soon."}</p>
             </div>
           </CardContent>
         </Card>

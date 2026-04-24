@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const StudentProfile = require('../models/studentProfileModel');
 const Inquiry = require('../models/inquiryModel');
+const Appointment = require('../models/appointmentModel');
 const { cloudinary, isCloudinaryConfigured } = require('../lib/cloudinary');
 
 const applicationStages = [
@@ -191,6 +192,22 @@ const sortDocumentsNewestFirst = (documents = []) =>
     return rightDate - leftDate;
   });
 
+const getDateKey = (date = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+
+const getTimeKey = (date = new Date()) =>
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Dhaka',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+
 const ensureCloudinary = () => {
   if (!isCloudinaryConfigured()) {
     const error = new Error('Cloudinary is not configured on the server.');
@@ -306,7 +323,7 @@ const populateStudentDocumentReviewers = async (profile) => {
   return profile;
 };
 
-const serializePortalData = (profile) => {
+const serializePortalData = (profile, upcomingAppointment = null) => {
   const inquiry = profile.linkedInquiry || null;
   const completeness = computeProfileCompleteness(profile);
 
@@ -321,6 +338,22 @@ const serializePortalData = (profile) => {
     },
     pendingActions: buildPendingActions(profile, inquiry),
     upcoming: {
+      appointment: upcomingAppointment
+        ? {
+            _id: upcomingAppointment._id,
+            date: upcomingAppointment.date,
+            time: upcomingAppointment.time,
+            type: upcomingAppointment.type,
+            status: upcomingAppointment.status,
+            assignedStaff: upcomingAppointment.assignedStaff
+              ? {
+                  _id: upcomingAppointment.assignedStaff._id,
+                  name: upcomingAppointment.assignedStaff.name,
+                  role: upcomingAppointment.assignedStaff.role,
+                }
+              : null,
+          }
+        : null,
       followUpAt: inquiry?.nextFollowUpAt || null,
       consultationNote: inquiry?.nextSuggestedAction || '',
       assignedStaff: inquiry?.assignedTo
@@ -336,7 +369,19 @@ const serializePortalData = (profile) => {
 
 const getStudentPortal = asyncHandler(async (req, res) => {
   const profile = await ensureStudentProfile(req.user);
-  res.json(serializePortalData(profile));
+  const today = getDateKey();
+  const currentTime = getTimeKey();
+  const upcomingAppointment = await Appointment.findOne({
+    studentId: profile._id,
+    status: { $in: ['requested', 'confirmed'] },
+    $or: [
+      { date: { $gt: today } },
+      { date: today, time: { $gte: currentTime } },
+    ],
+  })
+    .populate('assignedStaff', '_id name role')
+    .sort({ date: 1, time: 1 });
+  res.json(serializePortalData(profile, upcomingAppointment));
 });
 
 const getStudentProfile = asyncHandler(async (req, res) => {

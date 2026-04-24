@@ -184,6 +184,32 @@ export const adminApi = {
   deleteUser: (id: string) => apiClient.delete(`/admin/users/${id}`),
 };
 
+export const appointmentsApi = {
+  getStudentAppointments: () => apiClient.get("/appointments/student", { params: noCacheParams() }),
+  getStudentSlots: (date: string) => apiClient.get("/appointments/student/slots", { params: { date, ...noCacheParams() } }),
+  createStudentAppointment: (payload: {
+    date: string;
+    time: string;
+    type: "online" | "office";
+    notes?: string;
+  }) => apiClient.post("/appointments/student", payload),
+  cancelStudentAppointment: (id: string) => apiClient.patch(`/appointments/student/${id}/cancel`),
+  getAdminAppointments: (params?: Record<string, any>) =>
+    apiClient.get("/appointments/admin", { params: { ...params, ...noCacheParams() } }),
+  updateAdminAppointment: (
+    id: string,
+    payload: {
+      assignedStaff?: string | null;
+      date?: string;
+      time?: string;
+      type?: "online" | "office";
+      status?: "requested" | "confirmed" | "completed" | "cancelled" | "no-show";
+      notes?: string;
+    }
+  ) => apiClient.patch(`/appointments/admin/${id}`, payload),
+  getAdminSummary: () => apiClient.get("/appointments/admin/summary", { params: noCacheParams() }),
+};
+
 export const studentApi = {
   getPortal: () => apiClient.get("/student/portal", { params: noCacheParams() }),
   getProfile: () => apiClient.get("/student/profile", { params: noCacheParams() }),

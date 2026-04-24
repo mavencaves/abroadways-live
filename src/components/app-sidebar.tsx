@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   IconCalendar,
+  IconCalendarTime,
   IconDashboard,
   IconFolder,
   IconListDetails,
@@ -44,6 +45,12 @@ const navLinks = [
     title: "Events",
     url: "/dashboard/events",
     icon: IconCalendar,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Appointments",
+    url: "/dashboard/appointments",
+    icon: IconCalendarTime,
     allowedRoles: ["admin", "content-manager"],
   },
   {
