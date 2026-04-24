@@ -210,6 +210,44 @@ export const appointmentsApi = {
   getAdminSummary: () => apiClient.get("/appointments/admin/summary", { params: noCacheParams() }),
 };
 
+export const serviceOrdersApi = {
+  getStudentServices: () => apiClient.get("/service-orders/student/services", { params: noCacheParams() }),
+  getStudentOrders: () => apiClient.get("/service-orders/student/orders", { params: noCacheParams() }),
+  requestStudentService: (payload: { serviceType: string; notes?: string }) =>
+    apiClient.post("/service-orders/student/orders", payload),
+  submitStudentPaymentReference: (
+    id: string,
+    payload: { paymentMethod: string; transactionReference: string }
+  ) => apiClient.patch(`/service-orders/student/orders/${id}/payment`, payload),
+  getAdminOrders: (params?: Record<string, any>) =>
+    apiClient.get("/service-orders/admin/orders", { params: { ...params, ...noCacheParams() } }),
+  createAdminOrder: (payload: {
+    studentId: string;
+    inquiryId?: string | null;
+    appointmentId?: string | null;
+    serviceType: string;
+    amount?: number;
+    currency?: string;
+    status?: "draft" | "pending-payment" | "paid" | "cancelled" | "refunded";
+    paymentMethod?: string;
+    transactionReference?: string;
+    adminNotes?: string;
+  }) => apiClient.post("/service-orders/admin/orders", payload),
+  updateAdminOrder: (
+    id: string,
+    payload: {
+      serviceType?: string;
+      amount?: number;
+      currency?: string;
+      status?: "draft" | "pending-payment" | "paid" | "cancelled" | "refunded";
+      paymentMethod?: string;
+      transactionReference?: string;
+      adminNotes?: string;
+    }
+  ) => apiClient.patch(`/service-orders/admin/orders/${id}`, payload),
+  getAdminSummary: () => apiClient.get("/service-orders/admin/summary", { params: noCacheParams() }),
+};
+
 export const studentApi = {
   getPortal: () => apiClient.get("/student/portal", { params: noCacheParams() }),
   getProfile: () => apiClient.get("/student/profile", { params: noCacheParams() }),

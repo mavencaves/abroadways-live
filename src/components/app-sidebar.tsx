@@ -8,6 +8,8 @@ import {
   IconMail,
   IconPhoto,
   IconMessage2,
+  IconReceipt,
+  IconShoppingBag,
   IconUsers,
 } from "@tabler/icons-react";
 import { Link } from "react-router";
@@ -51,6 +53,18 @@ const navLinks = [
     title: "Appointments",
     url: "/dashboard/appointments",
     icon: IconCalendarTime,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Orders",
+    url: "/dashboard/orders",
+    icon: IconShoppingBag,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Payments",
+    url: "/dashboard/payments",
+    icon: IconReceipt,
     allowedRoles: ["admin", "content-manager"],
   },
   {

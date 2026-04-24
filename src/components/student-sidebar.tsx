@@ -4,6 +4,8 @@ import {
   IconDashboard,
   IconFileText,
   IconFolder,
+  IconReceipt,
+  IconSparkles,
   IconUserCircle,
 } from "@tabler/icons-react";
 import { Link } from "react-router";
@@ -31,6 +33,16 @@ const navLinks = [
     title: "Applications",
     url: "/student/applications",
     icon: IconFileText,
+  },
+  {
+    title: "Services",
+    url: "/student/services",
+    icon: IconSparkles,
+  },
+  {
+    title: "Payments",
+    url: "/student/payments",
+    icon: IconReceipt,
   },
   {
     title: "Appointments",

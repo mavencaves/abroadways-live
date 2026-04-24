@@ -7,6 +7,7 @@ import {
   CalendarClock,
   Funnel,
   MailQuestion,
+  ReceiptText,
   Target,
 } from "lucide-react";
 import {
@@ -21,7 +22,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { appointmentsApi, inquiriesApi } from "@/lib/api";
+import { appointmentsApi, inquiriesApi, serviceOrdersApi } from "@/lib/api";
 import type {
   InquiryDashboardAnalytics,
   InquiryNotificationsPayload,
@@ -86,20 +87,45 @@ export default function DashboardOverview() {
       assignedStaff?: { name?: string } | null;
     }>;
   } | null>(null);
+  const [ordersSummary, setOrdersSummary] = useState<{
+    summary: {
+      totalOrders: number;
+      openOrders: number;
+      pendingPayments: number;
+      paidRevenue: number;
+      monthlyRevenue: number;
+    };
+    pendingPayments: Array<{
+      _id: string;
+      serviceType: string;
+      amount: number;
+      currency: string;
+      studentId?: { fullName?: string } | null;
+    }>;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendView, setTrendView] = useState<(typeof TREND_OPTIONS)[number]["value"]>("daily");
+
+  const formatCurrency = (amount: number, currency = "BDT") =>
+    new Intl.NumberFormat("en-BD", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [analyticsResponse, notificationsResponse, appointmentsResponse] = await Promise.all([
+        const [analyticsResponse, notificationsResponse, appointmentsResponse, ordersResponse] = await Promise.all([
           inquiriesApi.getDashboardAnalytics(),
           inquiriesApi.getNotifications(),
           appointmentsApi.getAdminSummary(),
+          serviceOrdersApi.getAdminSummary(),
         ]);
         setData(analyticsResponse.data);
         setNotifications(notificationsResponse.data);
         setAppointmentsSummary(appointmentsResponse.data);
+        setOrdersSummary(ordersResponse.data);
       } catch (error: any) {
         const message = error?.response?.data?.message || "Failed to load dashboard analytics.";
         toast.error(message);
@@ -232,6 +258,70 @@ export default function DashboardOverview() {
                 <p className="text-sm text-blue-800">No urgent follow-up notifications right now.</p>
               )}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <ReceiptText className="h-5 w-5 text-blue-700" />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Payments</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-950">Revenue snapshot</h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <NotificationMiniCard title="Pending payments" value={ordersSummary?.summary.pendingPayments || 0} />
+              <NotificationMiniCard title="Open orders" value={ordersSummary?.summary.openOrders || 0} />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">Paid revenue</p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-900">
+                  {formatCurrency(ordersSummary?.summary.paidRevenue || 0)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-blue-700">Monthly revenue</p>
+                <p className="mt-2 text-2xl font-semibold text-blue-900">
+                  {formatCurrency(ordersSummary?.summary.monthlyRevenue || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2">
+              <ReceiptText className="h-5 w-5 text-blue-700" />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Queue</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-950">Pending payment review</h2>
+              </div>
+            </div>
+
+            {ordersSummary?.pendingPayments?.length ? (
+              <div className="space-y-3">
+                {ordersSummary.pendingPayments.map((item) => (
+                  <div key={item._id} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-slate-900">{item.studentId?.fullName || "Student"}</p>
+                        <p className="text-sm text-slate-500">{formatStatusLabel(item.serviceType)}</p>
+                      </div>
+                      <p className="font-semibold text-slate-900">{formatCurrency(item.amount, item.currency)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No pending payment reviews right now.</p>
+            )}
           </CardContent>
         </Card>
       </div>
