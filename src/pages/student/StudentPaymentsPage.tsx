@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ReceiptText } from "lucide-react";
+import { Loader2, ReceiptText } from "lucide-react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { serviceOrdersApi } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,8 +16,18 @@ type StudentOrder = {
   status: "draft" | "pending-payment" | "paid" | "cancelled" | "refunded";
   paymentMethod?: string;
   transactionReference?: string;
+  gatewayTransactionId?: string;
+  paymentGateway?: string;
   adminNotes?: string;
   createdAt?: string;
+  paymentCompletedAt?: string;
+  paymentLogs?: Array<{
+    status: string;
+    gateway?: string;
+    message?: string;
+    transactionReference?: string;
+    createdAt?: string;
+  }>;
 };
 
 const STATUS_STYLES: Record<StudentOrder["status"], string> = {
@@ -41,9 +52,12 @@ const formatLabel = (value: string) =>
     .join(" ");
 
 export default function StudentPaymentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<StudentOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [gatewayLoadingId, setGatewayLoadingId] = useState<string | null>(null);
+  const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, { paymentMethod: string; transactionReference: string }>>({});
 
   const loadOrders = async () => {
@@ -51,6 +65,7 @@ export default function StudentPaymentsPage() {
       setLoading(true);
       const response = await serviceOrdersApi.getStudentOrders();
       setOrders(Array.isArray(response.data?.items) ? response.data.items : []);
+      setGatewayEnabled(Boolean(response.data?.paymentGateway?.sslcommerzEnabled));
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to load your payments.");
     } finally {
@@ -61,6 +76,27 @@ export default function StudentPaymentsPage() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get("paymentStatus");
+    const message = searchParams.get("message");
+    if (!paymentStatus) return;
+
+    if (paymentStatus === "success") {
+      toast.success(message || "Payment completed successfully.");
+    } else if (paymentStatus === "failed") {
+      toast.error(message || "Payment failed.");
+    } else if (paymentStatus === "cancelled") {
+      toast(message || "Payment was cancelled.");
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("paymentStatus");
+    nextParams.delete("message");
+    nextParams.delete("orderId");
+    setSearchParams(nextParams, { replace: true });
+    loadOrders();
+  }, [searchParams, setSearchParams]);
 
   const summary = useMemo(
     () => ({
@@ -122,8 +158,66 @@ export default function StudentPaymentsPage() {
                 <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
                   <p><span className="font-medium text-slate-900">Payment method:</span> {order.paymentMethod ? formatLabel(order.paymentMethod) : "Not submitted yet"}</p>
                   <p><span className="font-medium text-slate-900">Transaction reference:</span> {order.transactionReference || "Not submitted yet"}</p>
+                  <p><span className="font-medium text-slate-900">Gateway transaction:</span> {order.gatewayTransactionId || "Not available yet"}</p>
+                  <p><span className="font-medium text-slate-900">Payment mode:</span> {order.paymentGateway ? formatLabel(order.paymentGateway) : "Manual"}</p>
                   <p className="md:col-span-2"><span className="font-medium text-slate-900">Team notes:</span> {order.adminNotes || "No additional notes from the team yet."}</p>
                 </div>
+
+                {order.paymentLogs?.length ? (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-sm font-medium text-slate-900">Payment history</p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      {[...order.paymentLogs].slice(-3).reverse().map((log, index) => (
+                        <div key={`${order._id}-log-${index}`} className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                          <p className="font-medium text-slate-900">
+                            {formatLabel(log.status)} via {formatLabel(log.gateway || "manual")}
+                          </p>
+                          <p>{log.message || "Payment activity recorded."}</p>
+                          <p className="text-xs text-slate-500">
+                            {log.createdAt
+                              ? new Date(log.createdAt).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })
+                              : "Recent activity"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {["draft", "pending-payment"].includes(order.status) && gatewayEnabled ? (
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      disabled={gatewayLoadingId === order._id}
+                      onClick={async () => {
+                        try {
+                          setGatewayLoadingId(order._id);
+                          const response = await serviceOrdersApi.initiateStudentPayment(order._id);
+                          const redirectUrl = response.data?.redirectUrl;
+                          if (!redirectUrl) {
+                            throw new Error("Payment gateway URL was not returned.");
+                          }
+                          window.location.href = redirectUrl;
+                        } catch (error: any) {
+                          toast.error(error?.response?.data?.message || error?.message || "Failed to start online payment.");
+                        } finally {
+                          setGatewayLoadingId(null);
+                        }
+                      }}
+                    >
+                      {gatewayLoadingId === order._id ? (
+                        <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Redirecting...</span>
+                      ) : (
+                        "Pay Now"
+                      )}
+                    </Button>
+                  </div>
+                ) : null}
 
                 {["draft", "pending-payment"].includes(order.status) ? (
                   <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[220px_1fr_auto]">

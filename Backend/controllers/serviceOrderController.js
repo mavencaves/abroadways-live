@@ -2,10 +2,16 @@ const asyncHandler = require('express-async-handler');
 const ServiceOrder = require('../models/serviceOrderModel');
 const StudentProfile = require('../models/studentProfileModel');
 const User = require('../models/userModel');
+const { initiateSslPayment, validateSslPayment } = require('../lib/sslcommerz');
 
 const ORDER_STATUSES = ['draft', 'pending-payment', 'paid', 'cancelled', 'refunded'];
 const PAYMENT_METHODS = ['bank-transfer', 'cash', 'bkash', 'nagad', 'rocket', 'other'];
 const DEFAULT_CURRENCY = 'BDT';
+const PAYMENT_LOG_STATUSES = ['initiated', 'success', 'failed', 'cancelled', 'manual-submitted', 'refunded'];
+const SSL_GATEWAY_ENABLED = Boolean(
+  String(process.env.SSLCOMMERZ_STORE_ID || '').trim() &&
+    String(process.env.SSLCOMMERZ_STORE_PASSWORD || '').trim()
+);
 
 const SERVICE_CATALOG = [
   {
@@ -43,6 +49,63 @@ const formatLabel = (value) =>
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+
+const buildBackendBaseUrl = (req) =>
+  String(process.env.BACKEND_BASE_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
+
+const buildFrontendBaseUrl = (req) => {
+  const explicitFrontendBaseUrl = String(process.env.FRONTEND_BASE_URL || '').trim();
+  if (explicitFrontendBaseUrl) return explicitFrontendBaseUrl.replace(/\/+$/, '');
+
+  const allowedOrigin = String(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)[0];
+
+  if (allowedOrigin) return allowedOrigin.replace(/\/+$/, '');
+
+  return `${req.protocol}://${req.get('host')}`;
+};
+
+const appendPaymentLog = (order, entry) => {
+  order.paymentLogs = Array.isArray(order.paymentLogs) ? order.paymentLogs : [];
+  order.paymentLogs.push({
+    gateway: entry.gateway || 'manual',
+    status: entry.status || 'initiated',
+    message: entry.message || '',
+    amount: Number(entry.amount || order.amount || 0),
+    currency: entry.currency || order.currency || DEFAULT_CURRENCY,
+    transactionReference: entry.transactionReference || '',
+    payload: entry.payload || null,
+    createdAt: entry.createdAt || new Date(),
+  });
+};
+
+const buildStudentRedirectUrl = (req, order, paymentStatus, message) => {
+  const url = new URL('/student/payments', buildFrontendBaseUrl(req));
+  url.searchParams.set('paymentStatus', paymentStatus);
+  url.searchParams.set('orderId', String(order._id));
+  if (message) {
+    url.searchParams.set('message', message);
+  }
+  return url.toString();
+};
+
+const findOrderByGatewayReference = async (req) => {
+  const orderId = String(req.body?.value_a || req.query?.value_a || '').trim();
+  const sessionKey = String(req.body?.tran_id || req.query?.tran_id || '').trim();
+
+  let order = null;
+  if (orderId) {
+    order = await ServiceOrder.findById(orderId);
+  }
+
+  if (!order && sessionKey) {
+    order = await ServiceOrder.findOne({ gatewaySessionKey: sessionKey });
+  }
+
+  return order;
+};
 
 const getMonthKey = (value = new Date()) =>
   new Intl.DateTimeFormat('en-CA', {
@@ -116,6 +179,9 @@ const getStudentServices = asyncHandler(async (req, res) => {
     recentOrders: orders.slice(0, 5),
     statuses: ORDER_STATUSES,
     paymentMethods: PAYMENT_METHODS,
+    paymentGateway: {
+      sslcommerzEnabled: SSL_GATEWAY_ENABLED,
+    },
   });
 });
 
@@ -129,6 +195,10 @@ const getStudentOrders = asyncHandler(async (req, res) => {
     items: orders,
     statuses: ORDER_STATUSES,
     paymentMethods: PAYMENT_METHODS,
+    paymentLogStatuses: PAYMENT_LOG_STATUSES,
+    paymentGateway: {
+      sslcommerzEnabled: SSL_GATEWAY_ENABLED,
+    },
   });
 });
 
@@ -150,6 +220,7 @@ const requestStudentService = asyncHandler(async (req, res) => {
     amount: service.amount,
     currency: service.currency,
     status: 'pending-payment',
+    paymentGateway: 'manual',
     adminNotes: String(notes || '').trim(),
   });
 
@@ -184,9 +255,16 @@ const submitStudentPaymentReference = asyncHandler(async (req, res) => {
 
   order.paymentMethod = paymentMethod;
   order.transactionReference = transactionReference;
+  order.paymentGateway = 'manual';
   if (order.status === 'draft') {
     order.status = 'pending-payment';
   }
+  appendPaymentLog(order, {
+    gateway: 'manual',
+    status: 'manual-submitted',
+    message: 'Student submitted a manual payment reference.',
+    transactionReference,
+  });
   await order.save();
 
   const populated = await populateOrders(ServiceOrder.findById(order._id));
@@ -198,6 +276,7 @@ const getAdminOrders = asyncHandler(async (req, res) => {
   const status = String(req.query.status || '').trim();
   const serviceType = String(req.query.serviceType || '').trim();
   const student = String(req.query.student || '').trim().toLowerCase();
+  const paymentState = String(req.query.paymentState || '').trim();
 
   const orders = await populateOrders(ServiceOrder.find({}));
   const items = orders.filter((order) => {
@@ -212,8 +291,14 @@ const getAdminOrders = asyncHandler(async (req, res) => {
       return false;
     }
     if (
+      paymentState &&
+      String(order.paymentLogs?.[order.paymentLogs.length - 1]?.status || '') !== paymentState
+    ) {
+      return false;
+    }
+    if (
       query &&
-      !`${order.studentId?.fullName || ''} ${order.studentId?.email || ''} ${order.serviceType} ${order.transactionReference || ''} ${order.adminNotes || ''}`
+      !`${order.studentId?.fullName || ''} ${order.studentId?.email || ''} ${order.serviceType} ${order.transactionReference || ''} ${order.adminNotes || ''} ${order.gatewayTransactionId || ''}`
         .toLowerCase()
         .includes(query)
     ) {
@@ -233,6 +318,10 @@ const getAdminOrders = asyncHandler(async (req, res) => {
     services: SERVICE_CATALOG,
     statuses: ORDER_STATUSES,
     paymentMethods: PAYMENT_METHODS,
+    paymentLogStatuses: PAYMENT_LOG_STATUSES,
+    paymentGateway: {
+      sslcommerzEnabled: SSL_GATEWAY_ENABLED,
+    },
   });
 });
 
@@ -277,7 +366,21 @@ const createAdminOrder = asyncHandler(async (req, res) => {
     paymentMethod: nextPaymentMethod,
     transactionReference: String(transactionReference || '').trim(),
     adminNotes: String(adminNotes || '').trim(),
+    paymentGateway: nextPaymentMethod ? 'manual' : 'manual',
   });
+
+  if (nextPaymentMethod || transactionReference) {
+    appendPaymentLog(order, {
+      gateway: 'manual',
+      status: nextStatus === 'paid' ? 'success' : 'manual-submitted',
+      message: nextStatus === 'paid' ? 'Payment marked as paid by admin.' : 'Manual payment details added by admin.',
+      transactionReference: String(transactionReference || '').trim(),
+    });
+    if (nextStatus === 'paid') {
+      order.paymentCompletedAt = new Date();
+    }
+    await order.save();
+  }
 
   const populated = await populateOrders(ServiceOrder.findById(order._id));
   res.status(201).json(populated);
@@ -315,10 +418,30 @@ const updateAdminOrder = asyncHandler(async (req, res) => {
 
   if (req.body.status !== undefined) {
     order.status = normalizeStatus(req.body.status);
+    if (order.status === 'paid') {
+      order.paymentCompletedAt = new Date();
+      appendPaymentLog(order, {
+        gateway: order.paymentGateway || 'manual',
+        status: 'success',
+        message: 'Payment marked as paid by admin.',
+        transactionReference: order.transactionReference,
+      });
+    }
+    if (order.status === 'refunded') {
+      appendPaymentLog(order, {
+        gateway: order.paymentGateway || 'manual',
+        status: 'refunded',
+        message: 'Payment marked as refunded by admin.',
+        transactionReference: order.transactionReference,
+      });
+    }
   }
 
   if (req.body.paymentMethod !== undefined) {
     order.paymentMethod = req.body.paymentMethod ? normalizePaymentMethod(req.body.paymentMethod) : '';
+    if (order.paymentMethod) {
+      order.paymentGateway = 'manual';
+    }
   }
 
   if (req.body.transactionReference !== undefined) {
@@ -335,9 +458,201 @@ const updateAdminOrder = asyncHandler(async (req, res) => {
   res.json(populated);
 });
 
+const initiateStudentGatewayPayment = asyncHandler(async (req, res) => {
+  const profile = await ensureStudentProfile(req.user);
+  const order = await ServiceOrder.findOne({
+    _id: req.params.id,
+    studentId: profile._id,
+  });
+
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found.');
+  }
+
+  if (order.status === 'paid') {
+    res.status(400);
+    throw new Error('This order is already paid.');
+  }
+
+  if (['cancelled', 'refunded'].includes(order.status)) {
+    res.status(400);
+    throw new Error('This order is not available for online payment.');
+  }
+
+  const backendBaseUrl = buildBackendBaseUrl(req).replace(/\/+$/, '');
+  const orderId = String(order._id);
+  const tranId = `abroadways-${orderId}-${Date.now()}`;
+
+  const paymentPayload = {
+    total_amount: String(order.amount),
+    currency: order.currency || DEFAULT_CURRENCY,
+    tran_id: tranId,
+    success_url: `${backendBaseUrl}/api/v1/service-orders/payment/sslcommerz/success`,
+    fail_url: `${backendBaseUrl}/api/v1/service-orders/payment/sslcommerz/fail`,
+    cancel_url: `${backendBaseUrl}/api/v1/service-orders/payment/sslcommerz/cancel`,
+    ipn_url: `${backendBaseUrl}/api/v1/service-orders/payment/sslcommerz/success`,
+    shipping_method: 'NO',
+    product_name: formatLabel(order.serviceType),
+    product_category: 'Service',
+    product_profile: 'general',
+    cus_name: profile.fullName || req.user.name || 'Student',
+    cus_email: profile.email || req.user.email || 'student@abroadways.com',
+    cus_add1: 'Dhaka',
+    cus_city: 'Dhaka',
+    cus_country: 'Bangladesh',
+    cus_phone: profile.phone || '01700000000',
+    value_a: orderId,
+    value_b: profile._id.toString(),
+    value_c: order.serviceType,
+  };
+
+  const gatewayResponse = await initiateSslPayment(paymentPayload);
+
+  if (!gatewayResponse?.GatewayPageURL) {
+    res.status(502);
+    throw new Error(gatewayResponse?.failedreason || 'Failed to initialize SSLCommerz payment.');
+  }
+
+  order.paymentGateway = 'sslcommerz';
+  order.gatewaySessionKey = tranId;
+  appendPaymentLog(order, {
+    gateway: 'sslcommerz',
+    status: 'initiated',
+    message: 'SSLCommerz payment session created.',
+    transactionReference: tranId,
+    payload: {
+      status: gatewayResponse.status,
+      sessionkey: gatewayResponse.sessionkey || '',
+    },
+  });
+  await order.save();
+
+  res.json({
+    orderId,
+    gateway: 'sslcommerz',
+    redirectUrl: gatewayResponse.GatewayPageURL,
+    sessionKey: tranId,
+  });
+});
+
+const handleGatewaySuccess = async (req, res) => {
+  const order = await findOrderByGatewayReference(req);
+
+  if (!order) {
+    return res.redirect(buildStudentRedirectUrl(req, { _id: 'unknown' }, 'failed', 'Payment order was not found.'));
+  }
+
+  const valId = String(req.body?.val_id || req.query?.val_id || '').trim();
+
+  try {
+    if (!valId) {
+      throw new Error('Missing validation reference from gateway.');
+    }
+
+    if (order.status === 'paid' && order.gatewayValidationId === valId) {
+      return res.redirect(buildStudentRedirectUrl(req, order, 'success', 'Payment already confirmed.'));
+    }
+
+    const validation = await validateSslPayment(valId);
+    const validatedAmount = Number(validation?.amount || 0);
+    const orderAmount = Number(order.amount || 0);
+    const validationStatus = String(validation?.status || '').toUpperCase();
+
+    if (validationStatus !== 'VALID' && validationStatus !== 'VALIDATED') {
+      throw new Error('Gateway validation did not confirm this payment.');
+    }
+
+    if (!Number.isFinite(validatedAmount) || validatedAmount !== orderAmount) {
+      throw new Error('Validated payment amount does not match the order amount.');
+    }
+
+    order.status = 'paid';
+    order.paymentGateway = 'sslcommerz';
+    order.paymentMethod = 'other';
+    order.gatewayValidationId = valId;
+    order.gatewayTransactionId = String(validation?.tran_id || req.body?.tran_id || req.query?.tran_id || '').trim();
+    order.transactionReference =
+      String(validation?.bank_tran_id || validation?.tran_id || req.body?.tran_id || req.query?.tran_id || '').trim();
+    order.paymentCompletedAt = new Date();
+    appendPaymentLog(order, {
+      gateway: 'sslcommerz',
+      status: 'success',
+      message: 'SSLCommerz payment validated successfully.',
+      transactionReference: order.transactionReference || order.gatewayTransactionId,
+      amount: validatedAmount,
+      currency: validation?.currency || order.currency,
+      payload: validation,
+    });
+    await order.save();
+
+    return res.redirect(buildStudentRedirectUrl(req, order, 'success', 'Payment completed successfully.'));
+  } catch (error) {
+    appendPaymentLog(order, {
+      gateway: 'sslcommerz',
+      status: 'failed',
+      message: error.message || 'Gateway validation failed.',
+      transactionReference: String(req.body?.tran_id || req.query?.tran_id || '').trim(),
+      payload: {
+        body: req.body,
+        query: req.query,
+      },
+    });
+    await order.save();
+    return res.redirect(buildStudentRedirectUrl(req, order, 'failed', error.message || 'Payment validation failed.'));
+  }
+};
+
+const paymentSuccessCallback = asyncHandler(async (req, res) => {
+  await handleGatewaySuccess(req, res);
+});
+
+const paymentFailCallback = asyncHandler(async (req, res) => {
+  const order = await findOrderByGatewayReference(req);
+  if (!order) {
+    return res.redirect(buildStudentRedirectUrl(req, { _id: 'unknown' }, 'failed', 'Payment failed.'));
+  }
+
+  appendPaymentLog(order, {
+    gateway: 'sslcommerz',
+    status: 'failed',
+    message: 'SSLCommerz reported a failed payment.',
+    transactionReference: String(req.body?.tran_id || req.query?.tran_id || '').trim(),
+    payload: {
+      body: req.body,
+      query: req.query,
+    },
+  });
+  await order.save();
+
+  return res.redirect(buildStudentRedirectUrl(req, order, 'failed', 'Payment failed or was declined.'));
+});
+
+const paymentCancelCallback = asyncHandler(async (req, res) => {
+  const order = await findOrderByGatewayReference(req);
+  if (!order) {
+    return res.redirect(buildStudentRedirectUrl(req, { _id: 'unknown' }, 'cancelled', 'Payment was cancelled.'));
+  }
+
+  appendPaymentLog(order, {
+    gateway: 'sslcommerz',
+    status: 'cancelled',
+    message: 'Student cancelled the SSLCommerz payment.',
+    transactionReference: String(req.body?.tran_id || req.query?.tran_id || '').trim(),
+    payload: {
+      body: req.body,
+      query: req.query,
+    },
+  });
+  await order.save();
+
+  return res.redirect(buildStudentRedirectUrl(req, order, 'cancelled', 'Payment was cancelled.'));
+});
+
 const getAdminOrderSummary = asyncHandler(async (req, res) => {
   const orders = await ServiceOrder.find({}).lean();
   const currentMonth = getMonthKey();
+  const pendingPayments = await populateOrders(ServiceOrder.find({ status: 'pending-payment' }));
 
   const paidOrders = orders.filter((order) => order.status === 'paid');
   const monthlyPaidOrders = paidOrders.filter((order) => getMonthKey(new Date(order.createdAt)) === currentMonth);
@@ -346,14 +661,11 @@ const getAdminOrderSummary = asyncHandler(async (req, res) => {
     summary: {
       totalOrders: orders.length,
       openOrders: orders.filter((order) => ['draft', 'pending-payment'].includes(order.status)).length,
-      pendingPayments: orders.filter((order) => order.status === 'pending-payment').length,
+    pendingPayments: orders.filter((order) => order.status === 'pending-payment').length,
       paidRevenue: paidOrders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
       monthlyRevenue: monthlyPaidOrders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
     },
-    pendingPayments: orders
-      .filter((order) => order.status === 'pending-payment')
-      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-      .slice(0, 6),
+    pendingPayments: pendingPayments.slice(0, 6),
   });
 });
 
@@ -361,10 +673,15 @@ module.exports = {
   SERVICE_CATALOG,
   ORDER_STATUSES,
   PAYMENT_METHODS,
+  PAYMENT_LOG_STATUSES,
   getStudentServices,
   getStudentOrders,
   requestStudentService,
   submitStudentPaymentReference,
+  initiateStudentGatewayPayment,
+  paymentSuccessCallback,
+  paymentFailCallback,
+  paymentCancelCallback,
   getAdminOrders,
   createAdminOrder,
   updateAdminOrder,

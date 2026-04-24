@@ -52,6 +52,71 @@ const serviceOrderSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    paymentGateway: {
+      type: String,
+      trim: true,
+      default: 'manual',
+    },
+    gatewaySessionKey: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    gatewayValidationId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    gatewayTransactionId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    paymentCompletedAt: {
+      type: Date,
+      default: null,
+    },
+    paymentLogs: [
+      {
+        gateway: {
+          type: String,
+          trim: true,
+          default: 'manual',
+        },
+        status: {
+          type: String,
+          trim: true,
+          default: 'initiated',
+        },
+        message: {
+          type: String,
+          trim: true,
+          default: '',
+        },
+        amount: {
+          type: Number,
+          default: 0,
+        },
+        currency: {
+          type: String,
+          trim: true,
+          default: 'BDT',
+        },
+        transactionReference: {
+          type: String,
+          trim: true,
+          default: '',
+        },
+        payload: {
+          type: mongoose.Schema.Types.Mixed,
+          default: null,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

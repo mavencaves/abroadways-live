@@ -215,6 +215,7 @@ export const serviceOrdersApi = {
   getStudentOrders: () => apiClient.get("/service-orders/student/orders", { params: noCacheParams() }),
   requestStudentService: (payload: { serviceType: string; notes?: string }) =>
     apiClient.post("/service-orders/student/orders", payload),
+  initiateStudentPayment: (id: string) => apiClient.post(`/service-orders/student/orders/${id}/pay`),
   submitStudentPaymentReference: (
     id: string,
     payload: { paymentMethod: string; transactionReference: string }

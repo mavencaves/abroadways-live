@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 type OrderStatus = "draft" | "pending-payment" | "paid" | "cancelled" | "refunded";
+type PaymentState = "initiated" | "success" | "failed" | "cancelled" | "manual-submitted" | "refunded";
 
 type PaymentOrder = {
   _id: string;
@@ -18,8 +19,17 @@ type PaymentOrder = {
   status: OrderStatus;
   paymentMethod?: string;
   transactionReference?: string;
+  gatewayTransactionId?: string;
+  paymentGateway?: string;
   adminNotes?: string;
   createdAt?: string;
+  paymentLogs?: Array<{
+    status: PaymentState;
+    gateway?: string;
+    message?: string;
+    transactionReference?: string;
+    createdAt?: string;
+  }>;
   studentId?: {
     fullName?: string;
     email?: string;
@@ -66,6 +76,8 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentStateFilter, setPaymentStateFilter] = useState("all");
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -80,7 +92,8 @@ export default function PaymentsPage() {
       const [ordersResponse, summaryResponse] = await Promise.all([
         serviceOrdersApi.getAdminOrders({
           q: searchTerm.trim() || undefined,
-          status: "pending-payment",
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          paymentState: paymentStateFilter !== "all" ? paymentStateFilter : undefined,
         }),
         serviceOrdersApi.getAdminSummary(),
       ]);
@@ -103,10 +116,13 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     loadData();
-  }, [canManagePayments, searchTerm]);
+  }, [canManagePayments, searchTerm, statusFilter, paymentStateFilter]);
 
   const pendingTotal = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    () =>
+      items
+        .filter((item) => item.status === "pending-payment")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0),
     [items]
   );
 
@@ -116,7 +132,7 @@ export default function PaymentsPage() {
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Payments</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Payments</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">Track pending payments, revenue, and manual payment verification.</p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">Track pending payments, revenue, and gateway activity from one place.</p>
         </div>
         <Card><CardContent className="space-y-4 p-8"><div className="flex items-center gap-3 text-amber-700"><ShieldCheck className="h-5 w-5" /><p className="text-sm font-medium">Only admin and content-manager accounts can manage payments.</p></div></CardContent></Card>
       </div>
@@ -129,7 +145,7 @@ export default function PaymentsPage() {
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Payments</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Payments</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">Review pending references, mark payments as paid, and track revenue at a glance.</p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">Review SSLCommerz and manual payment activity, verify paid orders, and monitor revenue.</p>
         </div>
       </div>
 
@@ -142,8 +158,20 @@ export default function PaymentsPage() {
 
       <Card>
         <CardContent className="space-y-4 p-5">
-          <div className="grid gap-4 xl:grid-cols-[1fr_auto]">
+          <div className="grid gap-4 xl:grid-cols-[1fr_200px_220px_auto]">
             <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search by student, service, reference, or notes" />
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="all">All order statuses</option>
+              {["draft", "pending-payment", "paid", "cancelled", "refunded"].map((status) => (
+                <option key={status} value={status}>{formatLabel(status)}</option>
+              ))}
+            </select>
+            <select value={paymentStateFilter} onChange={(event) => setPaymentStateFilter(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="all">All payment states</option>
+              {["initiated", "success", "failed", "cancelled", "manual-submitted", "refunded"].map((status) => (
+                <option key={status} value={status}>{formatLabel(status)}</option>
+              ))}
+            </select>
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
               Pending total: <span className="font-semibold">{formatCurrency(pendingTotal)}</span>
             </div>
@@ -156,7 +184,7 @@ export default function PaymentsPage() {
       ) : loadError ? (
         <Card><CardContent className="space-y-4 p-8"><p className="text-sm font-medium text-red-600">{loadError}</p><Button onClick={loadData}>Try Again</Button></CardContent></Card>
       ) : items.length === 0 ? (
-        <Card><CardContent className="p-10 text-center text-slate-500">No pending payments found.</CardContent></Card>
+        <Card><CardContent className="p-10 text-center text-slate-500">No payments matched the current filters.</CardContent></Card>
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
@@ -176,27 +204,59 @@ export default function PaymentsPage() {
                 <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
                   <p><span className="font-medium text-slate-900">Payment method:</span> {item.paymentMethod ? formatLabel(item.paymentMethod) : "Not submitted"}</p>
                   <p><span className="font-medium text-slate-900">Reference:</span> {item.transactionReference || "Not submitted"}</p>
+                  <p><span className="font-medium text-slate-900">Gateway transaction:</span> {item.gatewayTransactionId || "Not available"}</p>
+                  <p><span className="font-medium text-slate-900">Gateway:</span> {formatLabel(item.paymentGateway || "manual")}</p>
                   <p className="md:col-span-2"><span className="font-medium text-slate-900">Internal notes:</span> {item.adminNotes || "No internal notes yet."}</p>
                 </div>
 
+                {item.paymentLogs?.length ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-900">Transaction history</p>
+                    <div className="mt-3 space-y-2">
+                      {[...item.paymentLogs].slice(-3).reverse().map((log, index) => (
+                        <div key={`${item._id}-log-${index}`} className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
+                          <p className="font-medium text-slate-900">
+                            {formatLabel(log.status)} via {formatLabel(log.gateway || "manual")}
+                          </p>
+                          <p>{log.message || "Payment activity recorded."}</p>
+                          <p className="text-xs text-slate-500">
+                            {log.transactionReference || "No transaction reference"} •{" "}
+                            {log.createdAt
+                              ? new Date(log.createdAt).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })
+                              : "Recent activity"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button
-                    disabled={savingId === item._id}
-                    onClick={async () => {
-                      try {
-                        setSavingId(item._id);
-                        await serviceOrdersApi.updateAdminOrder(item._id, { status: "paid" });
-                        toast.success("Payment marked as paid.");
-                        await loadData();
-                      } catch (error: any) {
-                        toast.error(error?.response?.data?.message || "Failed to update payment status.");
-                      } finally {
-                        setSavingId(null);
-                      }
-                    }}
-                  >
-                    {savingId === item._id ? "Updating..." : "Mark as paid"}
-                  </Button>
+                  {item.status !== "paid" ? (
+                    <Button
+                      disabled={savingId === item._id}
+                      onClick={async () => {
+                        try {
+                          setSavingId(item._id);
+                          await serviceOrdersApi.updateAdminOrder(item._id, { status: "paid" });
+                          toast.success("Payment marked as paid.");
+                          await loadData();
+                        } catch (error: any) {
+                          toast.error(error?.response?.data?.message || "Failed to update payment status.");
+                        } finally {
+                          setSavingId(null);
+                        }
+                      }}
+                    >
+                      {savingId === item._id ? "Updating..." : "Mark as paid"}
+                    </Button>
+                  ) : null}
                   <Button
                     variant="outline"
                     disabled={savingId === item._id}
