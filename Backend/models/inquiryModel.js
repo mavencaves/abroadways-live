@@ -56,7 +56,7 @@ const inquiryCommunicationSchema = new mongoose.Schema(
     templateName: { type: String, trim: true, default: '' },
     actionType: {
       type: String,
-      enum: ['copied', 'opened', 'sent-manually'],
+      enum: ['copied', 'opened', 'sent-manually', 'sent'],
       required: true,
     },
     subject: { type: String, trim: true, default: '' },

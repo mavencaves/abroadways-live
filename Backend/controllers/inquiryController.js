@@ -5,6 +5,13 @@ const User = require('../models/userModel');
 const Blog = require('../models/blogModel');
 const Event = require('../models/eventModel');
 const { createNotification } = require('../lib/notifications');
+const {
+  buildActorMeta,
+  createCommunicationLog,
+  logWhatsAppAction,
+  renderTemplateContent,
+  sendEmailWithLogging,
+} = require('../lib/communicationService');
 
 const allowedStatuses = ['new', 'contacted', 'follow-up', 'qualified', 'closed', 'lost'];
 const assignableRoles = ['admin', 'content-manager'];
@@ -12,12 +19,6 @@ const taskStatuses = ['pending', 'in-progress', 'completed', 'cancelled'];
 const autoAssignableSources = ['homepage-consultation', 'contact-page'];
 const openLeadStatuses = ['new', 'contacted', 'follow-up', 'qualified'];
 const staleLeadDays = 5;
-
-const buildActorMeta = (user) => ({
-  createdBy: user?._id || null,
-  createdByName: user?.name || '',
-  createdByRole: user?.role || '',
-});
 
 const populateInquiryRelations = (query) =>
   query
@@ -122,13 +123,7 @@ const renderTemplate = (template, inquiry, user) => {
     assignedStaff: inquiry.assignedTo?.name || user?.name || 'Abroadways team',
   };
 
-  const fill = (text) =>
-    String(text || '').replace(/\{\{(\w+)\}\}/g, (_, key) => replacements[key] || '');
-
-  return {
-    subject: fill(template.subject),
-    body: fill(template.body),
-  };
+  return renderTemplateContent(template, replacements);
 };
 
 const buildNotificationsPayload = (inquiries, referenceDate = new Date()) => {
@@ -884,7 +879,7 @@ const updateInquiry = asyncHandler(async (req, res) => {
       throw new Error('Invalid communication channel.');
     }
 
-    if (!['copied', 'opened', 'sent-manually'].includes(actionType)) {
+    if (!['copied', 'opened', 'sent-manually', 'sent'].includes(actionType)) {
       res.status(400);
       throw new Error('Invalid communication action type.');
     }
@@ -923,6 +918,36 @@ const updateInquiry = asyncHandler(async (req, res) => {
         templateName: template?.name || '',
       },
     });
+
+    if (channel === 'whatsapp') {
+      await logWhatsAppAction({
+        recipient: inquiry.phone || inquiry.name,
+        body: renderedBody,
+        status: actionType,
+        templateId: template?._id || null,
+        templateName: template?.name || toTrimmedString(communicationAction.templateName),
+        relatedInquiry: inquiry._id,
+        actor: req.user,
+        metadata: {
+          source: 'inquiry-detail',
+        },
+      });
+    } else {
+      await createCommunicationLog({
+        recipient: inquiry.email || inquiry.name,
+        channel: 'email',
+        subject: renderedSubject,
+        body: renderedBody,
+        status: actionType,
+        templateId: template?._id || null,
+        templateName: template?.name || toTrimmedString(communicationAction.templateName),
+        relatedInquiry: inquiry._id,
+        actor: req.user,
+        metadata: {
+          source: 'inquiry-detail',
+        },
+      });
+    }
   }
 
   inquiry.nextSuggestedAction = deriveNextSuggestedAction({
@@ -940,6 +965,77 @@ const updateInquiry = asyncHandler(async (req, res) => {
   res.json(updatedInquiry);
 });
 
+const sendInquiryEmail = asyncHandler(async (req, res) => {
+  const inquiry = await populateInquiryRelations(Inquiry.findById(req.params.id));
+
+  if (!inquiry) {
+    res.status(404);
+    throw new Error('Inquiry not found');
+  }
+
+  if (!inquiry.email) {
+    res.status(400);
+    throw new Error('This inquiry does not have an email address.');
+  }
+
+  const templateId = toTrimmedString(req.body.templateId);
+  const template = await InquiryTemplate.findById(templateId);
+
+  if (!template || template.channel !== 'email' || !template.isActive) {
+    res.status(400);
+    throw new Error('Please choose an active email template.');
+  }
+
+  const prepared = renderTemplate(template, inquiry, req.user);
+
+  if (!prepared.subject || !prepared.body) {
+    res.status(400);
+    throw new Error('The selected template could not be rendered.');
+  }
+
+  await sendEmailWithLogging({
+    to: inquiry.email,
+    subject: prepared.subject,
+    body: prepared.body,
+    templateId: template._id,
+    templateName: template.name,
+    relatedInquiry: inquiry._id,
+    actor: req.user,
+    failSilently: false,
+    metadata: {
+      source: 'inquiry-detail-send',
+    },
+  });
+
+  inquiry.communications.push({
+    channel: 'email',
+    templateId: template._id,
+    templateKey: String(template._id),
+    templateName: template.name,
+    actionType: 'sent',
+    subject: prepared.subject,
+    bodyPreview: prepared.body.slice(0, 240),
+    ...buildActorMeta(req.user),
+  });
+  inquiry.lastContactedAt = new Date();
+  inquiry.lastContactChannel = 'email';
+  inquiry.activity.push({
+    type: 'template',
+    message: `Email sent using template: ${template.name}.`,
+    ...buildActorMeta(req.user),
+    meta: {
+      channel: 'email',
+      actionType: 'sent',
+      templateId: template._id,
+      templateName: template.name,
+    },
+  });
+  await inquiry.save();
+
+  const updatedInquiry = await populateInquiryRelations(Inquiry.findById(inquiry._id));
+  res.json(updatedInquiry);
+});
+
 module.exports = {
   createInquiry,
   getInquiries,
@@ -950,4 +1046,5 @@ module.exports = {
   getInquiryDashboardAnalytics,
   renderTemplate,
   updateInquiry,
+  sendInquiryEmail,
 };

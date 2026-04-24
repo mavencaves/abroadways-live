@@ -68,7 +68,7 @@ type InquiryCommunication = {
   } | null;
   templateKey?: string;
   templateName?: string;
-  actionType: "copied" | "opened" | "sent-manually";
+  actionType: "copied" | "opened" | "sent-manually" | "sent";
   subject?: string;
   bodyPreview?: string;
   createdAt: string;
@@ -1346,6 +1346,29 @@ export default function InquiriesPage() {
                               </p>
                             </div>
                           ) : null}
+                          <Button
+                            className="w-full gap-2"
+                            disabled={!selectedInquiry.email || !selectedEmailTemplateData || savingId === selectedInquiry._id}
+                            onClick={async () => {
+                              if (!selectedInquiry.email || !selectedEmailTemplateData) return;
+                              try {
+                                setSavingId(selectedInquiry._id);
+                                const response = await inquiriesApi.sendEmail(selectedInquiry._id, {
+                                  templateId: selectedEmailTemplateData._id,
+                                });
+                                await refreshWithUpdatedInquiry(response.data);
+                                setSelectedInquiryId(response.data._id);
+                                toast.success("Email sent successfully.");
+                              } catch (error: any) {
+                                toast.error(error?.response?.data?.message || "Failed to send email.");
+                              } finally {
+                                setSavingId(null);
+                              }
+                            }}
+                          >
+                            <Mail className="h-4 w-4" />
+                            Send Email
+                          </Button>
                           <Button
                             variant="outline"
                             className="w-full gap-2"

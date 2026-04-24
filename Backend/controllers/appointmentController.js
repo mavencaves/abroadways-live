@@ -3,6 +3,7 @@ const Appointment = require('../models/appointmentModel');
 const StudentProfile = require('../models/studentProfileModel');
 const User = require('../models/userModel');
 const { createNotification } = require('../lib/notifications');
+const { sendEmailWithLogging } = require('../lib/communicationService');
 
 const APPOINTMENT_SLOTS = ['10:00', '11:00', '12:00', '14:00', '15:00', '16:00'];
 const APPOINTMENT_STATUSES = ['requested', 'confirmed', 'completed', 'cancelled', 'no-show'];
@@ -303,6 +304,18 @@ const createStudentAppointment = asyncHandler(async (req, res) => {
     });
   }
 
+  await sendEmailWithLogging({
+    to: profile.email || req.user.email,
+    subject: 'Appointment request received',
+    body: `Hello ${profile.fullName || req.user.name || 'Student'},\n\nYour appointment request for ${date} at ${time} (${formatLabel(type)}) has been received by Abroadways. We will confirm it shortly.\n\nRegards,\nAbroadways`,
+    relatedAppointment: appointment._id,
+    relatedStudentProfile: profile._id,
+    actor: req.user,
+    metadata: {
+      trigger: 'appointment-requested',
+    },
+  });
+
   const populatedAppointment = await populateAppointmentQuery(
     Appointment.findById(appointment._id)
   );
@@ -344,6 +357,18 @@ const cancelStudentAppointment = asyncHandler(async (req, res) => {
       },
     });
   }
+
+  await sendEmailWithLogging({
+    to: profile.email || req.user.email,
+    subject: 'Appointment cancelled',
+    body: `Hello ${profile.fullName || req.user.name || 'Student'},\n\nYour appointment scheduled for ${appointment.date} at ${appointment.time} has been cancelled.\n\nRegards,\nAbroadways`,
+    relatedAppointment: appointment._id,
+    relatedStudentProfile: profile._id,
+    actor: req.user,
+    metadata: {
+      trigger: 'appointment-cancelled',
+    },
+  });
 
   const populatedAppointment = await populateAppointmentQuery(
     Appointment.findById(appointment._id)
@@ -500,6 +525,18 @@ const updateAdminAppointment = asyncHandler(async (req, res) => {
       metadata: {
         appointmentId: appointment._id,
         status: nextStatus,
+      },
+    });
+
+    await sendEmailWithLogging({
+      to: studentProfile?.email || '',
+      subject: title,
+      body: `Hello ${studentProfile?.fullName || 'Student'},\n\n${message}\n\nRegards,\nAbroadways`,
+      relatedAppointment: appointment._id,
+      relatedStudentProfile: appointment.studentId,
+      actor: req.user,
+      metadata: {
+        trigger: type,
       },
     });
   }

@@ -4,6 +4,7 @@ const Inquiry = require('../models/inquiryModel');
 const Appointment = require('../models/appointmentModel');
 const { cloudinary, isCloudinaryConfigured } = require('../lib/cloudinary');
 const { createNotification } = require('../lib/notifications');
+const { sendEmailWithLogging } = require('../lib/communicationService');
 
 const applicationStages = [
   'profile-submitted',
@@ -711,6 +712,19 @@ const reviewStudentDocument = asyncHandler(async (req, res) => {
       metadata: {
         documentId: document._id,
         profileId: profile._id,
+      },
+    });
+
+    await sendEmailWithLogging({
+      to: profile.email || profile.user?.email || '',
+      subject: titleMap[status],
+      body: `Hello ${profile.fullName || 'Student'},\n\n${messageMap[status]}${document.reviewNotes ? `\n\nReview notes:\n${document.reviewNotes}` : ''}\n\nRegards,\nAbroadways`,
+      relatedStudentProfile: profile._id,
+      relatedDocumentId: String(document._id),
+      actor: req.user,
+      metadata: {
+        trigger: `document-${status}`,
+        documentTitle: document.title,
       },
     });
   }

@@ -9,6 +9,7 @@ const {
   getInquiryNotifications,
   getInquiryTemplates,
   updateInquiry,
+  sendInquiryEmail,
 } = require('../controllers/inquiryController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
@@ -40,5 +41,9 @@ router
 router
   .route('/:id')
   .patch(protect, restrictTo('admin', 'content-manager'), updateInquiry);
+
+router
+  .route('/:id/send-email')
+  .post(protect, restrictTo('admin', 'content-manager'), sendInquiryEmail);
 
 module.exports = router;

@@ -132,7 +132,7 @@ export const inquiriesApi = {
       };
       communicationAction?: {
         channel: "email" | "whatsapp";
-        actionType: "copied" | "opened" | "sent-manually";
+        actionType: "copied" | "opened" | "sent-manually" | "sent";
         templateId?: string;
         templateName?: string;
         renderedSubject?: string;
@@ -141,6 +141,8 @@ export const inquiriesApi = {
     }
   ) =>
     apiClient.patch(`/inquiries/${id}`, data),
+  sendEmail: (id: string, data: { templateId: string }) =>
+    apiClient.post(`/inquiries/${id}/send-email`, data),
 };
 
 export const inquiryTemplatesApi = {

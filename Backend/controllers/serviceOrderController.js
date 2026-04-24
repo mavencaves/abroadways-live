@@ -4,6 +4,7 @@ const StudentProfile = require('../models/studentProfileModel');
 const User = require('../models/userModel');
 const { initiateSslPayment, validateSslPayment } = require('../lib/sslcommerz');
 const { createNotification, notifyAdmins, notifyStudentProfile } = require('../lib/notifications');
+const { sendEmailWithLogging } = require('../lib/communicationService');
 
 const ORDER_STATUSES = ['draft', 'pending-payment', 'paid', 'cancelled', 'refunded'];
 const PAYMENT_METHODS = ['bank-transfer', 'cash', 'bkash', 'nagad', 'rocket', 'other'];
@@ -98,11 +99,11 @@ const findOrderByGatewayReference = async (req) => {
 
   let order = null;
   if (orderId) {
-    order = await ServiceOrder.findById(orderId);
+    order = await ServiceOrder.findById(orderId).populate('studentId', 'fullName email user');
   }
 
   if (!order && sessionKey) {
-    order = await ServiceOrder.findOne({ gatewaySessionKey: sessionKey });
+    order = await ServiceOrder.findOne({ gatewaySessionKey: sessionKey }).populate('studentId', 'fullName email user');
   }
 
   return order;
@@ -238,6 +239,17 @@ const requestStudentService = asyncHandler(async (req, res) => {
       metadata: {
         orderId: order._id,
         serviceType: service.serviceType,
+      },
+    }),
+    sendEmailWithLogging({
+      to: profile.email || req.user.email,
+      subject: 'Service order created',
+      body: `Hello ${profile.fullName || req.user.name || 'Student'},\n\n${service.name} has been added to your account for ${service.amount} ${service.currency}. You can now complete payment from your student portal.\n\nRegards,\nAbroadways`,
+      relatedOrder: order._id,
+      relatedStudentProfile: profile._id,
+      actor: req.user,
+      metadata: {
+        trigger: 'order-created',
       },
     }),
     notifyAdmins({
@@ -426,6 +438,18 @@ const createAdminOrder = asyncHandler(async (req, res) => {
     },
   });
 
+  await sendEmailWithLogging({
+    to: student.email || '',
+    subject: 'New service order',
+    body: `Hello ${student.fullName || 'Student'},\n\n${service.name} has been created for your account. The current order status is ${formatLabel(order.status)}.\n\nRegards,\nAbroadways`,
+    relatedOrder: order._id,
+    relatedStudentProfile: student._id,
+    actor: req.user,
+    metadata: {
+      trigger: 'order-created-admin',
+    },
+  });
+
   res.status(201).json(populated);
 });
 
@@ -510,6 +534,20 @@ const updateAdminOrder = asyncHandler(async (req, res) => {
       eventKey: `order:${order._id}:status:${order.status}:${order.updatedAt?.toISOString?.() || Date.now()}`,
       metadata: {
         orderId: order._id,
+        status: order.status,
+      },
+    });
+
+    const studentProfile = await StudentProfile.findById(order.studentId).select('fullName email').lean();
+    await sendEmailWithLogging({
+      to: studentProfile?.email || '',
+      subject: 'Order status updated',
+      body: `Hello ${studentProfile?.fullName || 'Student'},\n\nYour ${formatLabel(order.serviceType)} order is now ${formatLabel(order.status)}.\n\nRegards,\nAbroadways`,
+      relatedOrder: order._id,
+      relatedStudentProfile: order.studentId,
+      actor: req.user,
+      metadata: {
+        trigger: 'order-status-updated',
         status: order.status,
       },
     });
@@ -659,6 +697,16 @@ const handleGatewaySuccess = async (req, res) => {
           validationId: valId,
         },
       }),
+      sendEmailWithLogging({
+        to: order.studentId?.email || '',
+        subject: 'Payment received',
+        body: `Hello ${order.studentId?.fullName || 'Student'},\n\nWe have received your payment for ${formatLabel(order.serviceType)} successfully.\n\nRegards,\nAbroadways`,
+        relatedOrder: order._id,
+        relatedStudentProfile: order.studentId?._id || order.studentId,
+        metadata: {
+          trigger: 'payment-success',
+        },
+      }),
       notifyAdmins({
         type: 'payment-paid',
         title: 'Payment received',
@@ -696,6 +744,16 @@ const handleGatewaySuccess = async (req, res) => {
         eventKey: `order:${order._id}:payment-failed:${valId || Date.now()}`,
         metadata: {
           orderId: order._id,
+        },
+      }),
+      sendEmailWithLogging({
+        to: order.studentId?.email || '',
+        subject: 'Payment failed',
+        body: `Hello ${order.studentId?.fullName || 'Student'},\n\nYour payment for ${formatLabel(order.serviceType)} could not be completed. Please try again or use the manual payment fallback.\n\nRegards,\nAbroadways`,
+        relatedOrder: order._id,
+        relatedStudentProfile: order.studentId?._id || order.studentId,
+        metadata: {
+          trigger: 'payment-failed',
         },
       }),
       notifyAdmins({
@@ -746,6 +804,16 @@ const paymentFailCallback = asyncHandler(async (req, res) => {
       eventKey: `order:${order._id}:payment-failed-callback:${Date.now()}`,
       metadata: {
         orderId: order._id,
+      },
+    }),
+    sendEmailWithLogging({
+      to: order.studentId?.email || '',
+      subject: 'Payment failed',
+      body: `Hello ${order.studentId?.fullName || 'Student'},\n\nYour payment for ${formatLabel(order.serviceType)} failed or was declined. Please try again or use the manual payment option.\n\nRegards,\nAbroadways`,
+      relatedOrder: order._id,
+      relatedStudentProfile: order.studentId?._id || order.studentId,
+      metadata: {
+        trigger: 'payment-failed-callback',
       },
     }),
     notifyAdmins({
