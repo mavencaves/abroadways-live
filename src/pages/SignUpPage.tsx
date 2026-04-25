@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import GoogleIcon from "@/components/google-icon";
 import FacebookIcon from "@/components/facebook-icon";
@@ -19,17 +19,59 @@ export default function SignUpPage() {
     const [password, setPassword] = useState("");
     const [agree, setAgree] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const { register } = useAuth();
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const { register, token, user, isLoading } = useAuth();
     const navigate = useNavigate();
+    const getDefaultRouteForRole = (role?: string) => {
+        if (role === "user") return "/student/dashboard";
+        if (role === "admin" || role === "content-manager") return "/dashboard";
+        return "/";
+    };
+
+    useEffect(() => {
+        if (!isLoading && token && user) {
+            navigate(getDefaultRouteForRole(user.role), { replace: true });
+        }
+    }, [isLoading, navigate, token, user]);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (submitting) return;
+        setErrorMessage(null);
+
+        if (!name.trim()) {
+            setErrorMessage("Please provide your full name.");
+            return;
+        }
+
+        if (!email.trim()) {
+            setErrorMessage("Please provide your email address.");
+            return;
+        }
+
+        if (password.trim().length < 8) {
+            setErrorMessage("Please create a password with at least 8 characters.");
+            return;
+        }
+
+        if (!agree) {
+            setErrorMessage("Please accept the terms to continue.");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            if (!agree) return;
-            const nextUser = await register(name, email, password);
-            navigate(nextUser.role === "user" ? "/student/dashboard" : "/dashboard", { replace: true });
+            const nextUser = await register(name.trim(), email.trim(), password);
+            navigate(getDefaultRouteForRole(nextUser.role), { replace: true });
+        } catch (error: any) {
+            const status = error?.response?.status;
+            const message =
+                status === 400
+                    ? error?.response?.data?.message || "This email is already in use or the details are invalid."
+                    : error?.code === "ERR_NETWORK"
+                        ? "Cannot reach the authentication server right now. Please try again in a moment."
+                        : error?.response?.data?.message || error?.message || "Signup failed. Please try again.";
+            setErrorMessage(message);
         } finally {
             setSubmitting(false);
         }
@@ -121,6 +163,11 @@ export default function SignUpPage() {
                     <Button type="submit" className="h-12 w-full text-base font-semibold text-white" disabled={submitting || !agree}>
                         {submitting ? "Creating Account..." : "Create Account"}
                     </Button>
+                    {errorMessage ? (
+                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {errorMessage}
+                        </div>
+                    ) : null}
                 </form>
 
                 <div className="flex items-center">

@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import {Navigate, Route, Routes, useLocation} from "react-router";
 import PublicLayout from "./layout/PublicLayout";
 import {
@@ -6,7 +7,6 @@ import {
     HomePage,
     IeltsBooksPage,
     ExamsPage,
-    MavenCaveAi,
     SOP,
     VisaPredictor,
     IeltsOverviewPage,
@@ -137,8 +137,22 @@ import OrdersPage from "@/pages/dashboard/admin/OrdersPage.tsx";
 import PaymentsPage from "@/pages/dashboard/admin/PaymentsPage.tsx";
 import NotificationsPage from "@/pages/dashboard/admin/NotificationsPage.tsx";
 import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage.tsx";
-import StudentAbroadAiPage from "@/pages/student/StudentAbroadAiPage.tsx";
-import AiMonitoringPage from "@/pages/dashboard/admin/AiMonitoringPage.tsx";
+
+const MavenCaveAi = lazy(() => import("@/pages/MavenCaveAi.tsx"));
+const StudentAbroadAiPage = lazy(() => import("@/pages/student/StudentAbroadAiPage.tsx"));
+const AiMonitoringPage = lazy(() => import("@/pages/dashboard/admin/AiMonitoringPage.tsx"));
+
+const withLazyPage = (element: ReactNode) => (
+    <Suspense
+        fallback={
+            <div className="flex min-h-[40vh] items-center justify-center px-6 text-sm text-slate-600">
+                Loading page...
+            </div>
+        }
+    >
+        {element}
+    </Suspense>
+);
 
 function getLegacyExamRedirect(pathname: string) {
     const normalizedPath = pathname.toLowerCase();
@@ -242,9 +256,9 @@ function App() {
                 {/*<Route path={"/study-abroad/usa/cities/new-york"} element={<StudyAbroad/>}/>*/}
                 <Route path={"/study-abroad/:country/cities/:city"} element={<TopUniversities/>}/>
                 <Route path={"study-abroad/:country/courses/:course"} element={<MastersTopCourses/>}/>
-                <Route path={"abroadai"} element={<MavenCaveAi/>}/>
-                <Route path={"abroadways-ai"} element={<MavenCaveAi/>}/>
-                <Route path={"mavencave-ai"} element={<MavenCaveAi/>}/>
+                <Route path={"abroadai"} element={withLazyPage(<MavenCaveAi/>)} />
+                <Route path={"abroadways-ai"} element={withLazyPage(<MavenCaveAi/>)} />
+                <Route path={"mavencave-ai"} element={withLazyPage(<MavenCaveAi/>)} />
                 <Route path={"study-abroad/exams"} element={<LegacyExamAliasRedirect/>}/>
                 <Route path={"study-abroad/exams/*"} element={<LegacyExamAliasRedirect/>}/>
                 <Route path={"resources/sop"} element={<SOP/>}/>
@@ -364,7 +378,9 @@ function App() {
             <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
             <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
                 <Route index element={<DashboardOverview/>}/>
-                <Route path={"users"} element={<UsersPage/>}/>
+                <Route element={<ProtectedRoute requiredRoles={['admin']}/>}>
+                    <Route path={"users"} element={<UsersPage/>}/>
+                </Route>
                 <Route path={"blogs"} element={<BlogsPage/>}/>
                 <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
                 <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
@@ -373,7 +389,7 @@ function App() {
                 <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
                 <Route path={"appointments"} element={<AppointmentsPage/>}/>
                 <Route path={"notifications"} element={<NotificationsPage/>}/>
-                <Route path={"ai"} element={<AiMonitoringPage/>}/>
+                <Route path={"ai"} element={withLazyPage(<AiMonitoringPage/>)} />
                 <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
                 <Route path={"orders"} element={<OrdersPage/>}/>
                 <Route path={"payments"} element={<PaymentsPage/>}/>
@@ -388,7 +404,7 @@ function App() {
                     <Route index element={<Navigate to="/student/dashboard" replace/>}/>
                     <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
                     <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
-                    <Route path={"abroadai"} element={<StudentAbroadAiPage/>}/>
+                    <Route path={"abroadai"} element={withLazyPage(<StudentAbroadAiPage/>)} />
                     <Route path={"ai"} element={<Navigate to="/student/abroadai" replace/>}/>
                     <Route path={"profile"} element={<StudentProfilePage/>}/>
                     <Route path={"applications"} element={<StudentApplicationsPage/>}/>

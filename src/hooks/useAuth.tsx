@@ -10,6 +10,7 @@ type User = {
 
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_USER_KEY = "auth_user";
+const AUTH_EXPIRED_EVENT = "abroadways:auth-expired";
 
 const persistAuthState = (token: string | null, user: User | null) => {
   if (token) {
@@ -72,6 +73,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         persistAuthState(null, null);
       })
       .finally(() => setIsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      persistAuthState(null, null);
+      setToken(null);
+      setUser(null);
+      setIsLoading(false);
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

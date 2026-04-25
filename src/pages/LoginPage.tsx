@@ -4,10 +4,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { authDebug, getOAuthUrl } from "@/lib/api";
+import { getOAuthUrl } from "@/lib/api";
 import GoogleIcon from "@/components/google-icon";
 import FacebookIcon from "@/components/facebook-icon";
 
@@ -21,25 +21,21 @@ export default function SignInPage() {
     const navigate = useNavigate();
     const location = useLocation() as any;
     const from = location.state?.from?.pathname || null;
-    const getDefaultRouteForRole = (role?: string) => (role === "user" ? "/student/dashboard" : "/dashboard");
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
-    const debugState = useMemo(
-        () => ({
-            apiBaseUrl: authDebug.apiBaseUrl,
-            loginEndpoint: authDebug.loginEndpoint,
-            hasToken: Boolean(token || (typeof window !== "undefined" && localStorage.getItem("auth_token"))),
-            hasCurrentUser: Boolean(user || storedUser),
-            loading: submitting || isLoading,
-            error: errorMessage ?? "none",
-        }),
-        [errorMessage, isLoading, storedUser, submitting, token, user]
-    );
+    const getDefaultRouteForRole = (role?: string) => {
+        if (role === "user") return "/student/dashboard";
+        if (role === "admin" || role === "content-manager") return "/dashboard";
+        return "/";
+    };
+    const canAccessPathForRole = (role: string | undefined, pathname: string | null) => {
+        if (!pathname) return false;
+        if (pathname.startsWith("/student")) return role === "user";
+        if (pathname.startsWith("/dashboard")) return role === "admin" || role === "content-manager";
+        return false;
+    };
 
     useEffect(() => {
         if (!isLoading && token && user) {
-            const target = from && (from.startsWith("/dashboard") || from.startsWith("/student"))
-                ? from
-                : getDefaultRouteForRole(user.role);
+            const target = canAccessPathForRole(user.role, from) ? from : getDefaultRouteForRole(user.role);
             navigate(target, { replace: true });
         }
     }, [from, isLoading, navigate, token, user]);
@@ -57,10 +53,7 @@ export default function SignInPage() {
         setSubmitting(true);
         try {
             const nextUser = await login(email.trim(), password);
-            const target =
-                from && (from.startsWith("/dashboard") || from.startsWith("/student"))
-                    ? from
-                    : getDefaultRouteForRole(nextUser.role);
+            const target = canAccessPathForRole(nextUser.role, from) ? from : getDefaultRouteForRole(nextUser.role);
             navigate(target, { replace: true });
         } catch (error: any) {
             const status = error?.response?.status;
@@ -109,8 +102,10 @@ export default function SignInPage() {
                             <Label htmlFor="password" className="font-medium text-slate-800">
                                 Password
                             </Label>
-                            <Button type="button" variant="link" className="h-auto p-0 text-sm text-blue-700 hover:text-blue-800">
-                                Forgot password?
+                            <Button asChild type="button" variant="link" className="h-auto p-0 text-sm text-blue-700 hover:text-blue-800">
+                                <a href="mailto:info@abroadways.com.bd?subject=Password%20Reset%20Support">
+                                    Forgot password?
+                                </a>
                             </Button>
                         </div>
                         <div className="relative">
@@ -179,16 +174,6 @@ export default function SignInPage() {
                         <Link to="/signup">Create an account</Link>
                     </Button>
                 </p>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-600">
-                    <p className="font-semibold text-slate-900">Temporary Auth Debug</p>
-                    <p><span className="font-medium">API base URL:</span> {debugState.apiBaseUrl}</p>
-                    <p><span className="font-medium">Login endpoint:</span> {debugState.loginEndpoint}</p>
-                    <p><span className="font-medium">Token exists:</span> {debugState.hasToken ? "yes" : "no"}</p>
-                    <p><span className="font-medium">Current user exists:</span> {debugState.hasCurrentUser ? "yes" : "no"}</p>
-                    <p><span className="font-medium">Loading state:</span> {debugState.loading ? "loading" : "idle"}</p>
-                    <p><span className="font-medium">Error state:</span> {debugState.error}</p>
-                </div>
             </CardContent>
         </Card>
     );

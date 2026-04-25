@@ -64,7 +64,7 @@ const formatDateTime = (value: string, time?: string) => {
     year: "numeric",
   });
 
-  return time ? `${datePart} • ${time}` : datePart;
+  return time ? `${datePart} | ${time}` : datePart;
 };
 
 const isUpcomingEvent = (value: string) => {
@@ -459,3 +459,4 @@ export default function EventsPage() {
     </div>
   );
 }
+

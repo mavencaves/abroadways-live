@@ -1,5 +1,9 @@
 import axios from "axios";
 
+const AUTH_TOKEN_KEY = "auth_token";
+const AUTH_USER_KEY = "auth_user";
+const AUTH_EXPIRED_EVENT = "abroadways:auth-expired";
+
 const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const normalizedApiBaseUrl = rawApiBaseUrl ? rawApiBaseUrl.replace(/\/+$/, "") : "";
 const isBrowser = typeof window !== "undefined";
@@ -38,6 +42,23 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const isBrowserRuntime = typeof window !== "undefined";
+    const hadToken = isBrowserRuntime ? Boolean(localStorage.getItem(AUTH_TOKEN_KEY)) : false;
+
+    if (status === 401 && isBrowserRuntime && hadToken) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export const authApi = {
   register: (payload: { name: string; email: string; password: string }) =>

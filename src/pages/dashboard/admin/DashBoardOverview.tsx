@@ -350,7 +350,7 @@ export default function DashboardOverview() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-slate-900">{item.studentId?.fullName || "Student"}</p>
-                        <p className="text-sm text-slate-500">{item.time} • {formatStatusLabel(item.status)}</p>
+                        <p className="text-sm text-slate-500">{item.time} | {formatStatusLabel(item.status)}</p>
                       </div>
                       <p className="text-sm text-slate-600">{item.assignedStaff?.name || "Unassigned"}</p>
                     </div>
@@ -380,7 +380,7 @@ export default function DashboardOverview() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-slate-900">{item.studentId?.fullName || "Student"}</p>
-                        <p className="text-sm text-slate-500">{item.date} • {item.time}</p>
+                        <p className="text-sm text-slate-500">{item.date} | {item.time}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-slate-600">{item.assignedStaff?.name || "Unassigned"}</p>
@@ -417,7 +417,7 @@ export default function DashboardOverview() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-slate-900">{formatStatusLabel(step.status)}</span>
                       <span className="text-slate-500">
-                        {step.count} leads {step.status !== "new" ? `• ${step.dropOffPercent}% drop-off` : ""}
+                        {step.count} leads {step.status !== "new" ? `| ${step.dropOffPercent}% drop-off` : ""}
                       </span>
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-slate-100">
@@ -612,3 +612,4 @@ function BreakdownChartCard({
     </Card>
   );
 }
+

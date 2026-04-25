@@ -25,6 +25,19 @@ type StudentDocument = {
 };
 
 const DEFAULT_DOCUMENT_TYPES = ["passport", "transcript", "certificate", "cv", "sop", "lor", "other"];
+const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+]);
 
 const STATUS_STYLES: Record<string, string> = {
   uploaded: "bg-blue-100 text-blue-800",
@@ -74,6 +87,22 @@ const getDocumentLinkMeta = (document: StudentDocument) => {
   }
 
   return { label: "Download file", shouldDownload: true };
+};
+
+const validateSelectedFile = (file: File | null) => {
+  if (!file) {
+    return "Please choose a file before uploading.";
+  }
+
+  if (file.size > MAX_DOCUMENT_BYTES) {
+    return "Please upload a file smaller than 15 MB.";
+  }
+
+  if (!ALLOWED_DOCUMENT_MIME_TYPES.has(file.type)) {
+    return "Only PDF, image, Word, Excel, and text documents are supported.";
+  }
+
+  return null;
 };
 
 export default function StudentDocumentsPage() {
@@ -276,6 +305,12 @@ export default function StudentDocumentsPage() {
 
                 try {
                   setSaving(true);
+                  const fileError = validateSelectedFile(formState.file);
+                  if (fileError) {
+                    toast.error(fileError);
+                    return;
+                  }
+
                   const response = await studentApi.addDocument({
                     title: formState.title.trim(),
                     type: formState.type,
@@ -451,11 +486,17 @@ export default function StudentDocumentsPage() {
                     return;
                   }
 
-                  try {
-                    setReplaceSaving(true);
-                    const response = await studentApi.resubmitDocument(replaceTarget._id, {
-                      title: replaceState.title.trim(),
-                      type: replaceState.type,
+                try {
+                  setReplaceSaving(true);
+                  const fileError = validateSelectedFile(replaceState.file);
+                  if (fileError) {
+                    toast.error(fileError);
+                    return;
+                  }
+
+                  const response = await studentApi.resubmitDocument(replaceTarget._id, {
+                    title: replaceState.title.trim(),
+                    type: replaceState.type,
                       notes: replaceState.notes.trim(),
                       file: replaceState.file,
                     });
