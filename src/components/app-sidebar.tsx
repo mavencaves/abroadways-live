@@ -13,6 +13,7 @@ import {
   IconMessage2,
   IconReceipt,
   IconShoppingBag,
+  IconSparkles,
   IconUsers,
 } from "@tabler/icons-react";
 import { Link } from "react-router";
@@ -107,6 +108,30 @@ const navLinks = [
     allowedRoles: ["admin", "content-manager"],
   },
   {
+    title: "Mock Tests",
+    url: "/dashboard/mock-tests",
+    icon: IconSparkles,
+    allowedRoles: ["admin", "course-manager"],
+  },
+  {
+    title: "Question Bank",
+    url: "/dashboard/mock-tests/questions",
+    icon: IconListDetails,
+    allowedRoles: ["admin", "course-manager"],
+  },
+  {
+    title: "Test Sets",
+    url: "/dashboard/mock-tests/test-sets",
+    icon: IconNotebook,
+    allowedRoles: ["admin", "course-manager"],
+  },
+  {
+    title: "Mock Results",
+    url: "/dashboard/mock-tests/results",
+    icon: IconReceipt,
+    allowedRoles: ["admin", "course-manager"],
+  },
+  {
     title: "AbroadAI",
     url: "/dashboard/ai",
     icon: IconMessages,
@@ -116,6 +141,7 @@ const navLinks = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
+  const homeUrl = user?.role === "course-manager" ? "/dashboard/mock-tests" : "/dashboard";
   const visibleLinks = navLinks.filter((item) => {
     if (!("allowedRoles" in item) || !item.allowedRoles) {
       return true;
@@ -129,7 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link to="/dashboard" className="flex flex-col">
+            <Link to={homeUrl} className="flex flex-col">
               <span className="text-2xl font-semibold text-blue-500">Abroadways</span>
               <span className="text-xs uppercase tracking-[0.18em] text-slate-500">Admin Dashboard</span>
             </Link>

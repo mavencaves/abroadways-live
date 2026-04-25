@@ -7,6 +7,7 @@ import {
   IconFolder,
   IconReceipt,
   IconMessages,
+  IconNotebook,
   IconSparkles,
   IconUserCircle,
 } from "@tabler/icons-react";
@@ -35,6 +36,11 @@ const navLinks = [
     title: "AbroadAI",
     url: "/student/abroadai",
     icon: IconMessages,
+  },
+  {
+    title: "Mock Tests",
+    url: "/student/mock-tests",
+    icon: IconNotebook,
   },
   {
     title: "Profile",

@@ -8,6 +8,11 @@ const questionSchema = new mongoose.Schema({
   options: [String],
   correctAnswer: mongoose.Schema.Types.Mixed,
   marks: { type: Number, default: 1 },
+  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+  tags: [{ type: String, trim: true }],
+  explanation: { type: String, default: "" },
+  sourceType: { type: String, enum: ['original'], default: 'original' },
+  isActive: { type: Boolean, default: true },
   meta: Object, // e.g. listening audio url, image urls
 }, { timestamps: true });
 

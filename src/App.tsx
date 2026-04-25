@@ -135,6 +135,17 @@ import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage.t
 import NotFoundPage from "@/pages/NotFoundPage.tsx";
 import UnauthorizedPage from "@/pages/UnauthorizedPage.tsx";
 import AppErrorBoundary from "@/components/AppErrorBoundary.tsx";
+import MockTestsLandingPage from "@/pages/MockTestsLandingPage.tsx";
+import MockTestExamPage from "@/pages/MockTestExamPage.tsx";
+import StudentMockTestsPage from "@/pages/student/StudentMockTestsPage.tsx";
+import StudentMockExamPage from "@/pages/student/StudentMockExamPage.tsx";
+import StudentMockSessionPage from "@/pages/student/StudentMockSessionPage.tsx";
+import StudentMockResultPage from "@/pages/student/StudentMockResultPage.tsx";
+import MockTestsPage from "@/pages/dashboard/admin/MockTestsPage.tsx";
+import MockTestQuestionsPage from "@/pages/dashboard/admin/MockTestQuestionsPage.tsx";
+import MockTestTestSetsPage from "@/pages/dashboard/admin/MockTestTestSetsPage.tsx";
+import MockTestResultsPage from "@/pages/dashboard/admin/MockTestResultsPage.tsx";
+import { useAuth } from "@/hooks/useAuth.tsx";
 
 const MavenCaveAi = lazy(() => import("@/pages/MavenCaveAi.tsx"));
 const StudentAbroadAiPage = lazy(() => import("@/pages/student/StudentAbroadAiPage.tsx"));
@@ -221,6 +232,16 @@ function LegacyExamAliasRedirect() {
     return <Navigate to={getLegacyExamRedirect(pathname)} replace />;
 }
 
+function DashboardEntryRedirect() {
+    const { user } = useAuth();
+
+    if (user?.role === "course-manager") {
+        return <Navigate to="/dashboard/mock-tests" replace />;
+    }
+
+    return <DashboardOverview />;
+}
+
 function App() {
     useScrollToTop()
     const location = useLocation();
@@ -244,6 +265,8 @@ function App() {
                     <Route path={"resources"} element={<ResourcesPage/>}/>
                     <Route path={"contact"} element={<ContactPage/>}/>
                     <Route path={"courses"} element={<CoursesLandingPage/>}/>
+                    <Route path={"mock-tests"} element={<MockTestsLandingPage/>}/>
+                    <Route path={"mock-tests/:exam"} element={<MockTestExamPage/>}/>
 
                     <Route path={"bookseat"} element={<BookAseat/>}/>
 
@@ -379,29 +402,37 @@ function App() {
 
                 </Route>
                 <Route path={"/admin/dashboard"} element={<Navigate to="/dashboard" replace/>}/>
-                <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager', 'course-manager']}/>}>
                 <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
-                    <Route index element={<DashboardOverview/>}/>
+                    <Route index element={<DashboardEntryRedirect/>}/>
                     <Route element={<ProtectedRoute requiredRoles={['admin']}/>}>
                         <Route path={"users"} element={<UsersPage/>}/>
                     </Route>
-                    <Route path={"blogs"} element={<BlogsPage/>}/>
-                    <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
-                    <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
-                    <Route path={"events"} element={<EventsPage/>}/>
-                    <Route path={"events/new"} element={<EventEditorPage/>}/>
-                    <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
-                    <Route path={"appointments"} element={<AppointmentsPage/>}/>
-                    <Route path={"notifications"} element={<NotificationsPage/>}/>
-                    <Route path={"ai"} element={withLazyPage(<AiMonitoringPage/>)} />
-                    <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
-                    <Route path={"orders"} element={<OrdersPage/>}/>
-                    <Route path={"payments"} element={<PaymentsPage/>}/>
-                    <Route path={"documents"} element={<DocumentsPage/>}/>
-                    <Route path={"media"} element={<MediaLibraryPage/>}/>
-                    <Route path={"pages"} element={<PagesPage/>}/>
-                    <Route path={"templates"} element={<TemplatesPage/>}/>
-                    <Route path={"inquiries"} element={<InquiriesPage/>}/>
+                    <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
+                        <Route path={"blogs"} element={<BlogsPage/>}/>
+                        <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
+                        <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
+                        <Route path={"events"} element={<EventsPage/>}/>
+                        <Route path={"events/new"} element={<EventEditorPage/>}/>
+                        <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
+                        <Route path={"appointments"} element={<AppointmentsPage/>}/>
+                        <Route path={"notifications"} element={<NotificationsPage/>}/>
+                        <Route path={"ai"} element={withLazyPage(<AiMonitoringPage/>)} />
+                        <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
+                        <Route path={"orders"} element={<OrdersPage/>}/>
+                        <Route path={"payments"} element={<PaymentsPage/>}/>
+                        <Route path={"documents"} element={<DocumentsPage/>}/>
+                        <Route path={"media"} element={<MediaLibraryPage/>}/>
+                        <Route path={"pages"} element={<PagesPage/>}/>
+                        <Route path={"templates"} element={<TemplatesPage/>}/>
+                        <Route path={"inquiries"} element={<InquiriesPage/>}/>
+                    </Route>
+                    <Route element={<ProtectedRoute requiredRoles={['admin', 'course-manager']}/>}>
+                        <Route path={"mock-tests"} element={<MockTestsPage/>}/>
+                        <Route path={"mock-tests/questions"} element={<MockTestQuestionsPage/>}/>
+                        <Route path={"mock-tests/test-sets"} element={<MockTestTestSetsPage/>}/>
+                        <Route path={"mock-tests/results"} element={<MockTestResultsPage/>}/>
+                    </Route>
                     <Route path="*" element={<NotFoundPage/>}/>
                 </Route>
                 </Route>
@@ -412,6 +443,10 @@ function App() {
                         <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
                         <Route path={"abroadai"} element={withLazyPage(<StudentAbroadAiPage/>)} />
                         <Route path={"ai"} element={<Navigate to="/student/abroadai" replace/>}/>
+                        <Route path={"mock-tests"} element={<StudentMockTestsPage/>}/>
+                        <Route path={"mock-tests/:exam"} element={<StudentMockExamPage/>}/>
+                        <Route path={"mock-tests/session/:sessionId"} element={<StudentMockSessionPage/>}/>
+                        <Route path={"mock-tests/results/:resultId"} element={<StudentMockResultPage/>}/>
                         <Route path={"profile"} element={<StudentProfilePage/>}/>
                         <Route path={"applications"} element={<StudentApplicationsPage/>}/>
                         <Route path={"services"} element={<StudentServicesPage/>}/>

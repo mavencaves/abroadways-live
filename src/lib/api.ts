@@ -445,3 +445,106 @@ export const notificationsApi = {
   markRead: (id: string) => apiClient.patch(`/notifications/${id}/read`),
   markAllRead: () => apiClient.patch("/notifications/read-all"),
 };
+
+export const mockTestsApi = {
+  getCatalog: () => apiClient.get("/mock-tests/catalog", { params: noCacheParams() }),
+  getExamLanding: (examSlug: string) => apiClient.get(`/mock-tests/exams/${examSlug}`, { params: noCacheParams() }),
+  getExamTestSets: (examSlug: string) =>
+    apiClient.get(`/mock-tests/exams/${examSlug}/test-sets`, { params: noCacheParams() }),
+  getQuestions: (params: {
+    examSlug: string;
+    sectionKey?: string;
+    type?: string;
+    search?: string;
+  }) => apiClient.get("/mock-tests/questions", { params: { ...params, ...noCacheParams() } }),
+  createQuestion: (payload: {
+    examSlug: string;
+    sectionKey: string;
+    type: string;
+    text: string;
+    options?: string[];
+    correctAnswer?: any;
+    marks?: number;
+    difficulty?: "easy" | "medium" | "hard";
+    tags?: string[];
+    explanation?: string;
+    isActive?: boolean;
+    meta?: Record<string, any>;
+  }) => apiClient.post("/mock-tests/questions", payload),
+  updateQuestion: (
+    questionId: string,
+    payload: {
+      sectionKey?: string;
+      type?: string;
+      text?: string;
+      options?: string[];
+      correctAnswer?: any;
+      marks?: number;
+      difficulty?: "easy" | "medium" | "hard";
+      tags?: string[];
+      explanation?: string;
+      isActive?: boolean;
+      meta?: Record<string, any>;
+    }
+  ) => apiClient.put(`/mock-tests/questions/${questionId}`, payload),
+  deleteQuestion: (questionId: string) => apiClient.delete(`/mock-tests/questions/${questionId}`),
+  getAdminTestSets: (params: { examSlug: string; status?: string }) =>
+    apiClient.get("/mock-tests/test-sets", { params: { ...params, ...noCacheParams() } }),
+  createTestSet: (payload: {
+    examSlug: string;
+    title: string;
+    slug: string;
+    description?: string;
+    instructions?: string;
+    durationMinutes?: number;
+    status?: "draft" | "published" | "archived";
+    sectionConfig?: Array<{
+      key: string;
+      title?: string;
+      questionCount?: number;
+      durationMinutes?: number;
+    }>;
+    questionIds?: string[];
+  }) => apiClient.post("/mock-tests/test-sets", payload),
+  updateTestSet: (
+    testSetId: string,
+    payload: {
+      title?: string;
+      slug?: string;
+      description?: string;
+      instructions?: string;
+      durationMinutes?: number;
+      status?: "draft" | "published" | "archived";
+      sectionConfig?: Array<{
+        key: string;
+        title?: string;
+        questionCount?: number;
+        durationMinutes?: number;
+      }>;
+      questionIds?: string[];
+    }
+  ) => apiClient.put(`/mock-tests/test-sets/${testSetId}`, payload),
+  deleteTestSet: (testSetId: string) => apiClient.delete(`/mock-tests/test-sets/${testSetId}`),
+  startSession: (payload: { testSetId: string; mode?: "practice" | "exam" }) =>
+    apiClient.post("/mock-tests/sessions/start", payload),
+  getSession: (sessionId: string) => apiClient.get(`/mock-tests/sessions/${sessionId}`, { params: noCacheParams() }),
+  submitAnswer: (sessionId: string, payload: { questionId: string; answer: any }) =>
+    apiClient.post(`/mock-tests/sessions/${sessionId}/answer`, payload),
+  finishSession: (sessionId: string) => apiClient.post(`/mock-tests/sessions/${sessionId}/finish`),
+  getMyResults: (examSlug?: string) =>
+    apiClient.get("/mock-tests/results/me", { params: { ...(examSlug ? { examSlug } : {}), ...noCacheParams() } }),
+  getAdminResults: (params?: { examSlug?: string; status?: string }) =>
+    apiClient.get("/mock-tests/results/admin/all", { params: { ...params, ...noCacheParams() } }),
+  getResult: (resultId: string) => apiClient.get(`/mock-tests/results/${resultId}`, { params: noCacheParams() }),
+  manualReviewResult: (
+    resultId: string,
+    payload: {
+      scores: Array<{
+        answerId: string;
+        marks: number;
+        feedback?: string;
+      }>;
+    }
+  ) => apiClient.post(`/mock-tests/results/${resultId}/manual-review`, payload),
+  getAdminSummary: () => apiClient.get("/mock-tests/admin/summary", { params: noCacheParams() }),
+};
