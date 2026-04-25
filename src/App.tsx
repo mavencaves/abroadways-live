@@ -137,6 +137,9 @@ import OrdersPage from "@/pages/dashboard/admin/OrdersPage.tsx";
 import PaymentsPage from "@/pages/dashboard/admin/PaymentsPage.tsx";
 import NotificationsPage from "@/pages/dashboard/admin/NotificationsPage.tsx";
 import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage.tsx";
+import NotFoundPage from "@/pages/NotFoundPage.tsx";
+import UnauthorizedPage from "@/pages/UnauthorizedPage.tsx";
+import AppErrorBoundary from "@/components/AppErrorBoundary.tsx";
 
 const MavenCaveAi = lazy(() => import("@/pages/MavenCaveAi.tsx"));
 const StudentAbroadAiPage = lazy(() => import("@/pages/student/StudentAbroadAiPage.tsx"));
@@ -225,196 +228,206 @@ function LegacyExamAliasRedirect() {
 
 function App() {
     useScrollToTop()
+    const location = useLocation();
+
     return (
-        <Routes>
-            <Route path={"/"} element={<PublicLayout/>}>
-                <Route index element={<HomePage/>}/>
-                <Route path={"about"} element={<AboutPage/>}/>
-                <Route path={"blog"} element={<BlogPage/>}/>
-                <Route path={"blog/:blogId"} element={<BlogDetailPage/>}/>
-                <Route path={"higher-education"} element={<HigherEducationPage/>}/>
-                <Route path={"higher-education/:region"} element={<HigherEducationRegionPage/>}/>
-                <Route path={"study-abroad"} element={<HigherEducationPage/>}/>
-                <Route path={"study-abroad/asia"} element={<HigherEducationRegionPage regionSlug="asia"/>}/>
-                <Route path={"study-abroad/europe"} element={<HigherEducationRegionPage regionSlug="europe"/>}/>
-                <Route path={"study-abroad/north-america"} element={<HigherEducationRegionPage regionSlug="north-america"/>}/>
-                <Route path={"study-abroad/south-america"} element={<HigherEducationRegionPage regionSlug="south-america"/>}/>
-                <Route path={"study-abroad/australia-oceania"} element={<HigherEducationRegionPage regionSlug="australia-oceania"/>}/>
-                <Route path={"resources"} element={<ResourcesPage/>}/>
-                <Route path={"contact"} element={<ContactPage/>}/>
-                <Route path={"courses"} element={<CoursesLandingPage/>}/>
+        <AppErrorBoundary resetKey={location.pathname}>
+            <Routes>
+                <Route path={"/"} element={<PublicLayout/>}>
+                    <Route index element={<HomePage/>}/>
+                    <Route path={"about"} element={<AboutPage/>}/>
+                    <Route path={"blog"} element={<BlogPage/>}/>
+                    <Route path={"blog/:blogId"} element={<BlogDetailPage/>}/>
+                    <Route path={"higher-education"} element={<HigherEducationPage/>}/>
+                    <Route path={"higher-education/:region"} element={<HigherEducationRegionPage/>}/>
+                    <Route path={"study-abroad"} element={<HigherEducationPage/>}/>
+                    <Route path={"study-abroad/asia"} element={<HigherEducationRegionPage regionSlug="asia"/>}/>
+                    <Route path={"study-abroad/europe"} element={<HigherEducationRegionPage regionSlug="europe"/>}/>
+                    <Route path={"study-abroad/north-america"} element={<HigherEducationRegionPage regionSlug="north-america"/>}/>
+                    <Route path={"study-abroad/south-america"} element={<HigherEducationRegionPage regionSlug="south-america"/>}/>
+                    <Route path={"study-abroad/australia-oceania"} element={<HigherEducationRegionPage regionSlug="australia-oceania"/>}/>
+                    <Route path={"resources"} element={<ResourcesPage/>}/>
+                    <Route path={"contact"} element={<ContactPage/>}/>
+                    <Route path={"courses"} element={<CoursesLandingPage/>}/>
 
-                <Route path={"bookseat"} element={<BookAseat/>}/>
+                    <Route path={"bookseat"} element={<BookAseat/>}/>
 
-                {/* blog details pages */}
+                    {/* blog details pages */}
 
-                {/* cousellor pages */}
-                <Route path={"/counsellor-home"} element={<CounsellorHomePage/>}/>
-                <Route path={"/counsellor-modal"} element={<CounselingSection/>}/>
-                <Route path={"/counsellor-referral"} element={<ReferralPage/>}/>
+                    {/* cousellor pages */}
+                    <Route path={"/counsellor-home"} element={<CounsellorHomePage/>}/>
+                    <Route path={"/counsellor-modal"} element={<CounselingSection/>}/>
+                    <Route path={"/counsellor-referral"} element={<ReferralPage/>}/>
 
-                {/*<Route path={"/study-abroad/usa/cities/new-york"} element={<StudyAbroad/>}/>*/}
-                <Route path={"/study-abroad/:country/cities/:city"} element={<TopUniversities/>}/>
-                <Route path={"study-abroad/:country/courses/:course"} element={<MastersTopCourses/>}/>
-                <Route path={"abroadai"} element={withLazyPage(<MavenCaveAi/>)} />
-                <Route path={"abroadways-ai"} element={withLazyPage(<MavenCaveAi/>)} />
-                <Route path={"mavencave-ai"} element={withLazyPage(<MavenCaveAi/>)} />
-                <Route path={"study-abroad/exams"} element={<LegacyExamAliasRedirect/>}/>
-                <Route path={"study-abroad/exams/*"} element={<LegacyExamAliasRedirect/>}/>
-                <Route path={"resources/sop"} element={<SOP/>}/>
-                <Route path={"resources/eligibility"} element={<EligibilityFirstPage/>}/>
-                <Route element={<IeltsBlogLayout/>}>
-                    <Route path={"/exams/ielts/overview"} element={<IeltsOverviewPage/>}/>
-                    <Route path={"/exams/ielts/types"} element={<IeltsTypesPage/>}/>
-                    <Route path={"/resources/books/ielts"} element={<IeltsBooksPage/>}/>
-                    <Route path={"/exams/ielts/eligibility"} element={<IeltsEligibilityPage/>}/>
-                    <Route path={"/exams/ielts/registration"} element={<IeltsRegistrationPage/>}/>
-                    <Route path={"/exams/ielts/results"} element={<IeltsResultsPage/>}/>
-                    <Route path={"/exams/ielts/syllabus"} element={<IeltsSyllabus/>}/>
-                    <Route path={"/exams/ielts/slot-booking"} element={<SlotBookingPage/>}/>
-                    <Route path={"/resources/recommendation-letter/masters"} element={<LorMasters/>}/>
-                    <Route path={"/exams/ielts/practice/listening"} element={<Listening/>}/>
-                    <Route path={"/exams/ielts/practice/reading"} element={<Reading/>}/>
-                    <Route path={"/exams/ielts/dates"} element={<IeltsExamDate/>}/>
-                    <Route path={"/exams/ielts/fees"} element={<IeltsFees/>}/>
-                    <Route path={"/exams/ielts/centers"} element={<IeltsTestCenters/>}/>
-                    <Route path={"/exams/ielts/practice/speaking"} element={<Speaking/>}/>
-                    <Route path={"/exams/ielts/practice/writing"} element={<Writing/>}/>
-                    <Route path={"/exams/ielts/practice/all-in-one"} element={<IeltsPractice/>}/>
-                    <Route path={"/exams/toefl/overview"} element={<TOEFLPage/>}/>
-                    <Route path={"/exams/gre/overview"} element={<GREPage/>}/>
-                    <Route path={"/exams/sat/eligibility"} element={<SATEligibilityPage/>}/>
-                    <Route path={"/exams/sat/registration"} element={<SATRegistrationPage/>}/>
-                    <Route path={"/exams/sat/syllabus"} element={<SATSyllabusPage/>}/>
-                    <Route path={"/exams/sat/preparation"} element={<SATPreparationPage/>}/>
-                    <Route path={"/exams/pte/overview"} element={<PTEPage/>}/>
-                    {/* Duolingo */}
-                    <Route path={"/exams/duolingo/fees"} element={<DuolingoFees/>}/>
-                    <Route path={"/exams/duolingo/preparation"} element={<DuolingoGuidePage/>}/>
-                    <Route path={"/exams/duolingo/sample"} element={<SampleQuestionPage/>}/>
-                    <Route path={"/exams/duolingo/syllabus"} element={<DuolingoSyllabusPage/>}/>
-                    {/* GMAT */}
-                    <Route path={"/exams/gmat/overview"} element={<GmatOverviewPage/>}/>
-                    <Route path={"/exams/gmat/preparation"} element={<GmatPrepPage/>}/>
-                    <Route path={"/exams/gmat/registration"} element={<GmatRegistrationPage/>}/>
-                    <Route path={"/exams/gmat/sample-question"} element={<GmatSampleQuesPage/>}/>
-                    <Route path={"/exams/gmat/syllabus"} element={<GmatSyllabusPage/>}/>
+                    {/*<Route path={"/study-abroad/usa/cities/new-york"} element={<StudyAbroad/>}/>*/}
+                    <Route path={"/study-abroad/:country/cities/:city"} element={<TopUniversities/>}/>
+                    <Route path={"study-abroad/:country/courses/:course"} element={<MastersTopCourses/>}/>
+                    <Route path={"abroadai"} element={withLazyPage(<MavenCaveAi/>)} />
+                    <Route path={"abroadways-ai"} element={withLazyPage(<MavenCaveAi/>)} />
+                    <Route path={"mavencave-ai"} element={withLazyPage(<MavenCaveAi/>)} />
+                    <Route path={"unauthorized"} element={<UnauthorizedPage/>}/>
+                    <Route path={"study-abroad/exams"} element={<LegacyExamAliasRedirect/>}/>
+                    <Route path={"study-abroad/exams/*"} element={<LegacyExamAliasRedirect/>}/>
+                    <Route path={"resources/sop"} element={<SOP/>}/>
+                    <Route path={"resources/eligibility"} element={<EligibilityFirstPage/>}/>
+                    <Route element={<IeltsBlogLayout/>}>
+                        <Route path={"/exams/ielts/overview"} element={<IeltsOverviewPage/>}/>
+                        <Route path={"/exams/ielts/types"} element={<IeltsTypesPage/>}/>
+                        <Route path={"/resources/books/ielts"} element={<IeltsBooksPage/>}/>
+                        <Route path={"/exams/ielts/eligibility"} element={<IeltsEligibilityPage/>}/>
+                        <Route path={"/exams/ielts/registration"} element={<IeltsRegistrationPage/>}/>
+                        <Route path={"/exams/ielts/results"} element={<IeltsResultsPage/>}/>
+                        <Route path={"/exams/ielts/syllabus"} element={<IeltsSyllabus/>}/>
+                        <Route path={"/exams/ielts/slot-booking"} element={<SlotBookingPage/>}/>
+                        <Route path={"/resources/recommendation-letter/masters"} element={<LorMasters/>}/>
+                        <Route path={"/exams/ielts/practice/listening"} element={<Listening/>}/>
+                        <Route path={"/exams/ielts/practice/reading"} element={<Reading/>}/>
+                        <Route path={"/exams/ielts/dates"} element={<IeltsExamDate/>}/>
+                        <Route path={"/exams/ielts/fees"} element={<IeltsFees/>}/>
+                        <Route path={"/exams/ielts/centers"} element={<IeltsTestCenters/>}/>
+                        <Route path={"/exams/ielts/practice/speaking"} element={<Speaking/>}/>
+                        <Route path={"/exams/ielts/practice/writing"} element={<Writing/>}/>
+                        <Route path={"/exams/ielts/practice/all-in-one"} element={<IeltsPractice/>}/>
+                        <Route path={"/exams/toefl/overview"} element={<TOEFLPage/>}/>
+                        <Route path={"/exams/gre/overview"} element={<GREPage/>}/>
+                        <Route path={"/exams/sat/eligibility"} element={<SATEligibilityPage/>}/>
+                        <Route path={"/exams/sat/registration"} element={<SATRegistrationPage/>}/>
+                        <Route path={"/exams/sat/syllabus"} element={<SATSyllabusPage/>}/>
+                        <Route path={"/exams/sat/preparation"} element={<SATPreparationPage/>}/>
+                        <Route path={"/exams/pte/overview"} element={<PTEPage/>}/>
+                        {/* Duolingo */}
+                        <Route path={"/exams/duolingo/fees"} element={<DuolingoFees/>}/>
+                        <Route path={"/exams/duolingo/preparation"} element={<DuolingoGuidePage/>}/>
+                        <Route path={"/exams/duolingo/sample"} element={<SampleQuestionPage/>}/>
+                        <Route path={"/exams/duolingo/syllabus"} element={<DuolingoSyllabusPage/>}/>
+                        {/* GMAT */}
+                        <Route path={"/exams/gmat/overview"} element={<GmatOverviewPage/>}/>
+                        <Route path={"/exams/gmat/preparation"} element={<GmatPrepPage/>}/>
+                        <Route path={"/exams/gmat/registration"} element={<GmatRegistrationPage/>}/>
+                        <Route path={"/exams/gmat/sample-question"} element={<GmatSampleQuesPage/>}/>
+                        <Route path={"/exams/gmat/syllabus"} element={<GmatSyllabusPage/>}/>
 
-                    {/*GRE*/}
-                    <Route path={"/exams/gre/registration"} element={<GRERegistrationPage/>}/>
-                    <Route path={"/exams/gre/syllabus"} element={<GRESyllabusPatternPage/>}/>
-                    <Route path={"/exams/gre/slot-booking"} element={<GRESlotBookingPage/>}/>
-                    <Route path={"/exams/gre/preparation"} element={<GREPreparationPage/>}/>
+                        {/*GRE*/}
+                        <Route path={"/exams/gre/registration"} element={<GRERegistrationPage/>}/>
+                        <Route path={"/exams/gre/syllabus"} element={<GRESyllabusPatternPage/>}/>
+                        <Route path={"/exams/gre/slot-booking"} element={<GRESlotBookingPage/>}/>
+                        <Route path={"/exams/gre/preparation"} element={<GREPreparationPage/>}/>
 
+
+                    </Route>
+                    {/* USA */}
+                    <Route path="/study-abroad/usa/universities/stanford-university" element={<StanfordUniversity/>}/>
+                    <Route path="/study-abroad/usa/universities/yale-university" element={<YaleUniversity/>}/>
+                    <Route path="/study-abroad/usa/universities/columbia-university" element={<ColumbiaUniversity/>}/>
+                    <Route path="/study-abroad/usa/universities/mit" element={<MIT/>}/>
+
+                    {/* UK */}
+                    <Route path="/study-abroad/uk/universities/oxford-university" element={<OxfordUniversity/>}/>
+                    <Route path="/study-abroad/uk/universities/cambridge-university" element={<CambridgeUniversity/>}/>
+                    <Route path="/study-abroad/uk/universities/manchester-university" element={<UniversityOfManchester/>}/>
+                    <Route path="/study-abroad/uk/universities/edinburgh-university" element={<UniversityOfEdinburgh/>}/>
+                    <Route path="/study-abroad/uk/universities/kings-college-london" element={<KingsCollegeLondon/>}/>
+                    <Route path="/study-abroad/uk/universities/imperial-college-london" element={<ImperialCollegeLondon/>}/>
+
+                    {/* Canada */}
+                    <Route path="/study-abroad/canada/universities/ubc" element={<UniversityOfBritishColumbia/>}/>
+                    <Route path="/study-abroad/canada/universities/mcgill-university" element={<McGillUniversity/>}/>
+                    <Route path="/study-abroad/canada/universities/university-of-alberta" element={<UniversityOfAlberta/>}/>
+                    <Route path="/study-abroad/canada/universities/university-of-montreal"
+                           element={<UniversityOfMontreal/>}/>
+                    <Route path="/study-abroad/canada/universities/university-of-ottawa" element={<UniversityOfOttawa/>}/>
+                    <Route path="/study-abroad/canada/universities/university-of-toronto" element={<UniversityOfToronto/>}/>
+
+                    {/* Australia */}
+                    <Route path="/study-abroad/australia/universities/macquarie-university"
+                           element={<MaccuireUniversity/>}/>
+                    <Route path="/study-abroad/australia/universities/monash-university" element={<MonashUniversity/>}/>
+                    <Route path="/study-abroad/australia/universities/university-of-sydney" element={<SydneyUniversity/>}/>
+                    <Route path="/study-abroad/australia/universities/university-of-melbourne"
+                           element={<MelboureUniversity/>}/>
+                    <Route path="/study-abroad/australia/universities/uq" element={<QueenslandUniversity/>}/>
+                    <Route path={"study-abroad/:countrySlug"} element={<StudyAbroadCountryPage/>}/>
+
+                    <Route element={<AuthLayout/>}>
+                        <Route path={"/signup"} element={<SignUpPage/>}/>
+                        <Route path={"/login"} element={<LoginPage/>}/>
+                    </Route>
+                    <Route path={"/visa-predictor"} element={<VisaPredictor/>}/>
+                    <Route path={"/ielts-cue-cards"} element={<CueCardPage/>}/>
+                    <Route path={"/exams/overview"} element={<ExamsPage/>}/>
+                    <Route path={"/resources/sop/phd"} element={<SOPPhD/>}/>
+                    <Route path={"/study-abroad/usa/universities/harvard-university"} element={<HarvardReact/>}/>
+                    <Route path={"/careers"} element={<Careers/>}/>
+                    <Route path={"/knowledge-center"} element={<KnowledgeCenter/>}/>
+                    <Route path={"/products/facilities"} element={<MavencaveAdvantage/>}/>
+                    <Route path={"/mavencave-freeClass"} element={<MavencaveFreeClass/>}/>
+                    <Route path={"/ielts-resources"} element={<PracticeResources/>}/>
+                    <Route path={"/calculator/cost"} element={<CostPage/>}/>
+                    <Route path={"/products/finance"} element={<FinancePage/>}/>
+                    <Route path={"/mavencave-digest"} element={<DigestPage/>}/>
+                    <Route path={"/testimonials/counseling"} element={<CounsellorPage/>}/>
+                    <Route path={"/event"} element={<EventPage/>}/>
+                    <Route path={"/resources/books/gre"} element={<GreBooks/>}/>
+                    <Route path={"/exams/toefl/registration"} element={<ToeflRegistration/>}/>
+                    <Route path={"/exams/toefl/syllabus"} element={<ToeflSyllabus/>}/>
+                    <Route path={"/exams/toefl/preparation"} element={<ToeflPrep/>}/>
+                    <Route path={"/exams/toefl/result"} element={<ToeflResult/>}/>
+                    <Route path={"/resources/books/pte"} element={<PteBooks/>}/>
+                    <Route path={"/offers/ielts-masterclass"} element={<IeltsMasterClass/>}/>
+                    <Route path={"/privacy-policy"} element={<PrivacyPolicyPage/>}/>
+                    <Route path={"/terms"} element={<TermsAndConditionsPage/>}/>
+                    <Route path={"/refund-policy"} element={<RefundPolicyPage/>}/>
+                    {/*Calculator*/}
+                    <Route path={"/calculator/cgpa"} element={<CGPACalculatorPage/>}/>
+                    <Route path={"404"} element={<NotFoundPage/>}/>
+                    <Route path="*" element={<NotFoundPage/>}/>
 
                 </Route>
-                {/* USA */}
-                <Route path="/study-abroad/usa/universities/stanford-university" element={<StanfordUniversity/>}/>
-                <Route path="/study-abroad/usa/universities/yale-university" element={<YaleUniversity/>}/>
-                <Route path="/study-abroad/usa/universities/columbia-university" element={<ColumbiaUniversity/>}/>
-                <Route path="/study-abroad/usa/universities/mit" element={<MIT/>}/>
-
-                {/* UK */}
-                <Route path="/study-abroad/uk/universities/oxford-university" element={<OxfordUniversity/>}/>
-                <Route path="/study-abroad/uk/universities/cambridge-university" element={<CambridgeUniversity/>}/>
-                <Route path="/study-abroad/uk/universities/manchester-university" element={<UniversityOfManchester/>}/>
-                <Route path="/study-abroad/uk/universities/edinburgh-university" element={<UniversityOfEdinburgh/>}/>
-                <Route path="/study-abroad/uk/universities/kings-college-london" element={<KingsCollegeLondon/>}/>
-                <Route path="/study-abroad/uk/universities/imperial-college-london" element={<ImperialCollegeLondon/>}/>
-
-                {/* Canada */}
-                <Route path="/study-abroad/canada/universities/ubc" element={<UniversityOfBritishColumbia/>}/>
-                <Route path="/study-abroad/canada/universities/mcgill-university" element={<McGillUniversity/>}/>
-                <Route path="/study-abroad/canada/universities/university-of-alberta" element={<UniversityOfAlberta/>}/>
-                <Route path="/study-abroad/canada/universities/university-of-montreal"
-                       element={<UniversityOfMontreal/>}/>
-                <Route path="/study-abroad/canada/universities/university-of-ottawa" element={<UniversityOfOttawa/>}/>
-                <Route path="/study-abroad/canada/universities/university-of-toronto" element={<UniversityOfToronto/>}/>
-
-                {/* Australia */}
-                <Route path="/study-abroad/australia/universities/macquarie-university"
-                       element={<MaccuireUniversity/>}/>
-                <Route path="/study-abroad/australia/universities/monash-university" element={<MonashUniversity/>}/>
-                <Route path="/study-abroad/australia/universities/university-of-sydney" element={<SydneyUniversity/>}/>
-                <Route path="/study-abroad/australia/universities/university-of-melbourne"
-                       element={<MelboureUniversity/>}/>
-                <Route path="/study-abroad/australia/universities/uq" element={<QueenslandUniversity/>}/>
-                <Route path={"study-abroad/:countrySlug"} element={<StudyAbroadCountryPage/>}/>
-
-                <Route element={<AuthLayout/>}>
-                    <Route path={"/signup"} element={<SignUpPage/>}/>
-                    <Route path={"/login"} element={<LoginPage/>}/>
+                <Route path={"/admin/dashboard"} element={<Navigate to="/dashboard" replace/>}/>
+                <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
+                <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
+                    <Route index element={<DashboardOverview/>}/>
+                    <Route element={<ProtectedRoute requiredRoles={['admin']}/>}>
+                        <Route path={"users"} element={<UsersPage/>}/>
+                    </Route>
+                    <Route path={"blogs"} element={<BlogsPage/>}/>
+                    <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
+                    <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
+                    <Route path={"events"} element={<EventsPage/>}/>
+                    <Route path={"events/new"} element={<EventEditorPage/>}/>
+                    <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
+                    <Route path={"appointments"} element={<AppointmentsPage/>}/>
+                    <Route path={"notifications"} element={<NotificationsPage/>}/>
+                    <Route path={"ai"} element={withLazyPage(<AiMonitoringPage/>)} />
+                    <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
+                    <Route path={"orders"} element={<OrdersPage/>}/>
+                    <Route path={"payments"} element={<PaymentsPage/>}/>
+                    <Route path={"documents"} element={<DocumentsPage/>}/>
+                    <Route path={"media"} element={<MediaLibraryPage/>}/>
+                    <Route path={"templates"} element={<TemplatesPage/>}/>
+                    <Route path={"inquiries"} element={<InquiriesPage/>}/>
+                    <Route path="*" element={<NotFoundPage/>}/>
                 </Route>
-                <Route path={"/visa-predictor"} element={<VisaPredictor/>}/>
-                <Route path={"/ielts-cue-cards"} element={<CueCardPage/>}/>
-                <Route path={"/exams/overview"} element={<ExamsPage/>}/>
-                <Route path={"/resources/sop/phd"} element={<SOPPhD/>}/>
-                <Route path={"/study-abroad/usa/universities/harvard-university"} element={<HarvardReact/>}/>
-                <Route path={"/careers"} element={<Careers/>}/>
-                <Route path={"/knowledge-center"} element={<KnowledgeCenter/>}/>
-                <Route path={"/products/facilities"} element={<MavencaveAdvantage/>}/>
-                <Route path={"/mavencave-freeClass"} element={<MavencaveFreeClass/>}/>
-                <Route path={"/ielts-resources"} element={<PracticeResources/>}/>
-                <Route path={"/calculator/cost"} element={<CostPage/>}/>
-                <Route path={"/products/finance"} element={<FinancePage/>}/>
-                <Route path={"/mavencave-digest"} element={<DigestPage/>}/>
-                <Route path={"/testimonials/counseling"} element={<CounsellorPage/>}/>
-                <Route path={"/event"} element={<EventPage/>}/>
-                <Route path={"/resources/books/gre"} element={<GreBooks/>}/>
-                <Route path={"/exams/toefl/registration"} element={<ToeflRegistration/>}/>
-                <Route path={"/exams/toefl/syllabus"} element={<ToeflSyllabus/>}/>
-                <Route path={"/exams/toefl/preparation"} element={<ToeflPrep/>}/>
-                <Route path={"/exams/toefl/result"} element={<ToeflResult/>}/>
-                <Route path={"/resources/books/pte"} element={<PteBooks/>}/>
-                <Route path={"/offers/ielts-masterclass"} element={<IeltsMasterClass/>}/>
-                <Route path={"/privacy-policy"} element={<PrivacyPolicyPage/>}/>
-                <Route path={"/terms"} element={<TermsAndConditionsPage/>}/>
-                <Route path={"/refund-policy"} element={<RefundPolicyPage/>}/>
-                {/*Calculator*/}
-                <Route path={"/calculator/cgpa"} element={<CGPACalculatorPage/>}/>
-
-            </Route>
-            <Route path={"/admin/dashboard"} element={<Navigate to="/dashboard" replace/>}/>
-            <Route element={<ProtectedRoute requiredRoles={['admin', 'content-manager']}/>}>
-            <Route path={"/dashboard"} element={<AdminDashboardLayout/>}>
-                <Route index element={<DashboardOverview/>}/>
-                <Route element={<ProtectedRoute requiredRoles={['admin']}/>}>
-                    <Route path={"users"} element={<UsersPage/>}/>
                 </Route>
-                <Route path={"blogs"} element={<BlogsPage/>}/>
-                <Route path={"blogs/new"} element={<BlogEditorPage/>}/>
-                <Route path={"blogs/:blogId/edit"} element={<BlogEditorPage/>}/>
-                <Route path={"events"} element={<EventsPage/>}/>
-                <Route path={"events/new"} element={<EventEditorPage/>}/>
-                <Route path={"events/:eventId/edit"} element={<EventEditorPage/>}/>
-                <Route path={"appointments"} element={<AppointmentsPage/>}/>
-                <Route path={"notifications"} element={<NotificationsPage/>}/>
-                <Route path={"ai"} element={withLazyPage(<AiMonitoringPage/>)} />
-                <Route path={"ai-query"} element={<Navigate to="/dashboard/ai" replace/>}/>
-                <Route path={"orders"} element={<OrdersPage/>}/>
-                <Route path={"payments"} element={<PaymentsPage/>}/>
-                <Route path={"documents"} element={<DocumentsPage/>}/>
-                <Route path={"media"} element={<MediaLibraryPage/>}/>
-                <Route path={"templates"} element={<TemplatesPage/>}/>
-                <Route path={"inquiries"} element={<InquiriesPage/>}/>
-            </Route>
-            </Route>
-            <Route element={<ProtectedRoute requiredRoles={['user']}/>}>
-                <Route path={"/student"} element={<StudentPortalLayout/>}>
-                    <Route index element={<Navigate to="/student/dashboard" replace/>}/>
-                    <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
-                    <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
-                    <Route path={"abroadai"} element={withLazyPage(<StudentAbroadAiPage/>)} />
-                    <Route path={"ai"} element={<Navigate to="/student/abroadai" replace/>}/>
-                    <Route path={"profile"} element={<StudentProfilePage/>}/>
-                    <Route path={"applications"} element={<StudentApplicationsPage/>}/>
-                    <Route path={"services"} element={<StudentServicesPage/>}/>
-                    <Route path={"payments"} element={<StudentPaymentsPage/>}/>
-                    <Route path={"appointments"} element={<StudentAppointmentsPage/>}/>
-                    <Route path={"documents"} element={<StudentDocumentsPage/>}/>
+                <Route element={<ProtectedRoute requiredRoles={['user']}/>}>
+                    <Route path={"/student"} element={<StudentPortalLayout/>}>
+                        <Route index element={<Navigate to="/student/dashboard" replace/>}/>
+                        <Route path={"dashboard"} element={<StudentDashboardPage/>}/>
+                        <Route path={"notifications"} element={<StudentNotificationsPage/>}/>
+                        <Route path={"abroadai"} element={withLazyPage(<StudentAbroadAiPage/>)} />
+                        <Route path={"ai"} element={<Navigate to="/student/abroadai" replace/>}/>
+                        <Route path={"profile"} element={<StudentProfilePage/>}/>
+                        <Route path={"applications"} element={<StudentApplicationsPage/>}/>
+                        <Route path={"services"} element={<StudentServicesPage/>}/>
+                        <Route path={"payments"} element={<StudentPaymentsPage/>}/>
+                        <Route path={"appointments"} element={<StudentAppointmentsPage/>}/>
+                        <Route path={"documents"} element={<StudentDocumentsPage/>}/>
+                        <Route path="*" element={<NotFoundPage/>}/>
+                    </Route>
                 </Route>
-            </Route>
-        </Routes>
+                <Route path="*" element={<Navigate to="/404" replace/>}/>
+            </Routes>
+        </AppErrorBoundary>
     )
 }
 
