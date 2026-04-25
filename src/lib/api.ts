@@ -112,18 +112,19 @@ export const aboutApi = {
 };
 
 export const publicPagesApi = {
-  getAll: () => apiClient.get("/public-pages", { params: noCacheParams() }),
-  getBySlug: (slug: string) => apiClient.get(`/public-pages/${slug}`, { params: noCacheParams() }),
-  updateBySlug: (
-    slug: string,
+  getAllAdmin: () => apiClient.get("/public-pages/admin/all", { params: noCacheParams() }),
+  getByRouteKey: (routeKey: string) => apiClient.get(`/public-pages/${routeKey}`, { params: noCacheParams() }),
+  create: (
     payload: {
+      routeKey: string;
+      slug: string;
       name: string;
       pageTitle: string;
       seoTitle?: string;
       seoDescription?: string;
       heroKicker?: string;
       heroTitle: string;
-      heroDescription?: string;
+      heroSubtitle?: string;
       heroImageUrl?: string;
       heroImageAlt?: string;
       bodyIntro?: string;
@@ -140,8 +141,41 @@ export const publicPagesApi = {
       ctaPrimaryUrl?: string;
       ctaSecondaryText?: string;
       ctaSecondaryUrl?: string;
+      status: "draft" | "published" | "archived";
     }
-  ) => apiClient.put(`/public-pages/${slug}`, payload),
+  ) => apiClient.post("/public-pages", payload),
+  updateByRouteKey: (
+    routeKey: string,
+    payload: {
+      routeKey: string;
+      slug: string;
+      name: string;
+      pageTitle: string;
+      seoTitle?: string;
+      seoDescription?: string;
+      heroKicker?: string;
+      heroTitle: string;
+      heroSubtitle?: string;
+      heroImageUrl?: string;
+      heroImageAlt?: string;
+      bodyIntro?: string;
+      sections: Array<{
+        title: string;
+        body?: string;
+        bullets?: string[];
+        imageUrl?: string;
+        imageAlt?: string;
+      }>;
+      ctaTitle?: string;
+      ctaDescription?: string;
+      ctaPrimaryText?: string;
+      ctaPrimaryUrl?: string;
+      ctaSecondaryText?: string;
+      ctaSecondaryUrl?: string;
+      status: "draft" | "published" | "archived";
+    }
+  ) => apiClient.put(`/public-pages/${routeKey}`, payload),
+  delete: (id: string) => apiClient.delete(`/public-pages/${id}`),
 };
 
 export const inquiriesApi = {

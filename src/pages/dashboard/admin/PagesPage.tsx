@@ -5,12 +5,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { publicPagesApi } from "@/lib/api";
-import { MANAGED_PUBLIC_PAGE_SLUGS, PUBLIC_PAGE_DEFAULTS, type PublicPageContent, type PublicPageSection } from "@/data/public-page-defaults";
+import {
+  MANAGED_PUBLIC_PAGE_SLUGS,
+  PUBLIC_PAGE_DEFAULTS,
+  type PublicPageContent,
+  type PublicPageSection,
+} from "@/data/public-page-defaults";
+
+type PageStatus = "draft" | "published" | "archived";
 
 type PublicPageRecord = PublicPageContent & {
   _id?: string;
+  routeKey: string;
+  status: PageStatus;
   updatedAt?: string;
 };
 
@@ -18,24 +28,53 @@ const managedPages = MANAGED_PUBLIC_PAGE_SLUGS.map((slug) => PUBLIC_PAGE_DEFAULT
 
 const clonePage = (page: PublicPageContent): PublicPageRecord => ({
   ...page,
+  routeKey: page.routeKey || page.slug,
+  status: "draft",
   sections: page.sections.map((section) => ({
     ...section,
     bullets: [...(section.bullets || [])],
   })),
 });
 
+const blankPage = (): PublicPageRecord => ({
+  routeKey: "",
+  slug: "",
+  name: "",
+  pageTitle: "",
+  seoTitle: "",
+  seoDescription: "",
+  heroKicker: "",
+  heroTitle: "",
+  heroSubtitle: "",
+  heroImageUrl: "",
+  heroImageAlt: "",
+  bodyIntro: "",
+  sections: [{ title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
+  ctaTitle: "",
+  ctaDescription: "",
+  ctaPrimaryText: "",
+  ctaPrimaryUrl: "",
+  ctaSecondaryText: "",
+  ctaSecondaryUrl: "",
+  status: "draft",
+});
+
 export default function PagesPage() {
   const { user } = useAuth();
   const [pages, setPages] = useState<Record<string, PublicPageRecord>>(
-    Object.fromEntries(managedPages.map((page) => [page.slug, clonePage(page)]))
+    Object.fromEntries(managedPages.map((page) => [page.routeKey || page.slug, clonePage(page)]))
   );
-  const [selectedSlug, setSelectedSlug] = useState(managedPages[0]?.slug || "finance");
+  const [selectedKey, setSelectedKey] = useState(managedPages[0]?.routeKey || managedPages[0]?.slug || "finance");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [draftPage, setDraftPage] = useState<PublicPageRecord>(blankPage());
 
   const canManagePages = user ? ["admin", "content-manager"].includes(user.role) : false;
+  const canDeletePages = user?.role === "admin";
 
   useEffect(() => {
     const loadPages = async () => {
@@ -47,24 +86,26 @@ export default function PagesPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await publicPagesApi.getAll();
+        const response = await publicPagesApi.getAllAdmin();
         const incoming = Array.isArray(response.data) ? response.data : [];
         setPages((prev) => {
           const next = { ...prev };
           for (const page of incoming) {
-            if (page.slug && next[page.slug]) {
-              next[page.slug] = {
-                ...clonePage(PUBLIC_PAGE_DEFAULTS[page.slug]),
-                ...page,
-                sections:
-                  Array.isArray(page.sections) && page.sections.length > 0
-                    ? page.sections.map((section: PublicPageSection) => ({
-                        ...section,
-                        bullets: [...(section.bullets || [])],
-                      }))
-                    : clonePage(PUBLIC_PAGE_DEFAULTS[page.slug]).sections,
-              };
-            }
+            const key = page.routeKey || page.slug;
+            const fallback = PUBLIC_PAGE_DEFAULTS[key] ? clonePage(PUBLIC_PAGE_DEFAULTS[key]) : blankPage();
+            next[key] = {
+              ...fallback,
+              ...page,
+              routeKey: key,
+              status: page.status || "draft",
+              sections:
+                Array.isArray(page.sections) && page.sections.length > 0
+                  ? page.sections.map((section: PublicPageSection) => ({
+                      ...section,
+                      bullets: [...(section.bullets || [])],
+                    }))
+                  : fallback.sections,
+            };
           }
           return next;
         });
@@ -80,84 +121,137 @@ export default function PagesPage() {
 
   const visiblePages = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    return managedPages.filter((page) => {
+    return Object.values(pages).filter((page) => {
       if (!query) return true;
-      return page.name.toLowerCase().includes(query) || page.slug.toLowerCase().includes(query);
+      return (
+        page.name.toLowerCase().includes(query) ||
+        page.routeKey.toLowerCase().includes(query) ||
+        page.slug.toLowerCase().includes(query)
+      );
     });
-  }, [searchTerm]);
+  }, [pages, searchTerm]);
 
-  const selectedPage = pages[selectedSlug] || clonePage(PUBLIC_PAGE_DEFAULTS[selectedSlug]);
+  const selectedPage = isCreating ? draftPage : pages[selectedKey] || clonePage(PUBLIC_PAGE_DEFAULTS[selectedKey]);
 
-  const updateSelectedPage = (updater: (page: PublicPageRecord) => PublicPageRecord) => {
+  const updatePage = (updater: (page: PublicPageRecord) => PublicPageRecord) => {
+    if (isCreating) {
+      setDraftPage((prev) => updater(prev));
+      return;
+    }
+
     setPages((prev) => ({
       ...prev,
-      [selectedSlug]: updater(prev[selectedSlug] || clonePage(PUBLIC_PAGE_DEFAULTS[selectedSlug])),
+      [selectedKey]: updater(prev[selectedKey] || clonePage(PUBLIC_PAGE_DEFAULTS[selectedKey])),
     }));
   };
 
   const updateSection = (index: number, updater: (section: PublicPageSection) => PublicPageSection) => {
-    updateSelectedPage((page) => ({
+    updatePage((page) => ({
       ...page,
       sections: page.sections.map((section, sectionIndex) => (sectionIndex === index ? updater(section) : section)),
     }));
   };
 
-  const handleSave = async () => {
-    if (!selectedPage.pageTitle.trim() || !selectedPage.heroTitle.trim()) {
-      toast.error("Page title and hero title are required.");
-      return;
+  const buildPayload = (page: PublicPageRecord) => ({
+    routeKey: page.routeKey.trim().toLowerCase(),
+    slug: page.slug.trim().toLowerCase(),
+    name: page.name.trim(),
+    pageTitle: page.pageTitle.trim(),
+    seoTitle: page.seoTitle?.trim() || "",
+    seoDescription: page.seoDescription?.trim() || "",
+    heroKicker: page.heroKicker?.trim() || "",
+    heroTitle: page.heroTitle.trim(),
+    heroSubtitle: page.heroSubtitle?.trim() || "",
+    heroImageUrl: page.heroImageUrl?.trim() || "",
+    heroImageAlt: page.heroImageAlt?.trim() || "",
+    bodyIntro: page.bodyIntro?.trim() || "",
+    sections: page.sections
+      .filter((section) => section.title.trim())
+      .map((section) => ({
+        title: section.title.trim(),
+        body: section.body?.trim() || "",
+        bullets: (section.bullets || []).map((bullet) => bullet.trim()).filter(Boolean),
+        imageUrl: section.imageUrl?.trim() || "",
+        imageAlt: section.imageAlt?.trim() || "",
+      })),
+    ctaTitle: page.ctaTitle?.trim() || "",
+    ctaDescription: page.ctaDescription?.trim() || "",
+    ctaPrimaryText: page.ctaPrimaryText?.trim() || "",
+    ctaPrimaryUrl: page.ctaPrimaryUrl?.trim() || "",
+    ctaSecondaryText: page.ctaSecondaryText?.trim() || "",
+    ctaSecondaryUrl: page.ctaSecondaryUrl?.trim() || "",
+    status: page.status,
+  });
+
+  const validatePage = (page: PublicPageRecord) => {
+    if (!page.routeKey.trim() || !page.slug.trim() || !page.name.trim() || !page.pageTitle.trim() || !page.heroTitle.trim()) {
+      toast.error("Route key, slug, name, page title, and hero heading are required.");
+      return false;
     }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validatePage(selectedPage)) return;
 
     try {
       setSaving(true);
-      const payload = {
-        name: selectedPage.name.trim(),
-        pageTitle: selectedPage.pageTitle.trim(),
-        seoTitle: selectedPage.seoTitle?.trim() || "",
-        seoDescription: selectedPage.seoDescription?.trim() || "",
-        heroKicker: selectedPage.heroKicker?.trim() || "",
-        heroTitle: selectedPage.heroTitle.trim(),
-        heroDescription: selectedPage.heroDescription?.trim() || "",
-        heroImageUrl: selectedPage.heroImageUrl?.trim() || "",
-        heroImageAlt: selectedPage.heroImageAlt?.trim() || "",
-        bodyIntro: selectedPage.bodyIntro?.trim() || "",
-        sections: selectedPage.sections
-          .filter((section) => section.title.trim())
-          .map((section) => ({
-            title: section.title.trim(),
-            body: section.body?.trim() || "",
-            bullets: (section.bullets || []).map((bullet) => bullet.trim()).filter(Boolean),
-            imageUrl: section.imageUrl?.trim() || "",
-            imageAlt: section.imageAlt?.trim() || "",
-          })),
-        ctaTitle: selectedPage.ctaTitle?.trim() || "",
-        ctaDescription: selectedPage.ctaDescription?.trim() || "",
-        ctaPrimaryText: selectedPage.ctaPrimaryText?.trim() || "",
-        ctaPrimaryUrl: selectedPage.ctaPrimaryUrl?.trim() || "",
-        ctaSecondaryText: selectedPage.ctaSecondaryText?.trim() || "",
-        ctaSecondaryUrl: selectedPage.ctaSecondaryUrl?.trim() || "",
-      };
+      const payload = buildPayload(selectedPage);
+      const response = isCreating
+        ? await publicPagesApi.create(payload)
+        : await publicPagesApi.updateByRouteKey(selectedKey, payload);
 
-      const response = await publicPagesApi.updateBySlug(selectedSlug, payload);
+      const responseKey = response.data.routeKey || response.data.slug;
       setPages((prev) => ({
         ...prev,
-        [selectedSlug]: {
-          ...clonePage(PUBLIC_PAGE_DEFAULTS[selectedSlug]),
+        [responseKey]: {
+          ...(PUBLIC_PAGE_DEFAULTS[responseKey] ? clonePage(PUBLIC_PAGE_DEFAULTS[responseKey]) : blankPage()),
           ...response.data,
+          routeKey: responseKey,
+          status: response.data.status || "draft",
           sections:
             Array.isArray(response.data.sections) && response.data.sections.length > 0
               ? response.data.sections.map((section: PublicPageSection) => ({
                   ...section,
                   bullets: [...(section.bullets || [])],
                 }))
-              : clonePage(PUBLIC_PAGE_DEFAULTS[selectedSlug]).sections,
+              : (PUBLIC_PAGE_DEFAULTS[responseKey] ? clonePage(PUBLIC_PAGE_DEFAULTS[responseKey]) : blankPage()).sections,
         },
       }));
-      toast.success("Public page content updated.");
+      setSelectedKey(responseKey);
+      setIsCreating(false);
+      setDraftPage(blankPage());
+      toast.success(isCreating ? "Public page created." : "Public page updated.");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to save public page content.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!canDeletePages || !selectedPage._id) return;
+    const confirmed = window.confirm(`Delete "${selectedPage.name}"? This will remove the editable override for this page.`);
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+      await publicPagesApi.delete(selectedPage._id);
+      setPages((prev) => {
+        const next = { ...prev };
+        if (PUBLIC_PAGE_DEFAULTS[selectedKey]) {
+          next[selectedKey] = clonePage(PUBLIC_PAGE_DEFAULTS[selectedKey]);
+        } else {
+          delete next[selectedKey];
+        }
+        return next;
+      });
+      setSelectedKey(managedPages[0]?.routeKey || managedPages[0]?.slug || "finance");
+      toast.success("Public page content deleted.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to delete public page content.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -184,7 +278,7 @@ export default function PagesPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Public CMS</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Editable Pages</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Manage the remaining launch-facing public pages without touching the rest of the site structure.
+            Admin and content-manager accounts can manage public page copy, CTA text, image URLs, and publishing status.
           </p>
         </div>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -193,41 +287,58 @@ export default function PagesPage() {
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="space-y-4 p-5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search managed pages"
-                className="pl-10"
-              />
+            <div className="flex flex-col gap-3 md:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search pages"
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  setIsCreating(true);
+                  setDraftPage(blankPage());
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Create Page
+              </Button>
             </div>
 
             <div className="space-y-3">
-              {visiblePages.map((page) => {
-                const current = pages[page.slug] || clonePage(page);
-                return (
-                  <button
-                    key={page.slug}
-                    type="button"
-                    onClick={() => setSelectedSlug(page.slug)}
-                    className={`w-full rounded-xl border p-4 text-left transition ${
-                      selectedSlug === page.slug
-                        ? "border-blue-300 bg-blue-50 shadow-sm"
-                        : "border-slate-200 bg-white hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-slate-900">{page.name}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{page.slug}</p>
-                      </div>
-                      <LayoutTemplate className="h-4 w-4 text-slate-400" />
+              {visiblePages.map((page) => (
+                <button
+                  key={page.routeKey}
+                  type="button"
+                  onClick={() => {
+                    setIsCreating(false);
+                    setSelectedKey(page.routeKey);
+                  }}
+                  className={`w-full rounded-xl border p-4 text-left transition ${
+                    !isCreating && selectedKey === page.routeKey
+                      ? "border-blue-300 bg-blue-50 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">{page.name}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{page.routeKey}</p>
                     </div>
-                    <p className="mt-3 line-clamp-2 text-sm text-slate-600">{current.heroTitle}</p>
-                  </button>
-                );
-              })}
+                    <LayoutTemplate className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge className={statusClass(page.status)}>{formatStatus(page.status)}</Badge>
+                    <span className="text-xs text-slate-500">Slug: {page.slug}</span>
+                  </div>
+                </button>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -236,51 +347,111 @@ export default function PagesPage() {
           <CardContent className="space-y-6 p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-slate-900">{selectedPage.name}</p>
-                <p className="mt-1 text-sm text-slate-500">Edit hero copy, body sections, CTAs, and image URLs.</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {isCreating ? "Create public page content" : `Edit ${selectedPage.name || "public page"}`}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Use media-library or Cloudinary URLs directly in the image fields.
+                </p>
               </div>
-              <Button onClick={handleSave} disabled={saving} className="gap-2">
-                <Save className="h-4 w-4" />
-                {saving ? "Saving..." : "Save Page"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {!isCreating && canDeletePages && selectedPage._id ? (
+                  <Button type="button" variant="outline" className="gap-2" onClick={handleDelete} disabled={deleting}>
+                    <Trash2 className="h-4 w-4" />
+                    {deleting ? "Deleting..." : "Delete"}
+                  </Button>
+                ) : null}
+                <Button type="button" onClick={handleSave} disabled={saving} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {saving ? "Saving..." : isCreating ? "Create" : "Save"}
+                </Button>
+              </div>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Input value={selectedPage.name} onChange={(event) => updateSelectedPage((page) => ({ ...page, name: event.target.value }))} placeholder="Internal page name" />
-              <Input value={selectedPage.pageTitle} onChange={(event) => updateSelectedPage((page) => ({ ...page, pageTitle: event.target.value }))} placeholder="Page title" />
-              <Input value={selectedPage.seoTitle || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, seoTitle: event.target.value }))} placeholder="SEO title" />
-              <Input value={selectedPage.heroKicker || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, heroKicker: event.target.value }))} placeholder="Hero kicker" />
-            </div>
-
-            <Input
-              value={selectedPage.heroTitle}
-              onChange={(event) => updateSelectedPage((page) => ({ ...page, heroTitle: event.target.value }))}
-              placeholder="Hero title"
-            />
-
-            <Textarea
-              value={selectedPage.heroDescription || ""}
-              onChange={(event) => updateSelectedPage((page) => ({ ...page, heroDescription: event.target.value }))}
-              placeholder="Hero description"
-              className="min-h-28"
-            />
 
             <div className="grid gap-4 md:grid-cols-2">
               <Input
-                value={selectedPage.heroImageUrl || ""}
-                onChange={(event) => updateSelectedPage((page) => ({ ...page, heroImageUrl: event.target.value }))}
-                placeholder="Hero image URL"
+                value={selectedPage.name}
+                onChange={(event) => updatePage((page) => ({ ...page, name: event.target.value }))}
+                placeholder="Page title label"
               />
               <Input
+                value={selectedPage.pageTitle}
+                onChange={(event) => updatePage((page) => ({ ...page, pageTitle: event.target.value }))}
+                placeholder="Page title"
+              />
+              <Input
+                value={selectedPage.routeKey}
+                onChange={(event) => updatePage((page) => ({ ...page, routeKey: event.target.value }))}
+                placeholder="Route key"
+              />
+              <Input
+                value={selectedPage.slug}
+                onChange={(event) => updatePage((page) => ({ ...page, slug: event.target.value }))}
+                placeholder="Slug"
+              />
+              <Input
+                value={selectedPage.seoTitle || ""}
+                onChange={(event) => updatePage((page) => ({ ...page, seoTitle: event.target.value }))}
+                placeholder="SEO title"
+              />
+              <select
+                value={selectedPage.status}
+                onChange={(event) => updatePage((page) => ({ ...page, status: event.target.value as PageStatus }))}
+                className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <Textarea
+              value={selectedPage.seoDescription || ""}
+              onChange={(event) => updatePage((page) => ({ ...page, seoDescription: event.target.value }))}
+              placeholder="SEO description"
+              className="min-h-24"
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input
+                value={selectedPage.heroKicker || ""}
+                onChange={(event) => updatePage((page) => ({ ...page, heroKicker: event.target.value }))}
+                placeholder="Hero kicker"
+              />
+              <Input
+                value={selectedPage.heroTitle}
+                onChange={(event) => updatePage((page) => ({ ...page, heroTitle: event.target.value }))}
+                placeholder="Hero heading"
+              />
+            </div>
+
+            <Textarea
+              value={selectedPage.heroSubtitle || ""}
+              onChange={(event) => updatePage((page) => ({ ...page, heroSubtitle: event.target.value }))}
+              placeholder="Hero subtitle"
+              className="min-h-24"
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="relative">
+                <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={selectedPage.heroImageUrl || ""}
+                  onChange={(event) => updatePage((page) => ({ ...page, heroImageUrl: event.target.value }))}
+                  placeholder="Hero image/photo URL"
+                  className="pl-10"
+                />
+              </div>
+              <Input
                 value={selectedPage.heroImageAlt || ""}
-                onChange={(event) => updateSelectedPage((page) => ({ ...page, heroImageAlt: event.target.value }))}
+                onChange={(event) => updatePage((page) => ({ ...page, heroImageAlt: event.target.value }))}
                 placeholder="Hero image alt text"
               />
             </div>
 
             <Textarea
               value={selectedPage.bodyIntro || ""}
-              onChange={(event) => updateSelectedPage((page) => ({ ...page, bodyIntro: event.target.value }))}
+              onChange={(event) => updatePage((page) => ({ ...page, bodyIntro: event.target.value }))}
               placeholder="Body intro"
               className="min-h-28"
             />
@@ -289,14 +460,14 @@ export default function PagesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-900">Body sections</p>
-                  <p className="text-sm text-slate-500">Each section supports text, bullets, and an image URL.</p>
+                  <p className="text-sm text-slate-500">Title, body copy, bullets, and image/photo URL are supported.</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   className="gap-2"
                   onClick={() =>
-                    updateSelectedPage((page) => ({
+                    updatePage((page) => ({
                       ...page,
                       sections: [...page.sections, { title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
                     }))
@@ -308,7 +479,7 @@ export default function PagesPage() {
               </div>
 
               {selectedPage.sections.map((section, index) => (
-                <div key={`${selectedPage.slug}-section-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div key={`${selectedPage.routeKey}-section-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                       <Edit3 className="h-4 w-4 text-blue-700" />
@@ -321,7 +492,7 @@ export default function PagesPage() {
                         size="sm"
                         className="gap-2 text-red-600 hover:text-red-700"
                         onClick={() =>
-                          updateSelectedPage((page) => ({
+                          updatePage((page) => ({
                             ...page,
                             sections: page.sections.filter((_, sectionIndex) => sectionIndex !== index),
                           }))
@@ -362,7 +533,7 @@ export default function PagesPage() {
                         <Input
                           value={section.imageUrl || ""}
                           onChange={(event) => updateSection(index, (current) => ({ ...current, imageUrl: event.target.value }))}
-                          placeholder="Section image URL"
+                          placeholder="Section image/photo URL"
                           className="pl-10"
                         />
                       </div>
@@ -379,13 +550,38 @@ export default function PagesPage() {
 
             <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-sm font-medium text-slate-900">CTA area</p>
-              <Input value={selectedPage.ctaTitle || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaTitle: event.target.value }))} placeholder="CTA title" />
-              <Textarea value={selectedPage.ctaDescription || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaDescription: event.target.value }))} placeholder="CTA description" className="min-h-24" />
+              <Input
+                value={selectedPage.ctaTitle || ""}
+                onChange={(event) => updatePage((page) => ({ ...page, ctaTitle: event.target.value }))}
+                placeholder="CTA title"
+              />
+              <Textarea
+                value={selectedPage.ctaDescription || ""}
+                onChange={(event) => updatePage((page) => ({ ...page, ctaDescription: event.target.value }))}
+                placeholder="CTA description"
+                className="min-h-24"
+              />
               <div className="grid gap-4 md:grid-cols-2">
-                <Input value={selectedPage.ctaPrimaryText || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaPrimaryText: event.target.value }))} placeholder="Primary CTA text" />
-                <Input value={selectedPage.ctaPrimaryUrl || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaPrimaryUrl: event.target.value }))} placeholder="Primary CTA URL" />
-                <Input value={selectedPage.ctaSecondaryText || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaSecondaryText: event.target.value }))} placeholder="Secondary CTA text" />
-                <Input value={selectedPage.ctaSecondaryUrl || ""} onChange={(event) => updateSelectedPage((page) => ({ ...page, ctaSecondaryUrl: event.target.value }))} placeholder="Secondary CTA URL" />
+                <Input
+                  value={selectedPage.ctaPrimaryText || ""}
+                  onChange={(event) => updatePage((page) => ({ ...page, ctaPrimaryText: event.target.value }))}
+                  placeholder="CTA button text"
+                />
+                <Input
+                  value={selectedPage.ctaPrimaryUrl || ""}
+                  onChange={(event) => updatePage((page) => ({ ...page, ctaPrimaryUrl: event.target.value }))}
+                  placeholder="CTA button link"
+                />
+                <Input
+                  value={selectedPage.ctaSecondaryText || ""}
+                  onChange={(event) => updatePage((page) => ({ ...page, ctaSecondaryText: event.target.value }))}
+                  placeholder="Secondary CTA text"
+                />
+                <Input
+                  value={selectedPage.ctaSecondaryUrl || ""}
+                  onChange={(event) => updatePage((page) => ({ ...page, ctaSecondaryUrl: event.target.value }))}
+                  placeholder="Secondary CTA link"
+                />
               </div>
             </div>
           </CardContent>
@@ -393,4 +589,14 @@ export default function PagesPage() {
       </div>
     </div>
   );
+}
+
+function formatStatus(status: PageStatus) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function statusClass(status: PageStatus) {
+  if (status === "published") return "bg-emerald-100 text-emerald-700";
+  if (status === "archived") return "bg-slate-200 text-slate-700";
+  return "bg-amber-100 text-amber-700";
 }

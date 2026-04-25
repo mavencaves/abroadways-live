@@ -7,6 +7,7 @@ export type PublicPageSection = {
 };
 
 export type PublicPageContent = {
+  routeKey?: string;
   slug: string;
   name: string;
   pageTitle: string;
@@ -14,7 +15,7 @@ export type PublicPageContent = {
   seoDescription?: string;
   heroKicker?: string;
   heroTitle: string;
-  heroDescription?: string;
+  heroSubtitle?: string;
   heroImageUrl?: string;
   heroImageAlt?: string;
   bodyIntro?: string;
@@ -29,6 +30,7 @@ export type PublicPageContent = {
 
 export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
   "ielts-masterclass": {
+    routeKey: "ielts-masterclass",
     slug: "ielts-masterclass",
     name: "IELTS Masterclass",
     pageTitle: "IELTS Masterclass",
@@ -36,7 +38,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Join Abroadways for a practical IELTS masterclass focused on exam strategy, preparation plans, and score improvement.",
     heroKicker: "IELTS Masterclass",
     heroTitle: "A clearer IELTS prep starting point for students who want structure, strategy, and confidence.",
-    heroDescription:
+    heroSubtitle:
       "This Abroadways page now replaces the old legacy masterclass experience with a cleaner overview of what students can expect from a practical IELTS-focused session.",
     heroImageUrl: "/images/IELTS_masterclass/img_1.jpg",
     heroImageAlt: "Students preparing for IELTS",
@@ -81,6 +83,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     ctaSecondaryUrl: "/exams/ielts/overview",
   },
   facilities: {
+    routeKey: "facilities",
     slug: "facilities",
     name: "Why Abroadways",
     pageTitle: "Why Abroadways",
@@ -88,7 +91,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Understand how Abroadways combines counselling, planning, and student support in one structured platform.",
     heroKicker: "Why Abroadways",
     heroTitle: "A more structured way to move from study abroad research into real progress.",
-    heroDescription:
+    heroSubtitle:
       "This page now serves as the cleaner Abroadways explanation for students who reach an older facilities route but still need to understand what makes the platform useful.",
     heroImageUrl: "/images/random-image1.png",
     heroImageAlt: "Abroadways student guidance support",
@@ -131,6 +134,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     ctaSecondaryUrl: "/study-abroad",
   },
   careers: {
+    routeKey: "careers",
     slug: "careers",
     name: "Careers",
     pageTitle: "Careers",
@@ -138,7 +142,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Explore current career opportunities at Abroadways across counselling, content, and operations.",
     heroKicker: "Careers at Abroadways",
     heroTitle: "Join a team helping students make stronger international education decisions.",
-    heroDescription:
+    heroSubtitle:
       "Abroadways is building a student guidance platform that combines counselling, operational follow-up, digital tools, and practical decision support.",
     heroImageUrl: "/images/Bristy/vitaly-gariev-6UEyCVPkjys-unsplash.jpg",
     heroImageAlt: "Team collaboration at Abroadways",
@@ -169,6 +173,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     ctaSecondaryUrl: "/contact",
   },
   "knowledge-center": {
+    routeKey: "knowledge-center",
     slug: "knowledge-center",
     name: "Knowledge Center",
     pageTitle: "Knowledge Center",
@@ -176,7 +181,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Explore practical study abroad guidance on destinations, scholarships, documents, and exam planning.",
     heroKicker: "Knowledge Center",
     heroTitle: "A practical content hub for students planning study abroad with more clarity.",
-    heroDescription:
+    heroSubtitle:
       "This page now replaces the old legacy Bangla content tree with a cleaner Abroadways knowledge hub built around real student questions.",
     heroImageUrl: "/images/article1.jpg",
     heroImageAlt: "Student reading study abroad guidance",
@@ -207,6 +212,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     ctaSecondaryUrl: "/blog",
   },
   counseling: {
+    routeKey: "counseling",
     slug: "counseling",
     name: "Counselling",
     pageTitle: "Counselling",
@@ -214,7 +220,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Speak with Abroadways for counselling on destinations, documents, visas, and study abroad planning.",
     heroKicker: "Counselling",
     heroTitle: "Talk to Abroadways for clearer study abroad direction and better next steps.",
-    heroDescription:
+    heroSubtitle:
       "This page replaces the old counsellor surface with a cleaner explanation of what students can expect from Abroadways consultation support.",
     heroImageUrl: "/images/coun-hero.jpg",
     heroImageAlt: "Student counselling at Abroadways",
@@ -245,6 +251,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     ctaSecondaryUrl: "/study-abroad",
   },
   finance: {
+    routeKey: "finance",
     slug: "finance",
     name: "Finance Support",
     pageTitle: "Finance Support",
@@ -252,7 +259,7 @@ export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
     seoDescription: "Explore tuition, budgeting, funding pathways, and financial planning support with Abroadways.",
     heroKicker: "Finance Support",
     heroTitle: "Finance guidance that helps students and families plan study abroad with more confidence.",
-    heroDescription:
+    heroSubtitle:
       "Abroadways supports students with clearer thinking around tuition, living costs, affordability, and practical funding conversations.",
     heroImageUrl: "/images/finance-hero.png",
     heroImageAlt: "Student finance planning",

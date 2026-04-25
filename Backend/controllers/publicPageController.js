@@ -16,13 +16,40 @@ const sanitizeSections = (sections = []) =>
         }))
     : [];
 
-const getPublicPages = asyncHandler(async (req, res) => {
+const buildPayload = (body = {}, userId = null, routeKeyFromParam = "") => ({
+  routeKey: `${body.routeKey || routeKeyFromParam || ""}`.trim().toLowerCase(),
+  slug: `${body.slug || body.routeKey || routeKeyFromParam || ""}`.trim().toLowerCase(),
+  name: `${body.name || ""}`.trim(),
+  pageTitle: `${body.pageTitle || ""}`.trim(),
+  seoTitle: `${body.seoTitle || ""}`.trim(),
+  seoDescription: `${body.seoDescription || ""}`.trim(),
+  heroKicker: `${body.heroKicker || ""}`.trim(),
+  heroTitle: `${body.heroTitle || ""}`.trim(),
+  heroSubtitle: `${body.heroSubtitle || body.heroDescription || ""}`.trim(),
+  heroImageUrl: `${body.heroImageUrl || ""}`.trim(),
+  heroImageAlt: `${body.heroImageAlt || ""}`.trim(),
+  bodyIntro: `${body.bodyIntro || ""}`.trim(),
+  sections: sanitizeSections(body.sections),
+  ctaTitle: `${body.ctaTitle || ""}`.trim(),
+  ctaDescription: `${body.ctaDescription || ""}`.trim(),
+  ctaPrimaryText: `${body.ctaPrimaryText || ""}`.trim(),
+  ctaPrimaryUrl: `${body.ctaPrimaryUrl || ""}`.trim(),
+  ctaSecondaryText: `${body.ctaSecondaryText || ""}`.trim(),
+  ctaSecondaryUrl: `${body.ctaSecondaryUrl || ""}`.trim(),
+  status: ["draft", "published", "archived"].includes(`${body.status || ""}`) ? body.status : "draft",
+  updatedBy: userId,
+});
+
+const getAdminPublicPages = asyncHandler(async (req, res) => {
   const pages = await PublicPage.find({}).sort({ name: 1 }).lean();
   res.json(pages);
 });
 
-const getPublicPageBySlug = asyncHandler(async (req, res) => {
-  const page = await PublicPage.findOne({ slug: req.params.slug.toLowerCase() }).lean();
+const getPublicPageByRouteKey = asyncHandler(async (req, res) => {
+  const page = await PublicPage.findOne({
+    routeKey: req.params.routeKey.toLowerCase(),
+    status: "published",
+  }).lean();
 
   if (!page) {
     res.status(404);
@@ -32,37 +59,17 @@ const getPublicPageBySlug = asyncHandler(async (req, res) => {
   res.json(page);
 });
 
-const upsertPublicPageBySlug = asyncHandler(async (req, res) => {
-  const slug = `${req.params.slug || ""}`.trim().toLowerCase();
-  const payload = {
-    slug,
-    name: `${req.body.name || ""}`.trim(),
-    pageTitle: `${req.body.pageTitle || ""}`.trim(),
-    seoTitle: `${req.body.seoTitle || ""}`.trim(),
-    seoDescription: `${req.body.seoDescription || ""}`.trim(),
-    heroKicker: `${req.body.heroKicker || ""}`.trim(),
-    heroTitle: `${req.body.heroTitle || ""}`.trim(),
-    heroDescription: `${req.body.heroDescription || ""}`.trim(),
-    heroImageUrl: `${req.body.heroImageUrl || ""}`.trim(),
-    heroImageAlt: `${req.body.heroImageAlt || ""}`.trim(),
-    bodyIntro: `${req.body.bodyIntro || ""}`.trim(),
-    sections: sanitizeSections(req.body.sections),
-    ctaTitle: `${req.body.ctaTitle || ""}`.trim(),
-    ctaDescription: `${req.body.ctaDescription || ""}`.trim(),
-    ctaPrimaryText: `${req.body.ctaPrimaryText || ""}`.trim(),
-    ctaPrimaryUrl: `${req.body.ctaPrimaryUrl || ""}`.trim(),
-    ctaSecondaryText: `${req.body.ctaSecondaryText || ""}`.trim(),
-    ctaSecondaryUrl: `${req.body.ctaSecondaryUrl || ""}`.trim(),
-    updatedBy: req.user?._id || null,
-  };
+const upsertPublicPageByRouteKey = asyncHandler(async (req, res) => {
+  const routeKey = `${req.params.routeKey || ""}`.trim().toLowerCase();
+  const payload = buildPayload(req.body, req.user?._id || null, routeKey);
 
-  if (!payload.slug || !payload.name || !payload.pageTitle || !payload.heroTitle) {
+  if (!payload.routeKey || !payload.slug || !payload.name || !payload.pageTitle || !payload.heroTitle) {
     res.status(400);
-    throw new Error("Slug, name, page title, and hero title are required.");
+    throw new Error("Route key, slug, name, page title, and hero title are required.");
   }
 
   const page = await PublicPage.findOneAndUpdate(
-    { slug },
+    { routeKey },
     payload,
     {
       new: true,
@@ -75,8 +82,40 @@ const upsertPublicPageBySlug = asyncHandler(async (req, res) => {
   res.json(page);
 });
 
+const createPublicPage = asyncHandler(async (req, res) => {
+  const payload = buildPayload(req.body, req.user?._id || null);
+
+  if (!payload.routeKey || !payload.slug || !payload.name || !payload.pageTitle || !payload.heroTitle) {
+    res.status(400);
+    throw new Error("Route key, slug, name, page title, and hero title are required.");
+  }
+
+  const existing = await PublicPage.findOne({ routeKey: payload.routeKey });
+  if (existing) {
+    res.status(409);
+    throw new Error("A public page with this route key already exists.");
+  }
+
+  const page = await PublicPage.create(payload);
+  res.status(201).json(page);
+});
+
+const deletePublicPage = asyncHandler(async (req, res) => {
+  const page = await PublicPage.findById(req.params.id);
+
+  if (!page) {
+    res.status(404);
+    throw new Error("Public page content not found.");
+  }
+
+  await page.deleteOne();
+  res.json({ message: "Public page content deleted." });
+});
+
 module.exports = {
-  getPublicPages,
-  getPublicPageBySlug,
-  upsertPublicPageBySlug,
+  getAdminPublicPages,
+  getPublicPageByRouteKey,
+  upsertPublicPageByRouteKey,
+  createPublicPage,
+  deletePublicPage,
 };

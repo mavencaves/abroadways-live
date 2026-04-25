@@ -17,11 +17,12 @@ export default function CmsPublicPage({ slug, fallback }: CmsPublicPageProps) {
 
     const loadPage = async () => {
       try {
-        const response = await publicPagesApi.getBySlug(slug);
+        const response = await publicPagesApi.getByRouteKey(slug);
         if (!isMounted || !response?.data) return;
         setPageContent({
           ...fallback,
           ...response.data,
+          routeKey: response.data.routeKey || slug,
           sections: Array.isArray(response.data.sections) && response.data.sections.length > 0 ? response.data.sections : fallback.sections,
         });
       } catch {
@@ -54,9 +55,9 @@ export default function CmsPublicPage({ slug, fallback }: CmsPublicPageProps) {
             <h1 className="mt-5 max-w-4xl font-serif text-4xl leading-tight sm:text-5xl">
               {pageContent.heroTitle}
             </h1>
-            {pageContent.heroDescription ? (
+            {pageContent.heroSubtitle ? (
               <p className="mt-6 max-w-3xl text-base leading-8 text-blue-100 sm:text-lg">
-                {pageContent.heroDescription}
+                {pageContent.heroSubtitle}
               </p>
             ) : null}
 
