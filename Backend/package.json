@@ -7,7 +7,9 @@
     "start": "node server.js",
     "server": "nodemon server.js",
     "promote-user": "node scripts/promote-user.js",
-    "set-user-password": "node scripts/set-user-password.js"
+    "set-user-password": "node scripts/set-user-password.js",
+    "seed:ielts": "node scripts/seed-ielts.js",
+    "seed:ielts-expanded": "node scripts/seed-ielts-expanded.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

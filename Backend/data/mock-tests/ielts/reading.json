@@ -1,0 +1,462 @@
+{
+  "datasetName": "Abroadways IELTS Expanded Practice Bank",
+  "version": 2,
+  "examSlug": "ielts",
+  "sourceType": "original",
+  "sectionKey": "reading",
+  "notes": "Original IELTS-style reading passages with mixed question types for the Abroadways mock-test platform.",
+  "questions": [
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "According to Passage R1, what was the main purpose of the neighbourhood seed library?",
+      "options": [
+        "To sell low-cost gardening tools to local residents",
+        "To help residents exchange seeds and preserve suitable local varieties",
+        "To replace all private gardens with a community farm",
+        "To train students in commercial farming methods"
+      ],
+      "correctAnswer": "To help residents exchange seeds and preserve suitable local varieties",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "urban-gardening", "mcq", "community"],
+      "explanation": "The passage explains that the library let people borrow, grow, and return seeds so that strong local varieties could continue circulating in the neighbourhood.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "includeInStarter": true,
+        "passageText": "When a seed library opened beside a busy market in the centre of Khulna, many residents assumed it was a small gardening shop. Instead, the shelves held labelled envelopes of bean, spinach, tomato, and herb seeds that could be borrowed free of charge. The organisers had noticed that families in the area were increasingly interested in rooftop and balcony gardening, yet many people were buying imported seed packets that performed poorly in the local climate. The library offered a simple alternative. Members borrowed a small number of seeds, planted them at home, and then returned fresh seeds from the strongest plants at the end of the season. Over time, the collection became better adapted to local heat, rainfall, and soil conditions. Teachers brought schoolchildren to learn how food crops developed, while elderly gardeners shared practical advice on storing seeds in glass jars and drying them away from direct sunlight. The project did not aim to replace shops or commercial farms. Its purpose was to build community knowledge, reduce waste, and protect the varieties that grew well in local conditions."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The seed library was created because imported seeds were often unsuitable for the local environment.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "True",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "urban-gardening"],
+      "explanation": "The passage directly states that many imported seed packets performed poorly in the local climate, which encouraged organisers to create the library.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The organisers wanted the seed library to become the main supplier of crops for local farms.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "False",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "true-false-not-given", "purpose"],
+      "explanation": "The text says the project did not aim to replace shops or commercial farms, so the statement contradicts the passage.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match each group with the activity mentioned in Passage R1.",
+      "options": [
+        "Teachers",
+        "Elderly gardeners",
+        "Schoolchildren"
+      ],
+      "correctAnswer": {
+        "Teachers": "brought students to observe crop development",
+        "Elderly gardeners": "shared advice about drying and storing seeds",
+        "Schoolchildren": "learned how food crops developed"
+      },
+      "marks": 3,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "roles"],
+      "explanation": "The passage links teachers with bringing children to the site, elderly gardeners with storage advice, and schoolchildren with observing how crops grow.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "interactionType": "matching-information"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "fill",
+      "text": "Complete the sentence with ONE WORD from Passage R1: Members returned fresh seeds from the ______ plants at the end of the season.",
+      "correctAnswer": "strongest",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "sentence-completion", "vocabulary"],
+      "explanation": "The exact phrase in the passage is 'returned fresh seeds from the strongest plants'.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Why did the coastal museum eventually replace bright spotlights in its exhibition hall?",
+      "options": [
+        "They were too expensive to import",
+        "They distorted the colours of old textile pieces",
+        "They were banned by local safety officials",
+        "They made the building too cold in winter"
+      ],
+      "correctAnswer": "They distorted the colours of old textile pieces",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "museum", "mcq", "detail"],
+      "explanation": "The passage says curators realised the strong white light made natural dyes appear flatter and less detailed than they really were.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection",
+        "includeInStarter": true,
+        "passageText": "The coastal museum in Barishal had long used bright overhead spotlights to illuminate its collection of woven mats, fishing tools, painted clay pots, and embroidered jackets. At first, visitors seemed pleased because the objects were easy to see from a distance. However, curators gradually realised that the lighting system created two problems. First, strong white light made natural dyes appear flatter and less detailed than they really were. Second, the lamps generated unnecessary heat, which could slowly damage delicate fabrics. After consulting conservators, the museum replaced the system with adjustable LEDs that produced less heat and could be angled more precisely. The new arrangement allowed curators to highlight fine stitching and surface texture without overwhelming the objects. The museum also changed its display labels. Previously, labels focused on dates and measurements, but the revised version explained who made the objects, how they were used, and why certain materials were chosen. As a result, visitors began spending longer in the gallery and asking more detailed questions. The museum director later said the goal had not been to make the room darker or more dramatic. It had been to make the objects easier to understand in the context of everyday coastal life."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The new LED system reduced the amount of heat directed at fragile items.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "True",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "museum"],
+      "explanation": "The passage clearly says the LEDs produced less heat, helping protect delicate fabrics.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "What change was made to the museum labels after the lighting system was updated?",
+      "options": [
+        "They were shortened to reduce visual clutter",
+        "They were translated into several regional languages",
+        "They began to explain makers, uses, and material choices",
+        "They started to include ticket prices and opening times"
+      ],
+      "correctAnswer": "They began to explain makers, uses, and material choices",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "museum", "labels", "mcq"],
+      "explanation": "The passage contrasts the old labels, which focused on dates and measurements, with the new labels, which explained who made the objects, how they were used, and why materials were chosen.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match the museum improvement with its main benefit in Passage R2.",
+      "options": [
+        "Adjustable LEDs",
+        "Revised display labels"
+      ],
+      "correctAnswer": {
+        "Adjustable LEDs": "revealed fine visual details while reducing heat",
+        "Revised display labels": "helped visitors understand social and practical context"
+      },
+      "marks": 2,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "cause-and-effect"],
+      "explanation": "The passage presents the lighting and labels as two linked changes: one improved how the objects looked, and the other improved how visitors interpreted them.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection",
+        "interactionType": "matching-features"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "What was the main reason the city council introduced the quiet-street pilot near the night market?",
+      "options": [
+        "To reduce late-night noise without closing the market completely",
+        "To move food vendors to an indoor shopping centre",
+        "To create more space for private cars",
+        "To replace local musicians with digital advertising"
+      ],
+      "correctAnswer": "To reduce late-night noise without closing the market completely",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "urban-policy", "mcq", "night-market"],
+      "explanation": "The passage explains that the council wanted to protect neighbourhood activity while also responding to complaints about late-night noise.",
+      "meta": {
+        "passageId": "R3",
+        "passageTitle": "Night Markets and Quiet Streets",
+        "includeInStarter": true,
+        "passageText": "For years, the Friday night market beside Shapla Road had been one of the busiest places in the district. Families came for grilled fish, second-hand books, and handmade clothing, while small music groups performed at the edge of the square. However, the market also created tension. Residents living in nearby apartment buildings complained that loudspeakers, delivery vans, and late cleaning work kept them awake long after midnight. Rather than closing the market, the city council launched a six-month quiet-street pilot. Vendors were asked to switch from loudspeakers to printed signs after 9 p.m., delivery vehicles had to unload before evening, and cleaning teams began work at dawn instead of midnight. The council also widened one pedestrian lane so shoppers could move more easily without spilling into the road. At first, some stall owners feared the changes would reduce business. Instead, customer numbers remained stable, and visitors said the market felt less crowded. Residents reported fewer sleep disturbances, although some still objected to the occasional live music performance. In its final report, the council concluded that small scheduling changes had improved the area more effectively than a complete ban would have done."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "During the pilot, vendors were still allowed to use loudspeakers after 9 p.m.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "False",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "policy"],
+      "explanation": "The passage says vendors had to switch from loudspeakers to printed signs after 9 p.m., so the statement is incorrect.",
+      "meta": {
+        "passageId": "R3",
+        "passageTitle": "Night Markets and Quiet Streets"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The passage states that local musicians were paid by the city council to continue performing.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "Not Given",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "true-false-not-given", "detail"],
+      "explanation": "The passage mentions live music performances, but it does not say who paid the musicians.",
+      "meta": {
+        "passageId": "R3",
+        "passageTitle": "Night Markets and Quiet Streets"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match each group with the outcome mentioned in Passage R3.",
+      "options": [
+        "Residents",
+        "Stall owners",
+        "Visitors"
+      ],
+      "correctAnswer": {
+        "Residents": "reported fewer sleep disturbances",
+        "Stall owners": "worried at first that business would fall",
+        "Visitors": "felt the market was less crowded"
+      },
+      "marks": 3,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "stakeholders"],
+      "explanation": "The passage links each group with a different response to the pilot scheme and its results.",
+      "meta": {
+        "passageId": "R3",
+        "passageTitle": "Night Markets and Quiet Streets",
+        "interactionType": "matching-information"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "fill",
+      "text": "Complete the sentence with ONE WORD from Passage R3: The council concluded that small ______ changes were more effective than a complete ban.",
+      "correctAnswer": "scheduling",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "sentence-completion", "policy-language"],
+      "explanation": "The final sentence states that small scheduling changes had improved the area more effectively than a complete ban.",
+      "meta": {
+        "passageId": "R3",
+        "passageTitle": "Night Markets and Quiet Streets",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Why were floating garden beds useful to farmers in the flood-prone district?",
+      "options": [
+        "They allowed crops to grow above temporary floodwater",
+        "They eliminated the need for compost",
+        "They made it possible to store vegetables for years",
+        "They reduced the cost of transporting crops to the city"
+      ],
+      "correctAnswer": "They allowed crops to grow above temporary floodwater",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "agriculture", "mcq", "flooding"],
+      "explanation": "The passage explains that the beds floated on floodwater, allowing vegetables to continue growing when fields were submerged.",
+      "meta": {
+        "passageId": "R4",
+        "passageTitle": "Floating Gardens for Seasonal Floods",
+        "includeInStarter": true,
+        "passageText": "In a low-lying district where fields remain underwater for several weeks each monsoon, some farming families have returned to an old method of growing vegetables on floating beds. These structures are built by tying together layers of water hyacinth and straw on a light bamboo frame. Once the surface becomes firm enough, farmers add compost and plant quick-growing crops such as spinach, coriander, and gourds. Because the beds rise and fall with the water level, the roots remain above stagnant floodwater. An agricultural officer who visited the area noted that the method had once been dismissed as too labour-intensive. However, recent seasons of irregular rainfall changed local opinion. Farmers said the floating beds did not replace all land cultivation, but they provided a reliable backup during long floods. The officer was especially interested in the way growers reused local materials and shared young seedlings between households. Some farmers even moored the beds near their homes so they could check them several times a day. The main difficulty was keeping the beds stable during strong winds, so many families attached short bamboo poles to the riverbed for support."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "fill",
+      "text": "Complete the sentence with ONE WORD from Passage R4: Farmers used light ______ frames to support the floating beds.",
+      "correctAnswer": "bamboo",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "sentence-completion", "materials"],
+      "explanation": "The passage says the beds are built on a light bamboo frame.",
+      "meta": {
+        "passageId": "R4",
+        "passageTitle": "Floating Gardens for Seasonal Floods"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match each material or feature from Passage R4 with its purpose.",
+      "options": [
+        "Water hyacinth and straw",
+        "Compost",
+        "Short bamboo poles"
+      ],
+      "correctAnswer": {
+        "Water hyacinth and straw": "formed the main body of the floating bed",
+        "Compost": "created a planting surface for crops",
+        "Short bamboo poles": "helped keep the beds steady in strong winds"
+      },
+      "marks": 3,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "process"],
+      "explanation": "Each item is tied to a clear function in the description of how the beds were built and maintained.",
+      "meta": {
+        "passageId": "R4",
+        "passageTitle": "Floating Gardens for Seasonal Floods",
+        "interactionType": "matching-features"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "According to Passage R4, floating beds completely replaced ordinary farming on dry land.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "False",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "agriculture"],
+      "explanation": "The passage clearly says floating beds did not replace all land cultivation.",
+      "meta": {
+        "passageId": "R4",
+        "passageTitle": "Floating Gardens for Seasonal Floods"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "What impressed the agricultural officer most about the growers' method?",
+      "options": [
+        "They imported stronger materials from other districts",
+        "They sold most of their seedlings to tourist markets",
+        "They reused local materials and shared seedlings between households",
+        "They mechanised the movement of beds during storms"
+      ],
+      "correctAnswer": "They reused local materials and shared seedlings between households",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "detail", "mcq", "community"],
+      "explanation": "The passage states that the officer was especially interested in the reuse of local materials and the sharing of seedlings.",
+      "meta": {
+        "passageId": "R4",
+        "passageTitle": "Floating Gardens for Seasonal Floods"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Why did the district archive begin digitising railway records?",
+      "options": [
+        "The paper files had become difficult to access and preserve",
+        "The archive wanted to sell rare documents to collectors",
+        "Local schools requested only audio interviews instead of written records",
+        "The railway company closed all stations in the district"
+      ],
+      "correctAnswer": "The paper files had become difficult to access and preserve",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "archives", "mcq", "digitisation"],
+      "explanation": "The passage explains that fragile paper records were hard to search and increasingly expensive to conserve physically.",
+      "meta": {
+        "passageId": "R5",
+        "passageTitle": "The Return of Local Rail Archives",
+        "passageText": "In a renovated office beside the old station in Ishwardi, volunteers have been cataloguing railway records that were once piled in unlocked cupboards. The collection includes station logs, ticket ledgers, engineering sketches, and letters from passengers written decades ago. For many years, these materials were rarely used because researchers had to travel in person and ask staff to search through fragile files by hand. The district archive eventually decided to digitise the collection after several ledgers were damaged by humidity. A small scanning team worked with retired railway employees who could still explain abbreviations and route names that no longer appeared on modern maps. Instead of storing the images in a closed system, the archive partnered with local schools and community groups to create a searchable website. Students used the site to trace how trade routes changed over time, while family historians searched for references to relatives who had worked on the rail network. The project also changed how the archive described its collection. Earlier catalogues grouped records only by year, but the new system added themes such as migration, commerce, engineering, and everyday travel. According to the lead archivist, the biggest success was not simply preserving old paper. It was turning overlooked material into a source of local memory and public research."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The archive trained retired railway employees as full-time conservation technicians before scanning began.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "Not Given",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "true-false-not-given", "archives"],
+      "explanation": "The passage says retired employees helped explain abbreviations and route names, but it does not say they were trained as full-time conservation technicians.",
+      "meta": {
+        "passageId": "R5",
+        "passageTitle": "The Return of Local Rail Archives"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "fill",
+      "text": "Complete the sentence with ONE WORD from Passage R5: The new website made the collection easier to search because it was ______.",
+      "correctAnswer": "searchable",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "sentence-completion", "technology"],
+      "explanation": "The passage states that the archive helped create a searchable website.",
+      "meta": {
+        "passageId": "R5",
+        "passageTitle": "The Return of Local Rail Archives"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match each archive material in Passage R5 with the kind of information it is most likely to contain.",
+      "options": [
+        "Station logs",
+        "Engineering sketches",
+        "Letters from passengers"
+      ],
+      "correctAnswer": {
+        "Station logs": "operational details about train movements",
+        "Engineering sketches": "technical designs and structural plans",
+        "Letters from passengers": "personal experiences and complaints"
+      },
+      "marks": 3,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "document-types"],
+      "explanation": "Each type of archive item is associated with a distinct kind of historical evidence.",
+      "meta": {
+        "passageId": "R5",
+        "passageTitle": "The Return of Local Rail Archives",
+        "interactionType": "matching-features"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "What does the lead archivist identify as the project's biggest success?",
+      "options": [
+        "Selling digital copies to international museums",
+        "Turning neglected records into a resource for public memory and research",
+        "Reducing the archive's staffing costs permanently",
+        "Replacing old paper files with audio recordings"
+      ],
+      "correctAnswer": "Turning neglected records into a resource for public memory and research",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "mcq", "main-idea", "archives"],
+      "explanation": "The final sentence says the greatest success was making overlooked material useful for local memory and public research.",
+      "meta": {
+        "passageId": "R5",
+        "passageTitle": "The Return of Local Rail Archives"
+      }
+    }
+  ]
+}

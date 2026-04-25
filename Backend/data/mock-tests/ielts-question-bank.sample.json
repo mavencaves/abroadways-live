@@ -1,0 +1,444 @@
+{
+  "datasetName": "Abroadways IELTS Original Practice Bank",
+  "version": 1,
+  "examSlug": "ielts",
+  "sourceType": "original",
+  "notes": "Sample IELTS-style question bank for mock-test seeding. All content is original and structured to match the mock test create-question payload shape.",
+  "questions": [
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "According to Passage R1, what was the main purpose of the neighbourhood seed library?",
+      "options": [
+        "To sell low-cost gardening tools to local residents",
+        "To help residents exchange seeds and preserve suitable local varieties",
+        "To replace all private gardens with a community farm",
+        "To train students in commercial farming methods"
+      ],
+      "correctAnswer": "To help residents exchange seeds and preserve suitable local varieties",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "urban-gardening", "mcq", "community"],
+      "explanation": "The passage explains that the library let people borrow, grow, and return seeds so that strong local varieties could continue circulating in the neighbourhood.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "passageText": "When a seed library opened beside a busy market in the centre of Khulna, many residents assumed it was a small gardening shop. Instead, the shelves held labelled envelopes of bean, spinach, tomato, and herb seeds that could be borrowed free of charge. The organisers had noticed that families in the area were increasingly interested in rooftop and balcony gardening, yet many people were buying imported seed packets that performed poorly in the local climate. The library offered a simple alternative. Members borrowed a small number of seeds, planted them at home, and then returned fresh seeds from the strongest plants at the end of the season. Over time, the collection became better adapted to local heat, rainfall, and soil conditions. Teachers brought schoolchildren to learn how food crops developed, while elderly gardeners shared practical advice on storing seeds in glass jars and drying them away from direct sunlight. The project did not aim to replace shops or commercial farms. Its purpose was to build community knowledge, reduce waste, and protect the varieties that grew well in local conditions."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The seed library was created because imported seeds were often unsuitable for the local environment.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "True",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "urban-gardening"],
+      "explanation": "The passage directly states that many imported seed packets performed poorly in the local climate, which encouraged organisers to create the library.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The organisers wanted the seed library to become the main supplier of crops for local farms.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "False",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "true-false-not-given", "purpose"],
+      "explanation": "The text says the project did not aim to replace shops or commercial farms, so the statement contradicts the passage.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match each group with the activity mentioned in Passage R1.",
+      "options": [
+        "Teachers",
+        "Elderly gardeners",
+        "Schoolchildren"
+      ],
+      "correctAnswer": {
+        "Teachers": "brought students to observe crop development",
+        "Elderly gardeners": "shared advice about drying and storing seeds",
+        "Schoolchildren": "learned how food crops developed"
+      },
+      "marks": 3,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "roles"],
+      "explanation": "The passage links teachers with bringing children to the site, elderly gardeners with storage advice, and schoolchildren with observing how crops grow.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City",
+        "interactionType": "matching-information"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "fill",
+      "text": "Complete the sentence with ONE WORD from Passage R1: Members returned fresh seeds from the ______ plants at the end of the season.",
+      "correctAnswer": "strongest",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "sentence-completion", "vocabulary"],
+      "explanation": "The exact phrase in the passage is 'returned fresh seeds from the strongest plants'.",
+      "meta": {
+        "passageId": "R1",
+        "passageTitle": "A Seed Library in the City"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Why did the coastal museum eventually replace bright spotlights in its exhibition hall?",
+      "options": [
+        "They were too expensive to import",
+        "They distorted the colours of old textile pieces",
+        "They were banned by local safety officials",
+        "They made the building too cold in winter"
+      ],
+      "correctAnswer": "They distorted the colours of old textile pieces",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "museum", "mcq", "detail"],
+      "explanation": "The passage says curators realised the strong white light made natural dyes appear flatter and less detailed than they really were.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection",
+        "passageText": "The coastal museum in Barishal had long used bright overhead spotlights to illuminate its collection of woven mats, fishing tools, painted clay pots, and embroidered jackets. At first, visitors seemed pleased because the objects were easy to see from a distance. However, curators gradually realised that the lighting system created two problems. First, strong white light made natural dyes appear flatter and less detailed than they really were. Second, the lamps generated unnecessary heat, which could slowly damage delicate fabrics. After consulting conservators, the museum replaced the system with adjustable LEDs that produced less heat and could be angled more precisely. The new arrangement allowed curators to highlight fine stitching and surface texture without overwhelming the objects. The museum also changed its display labels. Previously, labels focused on dates and measurements, but the revised version explained who made the objects, how they were used, and why certain materials were chosen. As a result, visitors began spending longer in the gallery and asking more detailed questions. The museum director later said the goal had not been to make the room darker or more dramatic. It had been to make the objects easier to understand in the context of everyday coastal life."
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "tf",
+      "text": "The new LED system reduced the amount of heat directed at fragile items.",
+      "options": ["True", "False", "Not Given"],
+      "correctAnswer": "True",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "reading", "true-false-not-given", "museum"],
+      "explanation": "The passage clearly says the LEDs produced less heat, helping protect delicate fabrics.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "What change was made to the museum labels after the lighting system was updated?",
+      "options": [
+        "They were shortened to reduce visual clutter",
+        "They were translated into several regional languages",
+        "They began to explain makers, uses, and material choices",
+        "They started to include ticket prices and opening times"
+      ],
+      "correctAnswer": "They began to explain makers, uses, and material choices",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "museum", "labels", "mcq"],
+      "explanation": "The passage contrasts the old labels, which focused on dates and measurements, with the new labels, which explained who made the objects, how they were used, and why materials were chosen.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection"
+      }
+    },
+    {
+      "sectionKey": "reading",
+      "type": "mcq",
+      "text": "Match the museum improvement with its main benefit in Passage R2.",
+      "options": [
+        "Adjustable LEDs",
+        "Revised display labels"
+      ],
+      "correctAnswer": {
+        "Adjustable LEDs": "revealed fine visual details while reducing heat",
+        "Revised display labels": "helped visitors understand social and practical context"
+      },
+      "marks": 2,
+      "difficulty": "medium",
+      "tags": ["ielts", "reading", "matching", "cause-and-effect"],
+      "explanation": "The passage presents the lighting and labels as two linked changes: one improved how the objects looked, and the other improved how visitors interpreted them.",
+      "meta": {
+        "passageId": "R2",
+        "passageTitle": "Lighting an Historic Collection",
+        "interactionType": "matching-features"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L1, why does Rafi initially call the library help desk?",
+      "options": [
+        "To report a lost membership card",
+        "To ask whether he can reserve a study room",
+        "To cancel a workshop booking",
+        "To apply for a volunteer position"
+      ],
+      "correctAnswer": "To ask whether he can reserve a study room",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "library", "mcq", "reservation"],
+      "explanation": "Rafi opens the conversation by asking whether a small study room is available for a group project on Thursday afternoon.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room",
+        "audioType": "conversation",
+        "scriptText": "Receptionist: City Library help desk, this is Mina speaking. How can I help? Rafi: Hi, I'd like to know if I can reserve a small study room for a group project this Thursday afternoon. Receptionist: Yes, small rooms can be booked for two hours at a time. How many people will be coming? Rafi: Four. We only need a whiteboard and a power socket for a laptop. Receptionist: That's fine. The first available slot after lunch is from 2:30 to 4:30. Rafi: That works well. Could you book it under Rafi Karim? Receptionist: Certainly. Can I also take your membership number? Rafi: Yes, it's 18426. Receptionist: Thank you. Please arrive ten minutes early, because if no one has checked in by the start time, the room may be offered to someone else. Rafi: Understood. Is food allowed inside? Receptionist: Water bottles are fine, but please keep snacks outside the room. Rafi: No problem. Thanks for your help."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L1: The reserved study room is available from ______ to 4:30.",
+      "correctAnswer": "2:30",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "time"],
+      "explanation": "The receptionist offers the slot from 2:30 to 4:30.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L1: Rafi's membership number is ______.",
+      "correctAnswer": "18426",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "note-completion", "number"],
+      "explanation": "Rafi gives his membership number as 18426 when Mina asks for it.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "What rule does Mina mention about using the study room?",
+      "options": [
+        "Students must bring their own chairs",
+        "Everyone must sign out when leaving",
+        "Late arrivals may lose the booking",
+        "Only printed materials may be used"
+      ],
+      "correctAnswer": "Late arrivals may lose the booking",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "rules"],
+      "explanation": "Mina says the room may be offered to someone else if nobody checks in by the start time.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L2, what is the main problem discussed in the farm podcast?",
+      "options": [
+        "The farm has too many workers during harvest season",
+        "Rainwater is running off quickly instead of soaking into the soil",
+        "Local customers prefer imported vegetables",
+        "The farm cannot store enough seeds for the next year"
+      ],
+      "correctAnswer": "Rainwater is running off quickly instead of soaking into the soil",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "lecture", "environment", "mcq"],
+      "explanation": "The speaker explains that compact soil caused water to run across the surface instead of being absorbed.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm",
+        "audioType": "monologue",
+        "scriptText": "Speaker: Today we're looking at a small vegetable farm outside Cumilla that struggled with water retention. After short periods of heavy rain, the top layer of soil became hard, and water moved across the field instead of sinking in. The farm team first assumed they needed to dig deeper drainage channels, but an agricultural adviser suggested a different approach. She noticed that repeated foot traffic and machine use had compacted the surface. Her advice was to reduce unnecessary movement across the beds, cover bare ground with organic mulch, and plant a fast-growing clover between crop rows after harvest. Within one season, the farm recorded slower runoff and improved moisture around young plants. The change did not eliminate irrigation, but it reduced the number of emergency watering sessions during hot weeks. The adviser also recommended keeping a simple field diary. Staff wrote down rainfall amounts, planting dates, and any visible changes in leaf colour. These notes helped them compare sections of the farm and identify where improvements were strongest."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L2: The adviser suggested planting ______ between crop rows after harvest.",
+      "correctAnswer": "clover",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "agriculture"],
+      "explanation": "The speaker states that the adviser recommended planting fast-growing clover between crop rows after harvest.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "Why did the adviser recommend keeping a field diary in Listening L2?",
+      "options": [
+        "To calculate the exact market value of each crop",
+        "To compare different parts of the farm over time",
+        "To train new workers in machine safety rules",
+        "To decide which seeds should be imported"
+      ],
+      "correctAnswer": "To compare different parts of the farm over time",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "reasoning"],
+      "explanation": "The speaker says the notes helped the team compare sections of the farm and see where improvements were strongest.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The chart below shows the percentage of university students in one city who used four different forms of transport to reach campus in 2018 and 2024. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "chart", "transport"],
+      "explanation": "A strong response should present an overview, compare the biggest increases and decreases, and report key figures accurately without giving personal opinion.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "bar-chart",
+        "promptTheme": "transport trends",
+        "dataPoints": {
+          "2018": {
+            "bus": 42,
+            "rickshaw": 18,
+            "bicycle": 25,
+            "walking": 15
+          },
+          "2024": {
+            "bus": 31,
+            "rickshaw": 14,
+            "bicycle": 34,
+            "walking": 21
+          }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The diagram below illustrates how rainwater is collected and filtered for household use in a small coastal community. Summarise the process by selecting and reporting the main features.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "process", "water"],
+      "explanation": "A strong answer should describe the stages in sequence, use process language, and avoid opinions or unsupported explanations.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "process-diagram",
+        "promptTheme": "rainwater collection",
+        "processStages": [
+          "Rain falls on sloped roofs",
+          "Water flows through gutters into a storage tank",
+          "Large particles are removed by a mesh filter",
+          "Water passes through sand and charcoal layers",
+          "Filtered water is stored in household containers"
+        ]
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Some people believe that university students should be required to complete a period of community service before graduation. To what extent do you agree or disagree?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "education", "opinion"],
+      "explanation": "A strong response should take a clear position, support it with relevant examples, and maintain a logical structure throughout the essay.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "opinion"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: In many cities, older neighbourhood markets are being replaced by large shopping centres. What problems can this cause, and what measures could be taken to protect the role of traditional markets?",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "writing", "task-2", "urban-development", "problem-solution"],
+      "explanation": "A strong essay should identify clear social or economic problems and then propose realistic measures that directly address them.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "problem-solution"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Many young professionals now choose to change jobs frequently rather than stay with one employer for a long time. Do the advantages of this trend outweigh the disadvantages?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "work", "advantages-disadvantages"],
+      "explanation": "A strong answer should examine both sides before making a reasoned judgement about whether the advantages are greater overall.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "advantages-disadvantages"
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a public place in your town or city that has improved in recent years. You should say where it is, what changes were made, how people use it now, and explain why you think the changes were successful or unsuccessful.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "city-life", "part-2"],
+      "explanation": "A strong response should be organised, descriptive, and personal, with enough detail to speak for one to two minutes naturally.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 3 Follow-up: Why do some public improvement projects become popular with local residents while others do not?",
+      "marks": 4,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "follow-up", "public-spaces", "part-3"],
+      "explanation": "A strong answer should move beyond personal experience and discuss factors such as planning, public need, maintenance, and accessibility.",
+      "meta": {
+        "part": "part-3",
+        "linkedPrompt": "Describe a public place in your town or city that has improved in recent years."
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a skill that you learned outside the classroom. You should say what the skill is, how you learned it, when you started using it, and explain how it has been useful to you.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "skills", "part-2"],
+      "explanation": "A strong response should clearly explain the learning process and give specific examples of how the skill helped the speaker.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 3 Follow-up: Do you think people learn practical skills more effectively from family members, teachers, or online resources?",
+      "marks": 4,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "follow-up", "learning", "part-3"],
+      "explanation": "A strong answer should compare different sources of learning and support the comparison with reasons or examples.",
+      "meta": {
+        "part": "part-3",
+        "linkedPrompt": "Describe a skill that you learned outside the classroom."
+      }
+    }
+  ]
+}

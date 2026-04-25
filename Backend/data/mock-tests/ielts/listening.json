@@ -1,0 +1,411 @@
+{
+  "datasetName": "Abroadways IELTS Expanded Practice Bank",
+  "version": 2,
+  "examSlug": "ielts",
+  "sourceType": "original",
+  "sectionKey": "listening",
+  "notes": "Original IELTS-style listening scripts and note-completion tasks for the Abroadways mock-test platform.",
+  "questions": [
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L1, why does Rafi initially call the library help desk?",
+      "options": [
+        "To report a lost membership card",
+        "To ask whether he can reserve a study room",
+        "To cancel a workshop booking",
+        "To apply for a volunteer position"
+      ],
+      "correctAnswer": "To ask whether he can reserve a study room",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "library", "mcq", "reservation"],
+      "explanation": "Rafi opens the conversation by asking whether a small study room is available for a group project on Thursday afternoon.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room",
+        "audioType": "conversation",
+        "includeInStarter": true,
+        "scriptText": "Receptionist: City Library help desk, this is Mina speaking. How can I help? Rafi: Hi, I'd like to know if I can reserve a small study room for a group project this Thursday afternoon. Receptionist: Yes, small rooms can be booked for two hours at a time. How many people will be coming? Rafi: Four. We only need a whiteboard and a power socket for a laptop. Receptionist: That's fine. The first available slot after lunch is from 2:30 to 4:30. Rafi: That works well. Could you book it under Rafi Karim? Receptionist: Certainly. Can I also take your membership number? Rafi: Yes, it's 18426. Receptionist: Thank you. Please arrive ten minutes early, because if no one has checked in by the start time, the room may be offered to someone else. Rafi: Understood. Is food allowed inside? Receptionist: Water bottles are fine, but please keep snacks outside the room. Rafi: No problem. Thanks for your help."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L1: The reserved study room is available from ______ to 4:30.",
+      "correctAnswer": "2:30",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "time"],
+      "explanation": "The receptionist offers the slot from 2:30 to 4:30.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L1: Rafi's membership number is ______.",
+      "correctAnswer": "18426",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "note-completion", "number"],
+      "explanation": "Rafi gives his membership number as 18426 when Mina asks for it.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "What rule does Mina mention about using the study room?",
+      "options": [
+        "Students must bring their own chairs",
+        "Everyone must sign out when leaving",
+        "Late arrivals may lose the booking",
+        "Only printed materials may be used"
+      ],
+      "correctAnswer": "Late arrivals may lose the booking",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "rules"],
+      "explanation": "Mina says the room may be offered to someone else if nobody checks in by the start time.",
+      "meta": {
+        "scriptId": "L1",
+        "scriptTitle": "Booking a Study Room",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L2, what is the main problem discussed in the farm podcast?",
+      "options": [
+        "The farm has too many workers during harvest season",
+        "Rainwater is running off quickly instead of soaking into the soil",
+        "Local customers prefer imported vegetables",
+        "The farm cannot store enough seeds for the next year"
+      ],
+      "correctAnswer": "Rainwater is running off quickly instead of soaking into the soil",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "lecture", "environment", "mcq"],
+      "explanation": "The speaker explains that compact soil caused water to run across the surface instead of being absorbed.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm",
+        "audioType": "monologue",
+        "includeInStarter": true,
+        "scriptText": "Speaker: Today we're looking at a small vegetable farm outside Cumilla that struggled with water retention. After short periods of heavy rain, the top layer of soil became hard, and water moved across the field instead of sinking in. The farm team first assumed they needed to dig deeper drainage channels, but an agricultural adviser suggested a different approach. She noticed that repeated foot traffic and machine use had compacted the surface. Her advice was to reduce unnecessary movement across the beds, cover bare ground with organic mulch, and plant a fast-growing clover between crop rows after harvest. Within one season, the farm recorded slower runoff and improved moisture around young plants. The change did not eliminate irrigation, but it reduced the number of emergency watering sessions during hot weeks. The adviser also recommended keeping a simple field diary. Staff wrote down rainfall amounts, planting dates, and any visible changes in leaf colour. These notes helped them compare sections of the farm and identify where improvements were strongest."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L2: The adviser suggested planting ______ between crop rows after harvest.",
+      "correctAnswer": "clover",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "agriculture"],
+      "explanation": "The speaker states that the adviser recommended planting fast-growing clover between crop rows after harvest.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "Why did the adviser recommend keeping a field diary in Listening L2?",
+      "options": [
+        "To calculate the exact market value of each crop",
+        "To compare different parts of the farm over time",
+        "To train new workers in machine safety rules",
+        "To decide which seeds should be imported"
+      ],
+      "correctAnswer": "To compare different parts of the farm over time",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "reasoning"],
+      "explanation": "The speaker says the notes helped the team compare sections of the farm and see where improvements were strongest.",
+      "meta": {
+        "scriptId": "L2",
+        "scriptTitle": "Improving Water Retention on a Small Farm",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L3, why does Nadia call the university careers office?",
+      "options": [
+        "To cancel a scholarship interview",
+        "To register for an employer networking session",
+        "To request a transcript for an internship",
+        "To ask about dormitory accommodation"
+      ],
+      "correctAnswer": "To register for an employer networking session",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "careers", "conversation", "mcq"],
+      "explanation": "Nadia says she wants to sign up for the employer networking session next Wednesday.",
+      "meta": {
+        "scriptId": "L3",
+        "scriptTitle": "Registering for a Careers Event",
+        "audioType": "conversation",
+        "scriptText": "Adviser: Careers Office, Omar speaking. Nadia: Hello, I saw a poster about the employer networking session next Wednesday. Is registration still open? Adviser: Yes, but there are only a few spaces left in the afternoon group. Nadia: That's fine. I mainly want to speak to firms that offer marketing internships. Adviser: Then the 3 p.m. session should suit you. Three agencies and one retail brand will be there. Nadia: Great. Do I need to bring a printed CV? Adviser: A digital copy on your phone is acceptable, but many students still prefer to bring one printed copy. Nadia: I'll do that. Adviser: I also recommend arriving by 2:30 because there will be a short workshop on introducing yourself to employers. Nadia: That sounds useful. Can you register me under Nadia Rahman? Adviser: Of course. Could you confirm your student number? Nadia: It's 240918. Adviser: Done. You'll get a confirmation email with the room number this afternoon."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L3: The networking session Nadia chooses starts at ______.",
+      "correctAnswer": "3 p.m.",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "table-completion", "time"],
+      "explanation": "Omar says the 3 p.m. session would suit Nadia best.",
+      "meta": {
+        "scriptId": "L3",
+        "scriptTitle": "Registering for a Careers Event",
+        "interactionType": "table-completion",
+        "tableLabel": "Event booking details"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L3: Nadia should arrive by ______ for the introductory workshop.",
+      "correctAnswer": "2:30",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "table-completion", "note-taking"],
+      "explanation": "The adviser recommends arriving by 2:30 for the short workshop before the event.",
+      "meta": {
+        "scriptId": "L3",
+        "scriptTitle": "Registering for a Careers Event",
+        "interactionType": "table-completion",
+        "tableLabel": "Event booking details"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L3: Nadia's student number is ______.",
+      "correctAnswer": "240918",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "table-completion", "number"],
+      "explanation": "Nadia gives her student number as 240918.",
+      "meta": {
+        "scriptId": "L3",
+        "scriptTitle": "Registering for a Careers Event",
+        "interactionType": "table-completion",
+        "tableLabel": "Event booking details"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "What does Omar recommend Nadia bring to the event?",
+      "options": [
+        "A portfolio folder only",
+        "A printed CV if possible",
+        "Her final-year project report",
+        "A signed internship contract"
+      ],
+      "correctAnswer": "A printed CV if possible",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "mcq", "careers-event"],
+      "explanation": "He says a digital copy is acceptable, but many students still prefer to bring one printed CV.",
+      "meta": {
+        "scriptId": "L3",
+        "scriptTitle": "Registering for a Careers Event"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L4, what is the lecturer mainly describing?",
+      "options": [
+        "How a university reduced food waste in one semester",
+        "How students should choose their degree subjects",
+        "Why city buses are replacing campus bicycles",
+        "Why laboratories must remain open all night"
+      ],
+      "correctAnswer": "How a university reduced food waste in one semester",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "lecture", "sustainability", "mcq"],
+      "explanation": "The talk focuses on the steps taken by the university to cut food waste in cafeterias and hostels.",
+      "meta": {
+        "scriptId": "L4",
+        "scriptTitle": "Reducing Food Waste on Campus",
+        "audioType": "monologue",
+        "scriptText": "Lecturer: This morning I'd like to outline a campus project that reduced food waste over one semester. The university began by measuring how much untouched food was leaving the main cafeteria each day. The average was 86 kilograms, which surprised many staff members. Instead of immediately changing the menu, the sustainability office first interviewed students and discovered two practical causes. Portions were often too large for evening diners, and many students had no idea that they could request half portions. The cafeteria therefore introduced smaller standard servings, clearer signs near the counters, and a discounted box for unsold meals during the final hour of service. In the hostels, student volunteers ran a weekly campaign on planning grocery shopping and storing fruit correctly. By the end of the semester, cafeteria waste had fallen by 28 percent. The university did not claim the problem had been solved completely, but the project showed that small behavioural changes, combined with better information, could make a measurable difference."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L4: The average amount of untouched food leaving the cafeteria each day was ______ kilograms.",
+      "correctAnswer": "86",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "number"],
+      "explanation": "The lecturer says the average was 86 kilograms per day.",
+      "meta": {
+        "scriptId": "L4",
+        "scriptTitle": "Reducing Food Waste on Campus"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L4: Waste fell by ______ percent by the end of the semester.",
+      "correctAnswer": "28",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "table-completion", "percentage"],
+      "explanation": "The lecturer states that waste had fallen by 28 percent.",
+      "meta": {
+        "scriptId": "L4",
+        "scriptTitle": "Reducing Food Waste on Campus",
+        "interactionType": "table-completion",
+        "tableLabel": "Project results"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "Which change was made first in the university project?",
+      "options": [
+        "Replacing the menu entirely",
+        "Measuring the amount of food waste",
+        "Closing one of the cafeterias",
+        "Training hostel managers in accounting"
+      ],
+      "correctAnswer": "Measuring the amount of food waste",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "sequence"],
+      "explanation": "The lecturer says the project began by measuring untouched food from the main cafeteria.",
+      "meta": {
+        "scriptId": "L4",
+        "scriptTitle": "Reducing Food Waste on Campus"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "Why were student volunteers involved in the hostel campaign?",
+      "options": [
+        "To inspect kitchen equipment for damage",
+        "To teach residents about shopping and storage habits",
+        "To collect money for cafeteria repairs",
+        "To replace catering staff during weekends"
+      ],
+      "correctAnswer": "To teach residents about shopping and storage habits",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "hostels"],
+      "explanation": "The lecturer says student volunteers ran a weekly campaign on planning grocery shopping and storing fruit properly.",
+      "meta": {
+        "scriptId": "L4",
+        "scriptTitle": "Reducing Food Waste on Campus"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "In Listening L5, what is the purpose of the community language exchange programme?",
+      "options": [
+        "To help newcomers practise speaking with local volunteers",
+        "To prepare schoolchildren for science competitions",
+        "To train radio presenters in pronunciation",
+        "To replace formal language classes at the college"
+      ],
+      "correctAnswer": "To help newcomers practise speaking with local volunteers",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "community", "mcq", "language-learning"],
+      "explanation": "The radio segment explains that the programme pairs newcomers with volunteers for informal speaking practice.",
+      "meta": {
+        "scriptId": "L5",
+        "scriptTitle": "A Community Language Exchange",
+        "audioType": "radio-segment",
+        "scriptText": "Presenter: You're listening to City Voices. Today we're discussing a community language exchange that started at the Riverside Learning Centre. Every Tuesday evening, local volunteers meet newcomers who want extra speaking practice in English. Coordinator: The idea is simple. Many learners attend formal classes, but they still need a relaxed space to ask questions, make mistakes, and build confidence. Presenter: How are the sessions organised? Coordinator: We start with a short activity, usually based on everyday topics such as shopping, transport, or health appointments. Then participants move into small groups. Each group has one volunteer and three or four learners. Presenter: Has attendance grown? Coordinator: Yes. We began with 12 learners last autumn, and now we usually have around 35. Presenter: What has made the programme successful? Coordinator: Consistency. We meet every week, and we also ask volunteers to keep a simple progress sheet so learners can see which situations they have practised. The centre is now looking for more volunteers with experience in customer service or community work, because they often know the kind of conversations newcomers need most."
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the note from Listening L5: Sessions take place every ______ evening.",
+      "correctAnswer": "Tuesday",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "note-completion", "day"],
+      "explanation": "The presenter says the volunteers meet learners every Tuesday evening.",
+      "meta": {
+        "scriptId": "L5",
+        "scriptTitle": "A Community Language Exchange"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L5: The programme began with ______ learners last autumn.",
+      "correctAnswer": "12",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "table-completion", "number"],
+      "explanation": "The coordinator says the programme started with 12 learners.",
+      "meta": {
+        "scriptId": "L5",
+        "scriptTitle": "A Community Language Exchange",
+        "interactionType": "table-completion",
+        "tableLabel": "Programme growth"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "fill",
+      "text": "Complete the table from Listening L5: The centre now usually welcomes around ______ learners.",
+      "correctAnswer": "35",
+      "marks": 1,
+      "difficulty": "easy",
+      "tags": ["ielts", "listening", "table-completion", "number"],
+      "explanation": "Current attendance is described as around 35 learners.",
+      "meta": {
+        "scriptId": "L5",
+        "scriptTitle": "A Community Language Exchange",
+        "interactionType": "table-completion",
+        "tableLabel": "Programme growth"
+      }
+    },
+    {
+      "sectionKey": "listening",
+      "type": "mcq",
+      "text": "What does the coordinator say is the main reason for the programme's success?",
+      "options": [
+        "Free transport for all participants",
+        "Consistency in holding weekly sessions",
+        "Advanced grammar textbooks",
+        "A large advertising budget"
+      ],
+      "correctAnswer": "Consistency in holding weekly sessions",
+      "marks": 1,
+      "difficulty": "medium",
+      "tags": ["ielts", "listening", "mcq", "community-programme"],
+      "explanation": "The coordinator says the most important factor has been meeting every week and keeping simple progress records.",
+      "meta": {
+        "scriptId": "L5",
+        "scriptTitle": "A Community Language Exchange"
+      }
+    }
+  ]
+}

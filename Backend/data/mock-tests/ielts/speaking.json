@@ -1,0 +1,454 @@
+{
+  "datasetName": "Abroadways IELTS Expanded Practice Bank",
+  "version": 2,
+  "examSlug": "ielts",
+  "sourceType": "original",
+  "sectionKey": "speaking",
+  "notes": "Original IELTS-style speaking cue cards with follow-up prompts and rubric metadata for the Abroadways mock-test platform.",
+  "rubrics": {
+    "ielts-speaking": {
+      "type": "ielts-speaking",
+      "criteria": [
+        {
+          "name": "Fluency and Coherence",
+          "bandDescriptors": {
+            "9": "Speaks at length effortlessly, with clear progression of ideas and almost no hesitation except to develop content.",
+            "7": "Speaks at length with only occasional hesitation, and organises ideas clearly with generally effective linking.",
+            "5": "Can keep going but hesitates frequently, with uneven development and some loss of clarity or logic.",
+            "3": "Speech is slow, repetitive, and difficult to follow because ideas are minimally connected."
+          }
+        },
+        {
+          "name": "Lexical Resource",
+          "bandDescriptors": {
+            "9": "Uses a wide range of vocabulary precisely and flexibly, including less common items where appropriate.",
+            "7": "Uses a sufficient range of vocabulary to discuss familiar and unfamiliar topics, though some errors remain.",
+            "5": "Vocabulary is limited or repetitive and may cause noticeable awkwardness or imprecision.",
+            "3": "Very restricted vocabulary makes it difficult to express ideas beyond simple basic messages."
+          }
+        },
+        {
+          "name": "Grammatical Range and Accuracy",
+          "bandDescriptors": {
+            "9": "Uses a wide range of structures with a high level of accuracy and only rare slips.",
+            "7": "Uses a mix of simple and complex structures with generally good control, despite some errors.",
+            "5": "Shows limited range or inconsistent control, and grammar errors are frequent enough to be noticed.",
+            "3": "Relies on simple fragments or heavily inaccurate sentences that often cause breakdowns in meaning."
+          }
+        },
+        {
+          "name": "Pronunciation",
+          "bandDescriptors": {
+            "9": "Is easy to understand throughout, using flexible stress, rhythm, and intonation with only rare lapses.",
+            "7": "Is generally easy to understand, though some features of stress or sound production may occasionally reduce clarity.",
+            "5": "Can usually be understood, but mispronunciation and limited control of rhythm or stress cause some effort for the listener.",
+            "3": "Is often hard to understand because pronunciation problems repeatedly interfere with communication."
+          }
+        }
+      ]
+    }
+  },
+  "questions": [
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a public place in your town or city that has improved in recent years. You should say where it is, what changes were made, how people use it now, and explain why you think the changes were successful or unsuccessful.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "city-life", "part-2"],
+      "explanation": "A strong response should be organised, descriptive, and personal, with enough detail to speak for one to two minutes naturally.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "includeInStarter": true,
+        "followUpQuestions": [
+          "Why do some public improvement projects become popular with local residents while others do not?",
+          "How important is maintenance compared with the initial design of a public place?",
+          "Should local people always be consulted before public spaces are redesigned?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a skill that you learned outside the classroom. You should say what the skill is, how you learned it, when you started using it, and explain how it has been useful to you.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "skills", "part-2"],
+      "explanation": "A strong response should clearly explain the learning process and give specific examples of how the skill helped the speaker.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Do people learn practical skills more effectively from family members, teachers, or online resources?",
+          "Which practical skills are becoming more important for young adults today?",
+          "Should schools spend more time teaching non-academic life skills?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a person who encouraged you to try something new. You should say who the person is, what they encouraged you to do, how they persuaded you, and explain how you felt afterwards.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "people", "motivation"],
+      "explanation": "A strong answer should focus on the influence of the person and the impact of the experience.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people need encouragement before trying new activities?",
+          "Is advice from older people usually more valuable than advice from friends of the same age?",
+          "How can teachers encourage students without putting too much pressure on them?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a website or app that you use regularly. You should say what it is, when you started using it, what you mainly use it for, and explain why you find it useful.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "technology", "daily-life"],
+      "explanation": "A strong response should balance description with evaluation, showing how the app fits into the speaker's routine.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "How has mobile technology changed the way people organise their day?",
+          "Do you think people rely too much on apps for simple tasks now?",
+          "What are the risks of using too many digital services from one company?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a crowded place you visited that you enjoyed. You should say where it was, why so many people were there, what you did there, and explain why you still enjoyed the experience.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "places", "crowds"],
+      "explanation": "A strong response should describe the setting vividly and explain why the crowd did not spoil the experience.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people enjoy crowded places while others avoid them?",
+          "How can event organisers make crowded places safer?",
+          "Do cities need more public spaces designed for large gatherings?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a photograph that you like. You should say when it was taken, what can be seen in it, who took it if you know, and explain why the photograph is meaningful to you.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "memory", "photography"],
+      "explanation": "A strong answer should move beyond description and explain why the image matters personally.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do people take more photos today than in the past?",
+          "Do you think photographs can sometimes prevent people from enjoying the moment itself?",
+          "What kinds of photographs are most valuable for future generations?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a long journey you took by public transport. You should say where you went, which form of transport you used, what happened during the journey, and explain how you felt about it.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "travel", "transport"],
+      "explanation": "A strong response should include a clear sequence of events and show what made the journey memorable.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people prefer public transport to private cars for long journeys?",
+          "What improvements are most important for long-distance public transport?",
+          "How might transport choices change in the future?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe something you saved money to buy. You should say what it was, why you wanted it, how long you saved for it, and explain whether it was worth the effort.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "money", "decision-making"],
+      "explanation": "A strong answer should cover the planning process, the motivation behind the purchase, and the result afterwards.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Do young people learn enough about saving money?",
+          "Is it better to save for expensive things or buy them in instalments?",
+          "How does advertising affect the way people spend money?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a local business that you admire. You should say what the business is, what it provides, how you first learned about it, and explain why you admire it.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "business", "community"],
+      "explanation": "A strong response should explain both the practical success of the business and the speaker's personal reasons for admiring it.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some local businesses build stronger customer loyalty than large chains?",
+          "How important is social media for small businesses now?",
+          "Should governments do more to support local businesses?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe an environmental habit you have developed. You should say what the habit is, when you started it, how easy or difficult it is to maintain, and explain why you continue doing it.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "environment", "habits"],
+      "explanation": "A strong answer should show a clear reason for the habit and reflect on its practical effects over time.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some environmental habits become popular more quickly than others?",
+          "Should individuals or companies bear more responsibility for reducing waste?",
+          "How can schools encourage long-term environmental behaviour?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a time when you helped organise an event. You should say what the event was, what role you played, what challenges you faced, and explain how successful the event was.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "events", "teamwork"],
+      "explanation": "A strong response should describe responsibilities clearly and reflect on both difficulties and outcomes.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "What qualities make someone a good organiser?",
+          "Do people work more effectively alone or in teams when planning events?",
+          "How has technology changed event organisation?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a book that you recommended to someone. You should say what the book was about, who you recommended it to, why you recommended it, and explain whether they enjoyed it.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "books", "recommendation"],
+      "explanation": "A strong answer should describe the book in a focused way and explain why it matched the other person's interests.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do personal recommendations still matter when so many reviews are available online?",
+          "Do people read differently now compared with the past?",
+          "What kinds of books are most useful for young people?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a meal that you learned to cook. You should say what the meal was, who taught you or how you learned it, when you first cooked it, and explain how confident you feel making it now.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "food", "learning"],
+      "explanation": "A strong response should describe the learning process and show how the speaker's confidence changed over time.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people enjoy cooking while others see it as a chore?",
+          "Do young adults still need to learn cooking skills in the age of food delivery?",
+          "How does food connect people to culture and family tradition?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a place where you like to study or work quietly. You should say where it is, what it is like, what you usually do there, and explain why this place suits you.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "study", "environment"],
+      "explanation": "A strong answer should focus on the qualities of the place and explain how those features support concentration.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "What makes a place suitable for concentrated work?",
+          "Do people need silence to be productive, or can some level of noise help?",
+          "How should public libraries change to meet modern study needs?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a conversation that changed your opinion about something. You should say who you spoke to, what the conversation was about, what opinion changed, and explain why the discussion affected you.",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "speaking", "cue-card", "opinions", "communication"],
+      "explanation": "A strong response should show both the original opinion and the reason the conversation caused the change.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why is it difficult for some people to change their opinions?",
+          "Are face-to-face conversations more persuasive than online discussions?",
+          "How should schools teach students to discuss disagreements respectfully?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a time when your plans changed unexpectedly. You should say what you had planned, what changed, how you reacted, and explain what you learned from the experience.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "change", "problem-solving"],
+      "explanation": "A strong answer should describe the situation clearly and show how the speaker adapted to the change.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people handle unexpected change more calmly than others?",
+          "Is careful planning always useful, even when plans often change?",
+          "How can workplaces prepare staff for sudden changes?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a tradition from another culture that you learned about. You should say what the tradition is, how you learned about it, what you found interesting about it, and explain whether you would like to experience it yourself.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "culture", "global-awareness"],
+      "explanation": "A strong response should describe the tradition accurately and reflect thoughtfully on cultural difference and personal interest.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why are people often curious about traditions from other cultures?",
+          "How can tourism affect traditional customs positively or negatively?",
+          "Do you think global culture is making local traditions weaker?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a goal that you achieved after facing difficulties. You should say what the goal was, what difficulties you faced, what helped you continue, and explain how you felt when you finally achieved it.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "goals", "persistence"],
+      "explanation": "A strong answer should show progress over time and explain both the challenges and the final sense of achievement.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do some people give up on goals more quickly than others?",
+          "Is personal motivation more important than outside support?",
+          "How can schools help students build resilience?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a useful lesson you learned from making a mistake. You should say what the mistake was, when it happened, what the result was, and explain what you learned from it.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "speaking", "cue-card", "reflection", "learning"],
+      "explanation": "A strong response should be honest, focused, and explain clearly how the mistake led to a valuable lesson.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "Why do people sometimes learn more from failure than from success?",
+          "Should children be protected from making mistakes, or is it part of learning?",
+          "How do different workplaces respond to mistakes?"
+        ]
+      }
+    },
+    {
+      "sectionKey": "speaking",
+      "type": "speaking",
+      "text": "IELTS Speaking Part 2 Cue Card: Describe a service in your neighbourhood that you think is very useful. You should say what the service is, who uses it, when you first noticed it, and explain why you think it is valuable.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "speaking", "cue-card", "community", "services"],
+      "explanation": "A strong answer should show who benefits from the service and why it matters in everyday life.",
+      "meta": {
+        "part": "part-2",
+        "prepTimeSeconds": 60,
+        "responseTimeSeconds": 120,
+        "rubricKey": "ielts-speaking",
+        "followUpQuestions": [
+          "What public services should local governments prioritise most strongly?",
+          "How can communities decide which services need improvement first?",
+          "Do private companies provide some services better than public organisations?"
+        ]
+      }
+    }
+  ]
+}

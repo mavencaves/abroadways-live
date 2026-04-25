@@ -1,0 +1,427 @@
+{
+  "datasetName": "Abroadways IELTS Expanded Practice Bank",
+  "version": 2,
+  "examSlug": "ielts",
+  "sourceType": "original",
+  "sectionKey": "writing",
+  "notes": "Original IELTS-style writing prompts with scoring rubric metadata for the Abroadways mock-test platform.",
+  "rubrics": {
+    "ielts-writing": {
+      "type": "ielts-writing",
+      "criteria": [
+        {
+          "name": "Task Achievement/Response",
+          "bandDescriptors": {
+            "9": "Fully addresses every part of the task with a clear position or overview, well-selected detail, and highly relevant development.",
+            "7": "Addresses all parts of the task clearly, presents a sound overview or position, and develops ideas with generally relevant support.",
+            "5": "Addresses the task only partially, with an unclear overview or position and uneven development of key points.",
+            "3": "Shows limited understanding of the task, with major omissions, minimal development, or serious irrelevance."
+          }
+        },
+        {
+          "name": "Coherence and Cohesion",
+          "bandDescriptors": {
+            "9": "Information and ideas are arranged logically, paragraphing is skillful, and cohesion feels natural without overuse.",
+            "7": "Ideas are logically organised, paragraphing is clear, and linking devices are used effectively though sometimes repetitively.",
+            "5": "Organisation is uneven, paragraphing may be mechanical, and cohesive devices are either limited or inaccurate.",
+            "3": "Response is difficult to follow because ideas are poorly arranged and linking is rarely effective."
+          }
+        },
+        {
+          "name": "Lexical Resource",
+          "bandDescriptors": {
+            "9": "Uses a wide range of vocabulary precisely and flexibly, with only rare minor errors in word choice or spelling.",
+            "7": "Uses a sufficient range of vocabulary for clear academic communication, with occasional awkward or inaccurate choices.",
+            "5": "Vocabulary range is limited or repetitive, and errors sometimes reduce clarity.",
+            "3": "Very restricted vocabulary leads to frequent inaccuracy and substantial strain for the reader."
+          }
+        },
+        {
+          "name": "Grammatical Range and Accuracy",
+          "bandDescriptors": {
+            "9": "Uses a wide range of structures accurately, with rare minor slips that do not affect clarity.",
+            "7": "Produces a mix of simple and complex structures with generally good control, though some errors remain.",
+            "5": "Relies heavily on simple structures or uses complex forms inaccurately, causing noticeable errors.",
+            "3": "Frequent grammatical errors and limited sentence control seriously reduce clarity."
+          }
+        }
+      ]
+    }
+  },
+  "questions": [
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The chart below shows the percentage of university students in one city who used four different forms of transport to reach campus in 2018 and 2024. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "chart", "transport"],
+      "explanation": "A strong response should present an overview, compare the biggest increases and decreases, and report key figures accurately without giving personal opinion.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "bar-chart",
+        "promptTheme": "transport trends",
+        "rubricKey": "ielts-writing",
+        "includeInStarter": true,
+        "dataPoints": {
+          "2018": {
+            "bus": 42,
+            "rickshaw": 18,
+            "bicycle": 25,
+            "walking": 15
+          },
+          "2024": {
+            "bus": 31,
+            "rickshaw": 14,
+            "bicycle": 34,
+            "walking": 21
+          }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The diagram below illustrates how rainwater is collected and filtered for household use in a small coastal community. Summarise the process by selecting and reporting the main features.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "process", "water"],
+      "explanation": "A strong answer should describe the stages in sequence, use process language, and avoid opinions or unsupported explanations.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "process-diagram",
+        "promptTheme": "rainwater collection",
+        "rubricKey": "ielts-writing",
+        "processStages": [
+          "Rain falls on sloped roofs",
+          "Water flows through gutters into a storage tank",
+          "Large particles are removed by a mesh filter",
+          "Water passes through sand and charcoal layers",
+          "Filtered water is stored in household containers"
+        ]
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The line graph below compares monthly visits to a town library's physical building and its digital portal over one year. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "line-graph", "library"],
+      "explanation": "A strong response should identify overall trends, seasonal changes, and the main contrast between in-person and online use.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "line-graph",
+        "promptTheme": "library access patterns",
+        "rubricKey": "ielts-writing",
+        "dataPoints": {
+          "January": { "building": 5200, "portal": 3100 },
+          "April": { "building": 6100, "portal": 4200 },
+          "July": { "building": 4300, "portal": 5900 },
+          "October": { "building": 5600, "portal": 6100 },
+          "December": { "building": 4800, "portal": 6500 }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The maps below show a riverside area before and after redevelopment. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "map", "urban-development"],
+      "explanation": "A strong report should describe the most significant changes in land use, transport access, and public facilities in a clear sequence.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "map",
+        "promptTheme": "waterfront redevelopment",
+        "rubricKey": "ielts-writing",
+        "mapChanges": [
+          "An empty riverside lot became a public park",
+          "A narrow road was widened and linked to a footbridge",
+          "Old storage sheds were replaced by cafes and a visitor centre",
+          "A bus stop and cycle lane were added near the entrance"
+        ]
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The bar chart below compares the percentage of households using three renewable energy sources in urban, suburban, and rural areas. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "bar-chart", "energy"],
+      "explanation": "A strong response should include an overview of the most and least common energy sources and compare the three location types accurately.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "bar-chart",
+        "promptTheme": "renewable energy adoption",
+        "rubricKey": "ielts-writing",
+        "dataPoints": {
+          "Urban": { "solar": 22, "biogas": 6, "rooftop_wind": 4 },
+          "Suburban": { "solar": 35, "biogas": 11, "rooftop_wind": 7 },
+          "Rural": { "solar": 28, "biogas": 24, "rooftop_wind": 3 }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The diagram below shows how coffee husks are turned into fuel briquettes for small businesses. Summarise the process by selecting and reporting the main features.",
+      "marks": 9,
+      "difficulty": "easy",
+      "tags": ["ielts", "writing", "task-1", "process", "recycling"],
+      "explanation": "A strong response should outline each stage in the correct order and highlight how waste material becomes a usable fuel product.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "process-diagram",
+        "promptTheme": "fuel briquette production",
+        "rubricKey": "ielts-writing",
+        "processStages": [
+          "Coffee husks are dried after processing",
+          "The husks are crushed into smaller particles",
+          "Water and binding material are mixed with the husks",
+          "The mixture is pressed into moulds",
+          "The briquettes are dried again before sale"
+        ]
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The table below gives average monthly student housing costs in three university cities and breaks the figures into rent, transport, and food. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "table", "living-costs"],
+      "explanation": "A strong response should compare total monthly costs and identify which spending category contributes most in each city.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "table",
+        "promptTheme": "student living costs",
+        "rubricKey": "ielts-writing",
+        "dataPoints": {
+          "Dhaka": { "rent": 180, "transport": 35, "food": 90 },
+          "Chattogram": { "rent": 150, "transport": 42, "food": 85 },
+          "Sylhet": { "rent": 140, "transport": 28, "food": 88 }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The pie charts below show how staff in a mid-sized company spent their working time in 2015 and 2025. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "pie-chart", "workplace"],
+      "explanation": "A strong report should highlight the largest shifts between the two years and compare the balance between collaborative and individual work.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "pie-chart",
+        "promptTheme": "staff time allocation",
+        "rubricKey": "ielts-writing",
+        "dataPoints": {
+          "2015": {
+            "meetings": 18,
+            "focused_work": 46,
+            "emails": 20,
+            "training": 8,
+            "travel": 8
+          },
+          "2025": {
+            "meetings": 24,
+            "focused_work": 38,
+            "emails": 15,
+            "training": 13,
+            "travel": 10
+          }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The graph and chart below show annual commuter rail passenger numbers and the percentage of trains arriving on time over a six-year period. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "writing", "task-1", "mixed-chart", "transport"],
+      "explanation": "A strong response should combine the two data sources effectively, showing the relationship between ridership and punctuality without over-claiming causation.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "mixed-chart",
+        "promptTheme": "rail performance",
+        "rubricKey": "ielts-writing",
+        "dataPoints": {
+          "2019": { "passengers_millions": 21, "on_time": 88 },
+          "2020": { "passengers_millions": 15, "on_time": 93 },
+          "2021": { "passengers_millions": 17, "on_time": 91 },
+          "2022": { "passengers_millions": 22, "on_time": 89 },
+          "2023": { "passengers_millions": 26, "on_time": 86 },
+          "2024": { "passengers_millions": 29, "on_time": 90 }
+        }
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 1: The diagram below illustrates a recycling system for protective packaging used by science laboratories. Summarise the process by selecting and reporting the main features.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-1", "process", "laboratory"],
+      "explanation": "A strong response should describe the closed-loop process clearly and use passive forms and sequencing language accurately.",
+      "meta": {
+        "taskType": "task-1",
+        "visualType": "process-diagram",
+        "promptTheme": "laboratory packaging recycling",
+        "rubricKey": "ielts-writing",
+        "processStages": [
+          "Protective packaging is collected after equipment delivery",
+          "The material is sorted by size and composition",
+          "Damaged pieces are shredded and cleaned",
+          "Usable pieces are reprocessed into new inserts",
+          "Finished packaging is redistributed to laboratories"
+        ]
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Some people believe that university students should be required to complete a period of community service before graduation. To what extent do you agree or disagree?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "education", "opinion"],
+      "explanation": "A strong response should take a clear position, support it with relevant examples, and maintain a logical structure throughout the essay.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "opinion",
+        "rubricKey": "ielts-writing",
+        "includeInStarter": true
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: In many cities, older neighbourhood markets are being replaced by large shopping centres. What problems can this cause, and what measures could be taken to protect the role of traditional markets?",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "writing", "task-2", "urban-development", "problem-solution"],
+      "explanation": "A strong essay should identify clear social or economic problems and then propose realistic measures that directly address them.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "problem-solution",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Many young professionals now choose to change jobs frequently rather than stay with one employer for a long time. Do the advantages of this trend outweigh the disadvantages?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "work", "advantages-disadvantages"],
+      "explanation": "A strong answer should examine both sides before making a reasoned judgement about whether the advantages are greater overall.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "advantages-disadvantages",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: More companies now allow employees to work remotely for most of the week. What effects could this have on city centres, and is the overall impact positive or negative?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "workplace", "effects"],
+      "explanation": "A strong response should analyse both economic and social effects on urban areas before reaching a clear judgement.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "two-part-question",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Some people think school budgets should focus more on arts subjects, while others believe science and technology should receive most of the funding. Discuss both views and give your own opinion.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "education", "discuss-both-views"],
+      "explanation": "A strong essay should present each side fairly before developing a clear personal view supported by reasons.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "discuss-both-views",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: International students should be required to learn the local language before starting their degree courses. To what extent do you agree or disagree?",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "writing", "task-2", "language", "opinion"],
+      "explanation": "A strong answer should balance academic practicality, integration, and fairness while maintaining a clear overall position.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "opinion",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Public transport should be made cheaper or free in order to reduce traffic congestion. Do the advantages of this policy outweigh the disadvantages?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "transport", "advantages-disadvantages"],
+      "explanation": "A strong response should weigh financial cost, behaviour change, and long-term urban benefits before reaching a conclusion.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "advantages-disadvantages",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Some people believe that parents should take the main responsibility for teaching children how to manage money, while others think schools should play the leading role. Discuss both views and give your own opinion.",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "finance", "discuss-both-views"],
+      "explanation": "A strong essay should compare the responsibilities of home and school, using relevant examples and a clear final opinion.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "discuss-both-views",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Governments should limit tourist numbers in environmentally fragile areas, even if this reduces local income. To what extent do you agree or disagree?",
+      "marks": 9,
+      "difficulty": "hard",
+      "tags": ["ielts", "writing", "task-2", "environment", "opinion"],
+      "explanation": "A strong answer should engage with the tension between conservation and livelihoods while presenting a clear, balanced argument.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "opinion",
+        "rubricKey": "ielts-writing"
+      }
+    },
+    {
+      "sectionKey": "writing",
+      "type": "essay",
+      "text": "IELTS Writing Task 2: Universities should include entrepreneurship training in all degree programmes. Do you agree or disagree?",
+      "marks": 9,
+      "difficulty": "medium",
+      "tags": ["ielts", "writing", "task-2", "higher-education", "opinion"],
+      "explanation": "A strong response should consider employability, academic breadth, and the practical limits of making entrepreneurship compulsory.",
+      "meta": {
+        "taskType": "task-2",
+        "essayType": "opinion",
+        "rubricKey": "ielts-writing"
+      }
+    }
+  ]
+}
