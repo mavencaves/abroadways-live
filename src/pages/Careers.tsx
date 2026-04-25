@@ -1,109 +1,153 @@
-import React from 'react';
-import image from '/images/Bristy/vitaly-gariev-6UEyCVPkjys-unsplash.jpg';
-import image1 from '/images/Bristy/vitaly-gariev-92gc5wLdtnY-unsplash.jpg';
-import image2 from '/images/Bristy/mapbox-zU6tCBzO0Ig-unsplash.jpg';
-import image3 from '/images/Bristy/brooke-cagle-g1Kr4Ozfoac-unsplash.jpg';
+import { BriefcaseBusiness, Compass, HeartHandshake, Mail, MapPin } from "lucide-react";
+import { Link } from "react-router";
 
-interface Position {
-  title: string;
-  location: string;
-  type: string;
-  route: string;
-}
+const openRoles = [
+  {
+    title: "Student Counselling Associate",
+    location: "Dhaka, Bangladesh",
+    type: "Full-time",
+    summary: "Support students through destination research, admissions planning, and consultation follow-up.",
+  },
+  {
+    title: "IELTS Trainer",
+    location: "Dhaka, Bangladesh",
+    type: "Full-time",
+    summary: "Lead practical English test preparation with a strong focus on student readiness and score improvement.",
+  },
+  {
+    title: "Content and SEO Writer",
+    location: "Dhaka, Bangladesh",
+    type: "Full-time",
+    summary: "Create high-trust study abroad content that helps students make better academic and visa decisions.",
+  },
+  {
+    title: "Operations Coordinator",
+    location: "Dhaka, Bangladesh",
+    type: "Full-time",
+    summary: "Keep student workflows, documentation, and internal handoffs organised across service teams.",
+  },
+];
 
-const Careers: React.FC = () => {
-  const positions: Position[] = [
-    { title: 'SEO কনটেন্ট রাইটার', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'seo-writer' },
-    { title: 'ভিডিও এডিটর', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'video-editor' },
-    { title: 'এডুকেশন কোচ', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'education-coach' },
-    { title: 'IELTS ট্রেইনার', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'ielts-trainer' },
-    { title: 'ইউজার রিসার্চার', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'user-researcher' },
-    { title: 'অপারেশনস ম্যানেজার', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'operations-manager' },
-    { title: 'প্রোডাক্ট ডিজাইনার', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'product-designer' },
-    { title: 'এক্টিভিটি অ্যাসিস্ট্যান্ট', location: 'ঢাকা, বাংলাদেশ', type: 'ফুল টাইম', route: 'activity-assistant' },
-  ];
+const values = [
+  {
+    icon: Compass,
+    title: "Purpose-led work",
+    description: "We focus on helping students move from uncertainty to a clear, practical international study plan.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Student-first culture",
+    description: "Our teams are expected to combine care, responsiveness, and honest guidance in every interaction.",
+  },
+  {
+    icon: BriefcaseBusiness,
+    title: "Real growth opportunities",
+    description: "You will work across counselling, content, operations, and digital systems that are actively scaling.",
+  },
+];
 
-  const handleButtonClick = (route: string) => {
-    console.log(`Navigating to route: /positions/${route}`);
-  };
-
+export default function Careers() {
   return (
-    <div className="font-sans antialiased">
-      {/* Banner Section */}
-      <div className="bg-[#e8e7fa] py-16 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
-          {/* Left Content Section */}
-          <div className="md:w-1/2 p-4 text-center md:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#4446a8] mb-4 leading-tight">
-              কিছু বড়োতার কর্মকাণ্ডের <br className="hidden md:block" /> অংশ হোন
-            </h2>
-            <p className="text-gray-600 text-sm md:text-base mb-6 max-w-lg mx-auto md:mx-0">
-              আমাদের মূল বিশ্বাস হলো, কাজ শুধুমাত্র একটি চাকরি নয় - এটি একটি উদ্দেশ্য-চালিত যাত্রা হওয়া উচিত। আমাদের সঙ্গে যোগ দিন, আপনি কেবল একটি পদ পূরণ করছেন না, বরং আপনি অর্থপূর্ণ পরিবর্তন আনছেন আমাদের এবং একটি উন্নত ভবিষ্যতের পথে সহায়তা করছেন। আমরা এমন একটি কর্মপরিবেশ সংস্কৃতি তৈরি করি যেখানে প্রতিটি কণ্ঠস্বর গুরুত্বপূর্ণ এবং আপনার ধারণাগুলো বাস্তব প্রভাব তৈরি করতে পারে। নিজের ভেতর বেড়ে ওঠার জন্য আছে যেন - একটি দল, একটি লক্ষ্য, এবং একটি আনন্দদায়ক অংশ, যা সুখী হৃদয় বৃদ্ধি করাবে।
+    <div className="bg-slate-50">
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.18),_transparent_28%),linear-gradient(135deg,#06142f_0%,#0b2453_58%,#123b86_100%)] px-4 py-20 text-white sm:px-6 lg:px-8">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:72px_72px] opacity-15" />
+        <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-blue-200">Careers at Abroadways</p>
+            <h1 className="mt-5 max-w-4xl font-serif text-4xl leading-tight sm:text-5xl">
+              Join a team that helps students make confident study abroad decisions.
+            </h1>
+            <p className="mt-6 max-w-3xl text-base leading-8 text-blue-100 sm:text-lg">
+              Abroadways is building a stronger guidance platform for students, families, and counsellors. We look for
+              thoughtful people who care about clarity, execution, and student outcomes.
             </p>
-          </div>
 
-          {/* Right Image Grid Section */}
-          <div className="md:w-1/2 flex-grow-0 p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="w-full aspect-square rounded-3xl overflow-hidden">
-                <img src={image} alt="img1" className="w-full h-full object-cover" />
-              </div>
-              <div className="w-full aspect-square rounded-3xl overflow-hidden">
-                <img src={image1} alt="img2" className="w-full h-full object-cover" />
-              </div>
-              <div className="w-full aspect-square rounded-3xl overflow-hidden">
-                <img src={image2} alt="img3" className="w-full h-full object-cover" />
-              </div>
-              <div className="w-full aspect-square rounded-3xl overflow-hidden">
-                <img src={image3} alt="img4" className="w-full h-full object-cover" />
-              </div>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                to="/contact"
+                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-blue-900 transition hover:bg-blue-50"
+              >
+                Apply via Consultation Team
+              </Link>
+              <a
+                href="mailto:careers@abroadways.com.bd"
+                className="inline-flex items-center rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Email Careers
+              </a>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Positions Section */}
-      <div className="bg-white py-16 px-4 sm:px-6 md:px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#4446a8]">
-              ওপেন পজিশনসমূহ
-            </h2>
-            <button
-              className="bg-indigo-700 text-white text-sm font-semibold py-2 px-5 rounded-full hover:bg-[#393b90] transition-colors duration-300 w-full sm:w-auto"
-              onClick={() => handleButtonClick('all')}
-            >
-              সব দেখুন
-            </button>
-          </div>
-
-          {/* Positions List */}
-          <div className="space-y-4">
-            {positions.map((position, index) => (
+          <div className="grid gap-4 rounded-[2rem] border border-white/15 bg-white/10 p-6 backdrop-blur-sm sm:grid-cols-2">
+            {values.map((value) => (
               <div
-                key={index}
-                className="bg-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                key={value.title}
+                className="rounded-[1.6rem] border border-white/15 bg-white/10 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.12)] sm:last:col-span-2"
               >
-                <div className="flex-1 text-left">
-                  <h3 className="text-lg md:text-xl font-bold text-[#4446a8]">{position.title}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{position.location} / {position.type}</p>
+                <div className="inline-flex rounded-2xl bg-white/15 p-3 text-blue-100">
+                  <value.icon className="h-5 w-5" />
                 </div>
-                <button
-                  className="bg-indigo-700 text-white text-sm font-semibold py-3 px-6 rounded-full hover:bg-[#393b90] transition-colors duration-300 flex items-center justify-center"
-                  onClick={() => handleButtonClick(position.route)}
-                >
-                  জব ডিটেইলস দেখুন
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                <h2 className="mt-4 text-lg font-semibold text-white">{value.title}</h2>
+                <p className="mt-2 text-sm leading-7 text-blue-100">{value.description}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">Open Roles</p>
+              <h2 className="mt-3 text-3xl font-semibold text-slate-950">Current opportunities</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                These roles reflect the kinds of hires Abroadways is prioritising as we grow our student services,
+                content, and operations capabilities.
+              </p>
+            </div>
+            <a
+              href="mailto:careers@abroadways.com.bd?subject=Application%20for%20Abroadways"
+              className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+            >
+              <Mail className="h-4 w-4" />
+              Send Your CV
+            </a>
+          </div>
+
+          <div className="mt-8 space-y-4">
+            {openRoles.map((role) => (
+              <div
+                key={role.title}
+                className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_42px_rgba(15,23,42,0.06)]"
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-3xl">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-semibold text-slate-950">{role.title}</h3>
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+                        {role.type}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                      <MapPin className="h-4 w-4 text-blue-700" />
+                      {role.location}
+                    </div>
+                    <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">{role.summary}</p>
+                  </div>
+
+                  <a
+                    href={`mailto:careers@abroadways.com.bd?subject=${encodeURIComponent(`Application - ${role.title}`)}`}
+                    className="inline-flex items-center justify-center rounded-full border border-blue-200 px-5 py-3 text-sm font-semibold text-blue-800 transition hover:border-blue-300 hover:bg-blue-50"
+                  >
+                    Apply for this role
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
-};
-
-export default Careers;
+}

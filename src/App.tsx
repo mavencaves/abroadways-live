@@ -29,7 +29,6 @@ import {
     Careers,
     KnowledgeCenter,
     MavencaveAdvantage,
-    MavencaveFreeClass,
     IeltsExamDate,
     IeltsPractice,
     IeltsFees,
@@ -51,7 +50,6 @@ import {
     ResourcesPage,
     ContactPage,
     ColumbiaUniversity,
-    DigestPage,
     CounsellorPage,
     UniversityOfBritishColumbia,
     McGillUniversity,
@@ -102,10 +100,6 @@ import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage.tsx";
 import TermsAndConditionsPage from "@/pages/TermsAndConditionsPage.tsx";
 import RefundPolicyPage from "@/pages/RefundPolicyPage.tsx";
 import CGPACalculatorPage from "@/pages/CGPACalculatorPage.tsx";
-import CounsellorHomePage from "./components/CounselorPage/CounsellorHomePage";
-
-import ReferralPage from "./components/CounselorPage/ReferralPage";
-import CounselingSection from "./components/CounselorPage/CouselingModal/CounselingSection";
 import AdminDashboardLayout from "@/layout/AdminDashboardLayout.tsx";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import UsersPage from "@/pages/dashboard/admin/UsersPage.tsx";
@@ -255,16 +249,16 @@ function App() {
                     {/* blog details pages */}
 
                     {/* cousellor pages */}
-                    <Route path={"/counsellor-home"} element={<CounsellorHomePage/>}/>
-                    <Route path={"/counsellor-modal"} element={<CounselingSection/>}/>
-                    <Route path={"/counsellor-referral"} element={<ReferralPage/>}/>
+                    <Route path={"/counsellor-home"} element={<Navigate to="/testimonials/counseling" replace/>}/>
+                    <Route path={"/counsellor-modal"} element={<Navigate to="/contact" replace/>}/>
+                    <Route path={"/counsellor-referral"} element={<Navigate to="/contact" replace/>}/>
 
                     {/*<Route path={"/study-abroad/usa/cities/new-york"} element={<StudyAbroad/>}/>*/}
                     <Route path={"/study-abroad/:country/cities/:city"} element={<TopUniversities/>}/>
                     <Route path={"study-abroad/:country/courses/:course"} element={<MastersTopCourses/>}/>
                     <Route path={"abroadai"} element={withLazyPage(<MavenCaveAi/>)} />
                     <Route path={"abroadways-ai"} element={withLazyPage(<MavenCaveAi/>)} />
-                    <Route path={"mavencave-ai"} element={withLazyPage(<MavenCaveAi/>)} />
+                    <Route path={"mavencave-ai"} element={<Navigate to="/abroadai" replace/>} />
                     <Route path={"unauthorized"} element={<UnauthorizedPage/>}/>
                     <Route path={"study-abroad/exams"} element={<LegacyExamAliasRedirect/>}/>
                     <Route path={"study-abroad/exams/*"} element={<LegacyExamAliasRedirect/>}/>
@@ -360,11 +354,11 @@ function App() {
                     <Route path={"/careers"} element={<Careers/>}/>
                     <Route path={"/knowledge-center"} element={<KnowledgeCenter/>}/>
                     <Route path={"/products/facilities"} element={<MavencaveAdvantage/>}/>
-                    <Route path={"/mavencave-freeClass"} element={<MavencaveFreeClass/>}/>
+                    <Route path={"/mavencave-freeClass"} element={<Navigate to="/offers/ielts-masterclass" replace/>}/>
                     <Route path={"/ielts-resources"} element={<PracticeResources/>}/>
                     <Route path={"/calculator/cost"} element={<CostPage/>}/>
                     <Route path={"/products/finance"} element={<FinancePage/>}/>
-                    <Route path={"/mavencave-digest"} element={<DigestPage/>}/>
+                    <Route path={"/mavencave-digest"} element={<Navigate to="/blog" replace/>}/>
                     <Route path={"/testimonials/counseling"} element={<CounsellorPage/>}/>
                     <Route path={"/event"} element={<EventPage/>}/>
                     <Route path={"/resources/books/gre"} element={<GreBooks/>}/>

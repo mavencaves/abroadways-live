@@ -63,7 +63,7 @@ const quickLinkGroups: Array<
       value: "free-counseling",
       trigger: "Free Counseling",
       content: "Start with an initial consultation for your study abroad plan.",
-      to: "/counsellor-home",
+      to: "/testimonials/counseling",
     },
     {
       value: "ielts-coaching",
@@ -230,8 +230,8 @@ const footerColumns: FooterGroup[] = [
     items: [
       { label: "Free IELTS Masterclass", to: "/offers/ielts-masterclass" },
       { label: "Talk To A Counselor", to: "/testimonials/counseling" },
-      { label: "Book A Seat", to: "/bookseat" },
-      { label: "Counsellor Referral", to: "/counsellor-referral" },
+      { label: "Upcoming Events", to: "/event" },
+      { label: "Consultation Support", to: "/contact" },
       { label: "Twinning Programs", to: "/contact" },
       { label: "Cost Calculator", to: "/calculator/cost" },
       { label: "CGPA Calculator", to: "/calculator/cgpa" },
@@ -252,8 +252,8 @@ const footerColumns: FooterGroup[] = [
     items: [
       { label: "Abroadways Finance", to: "/products/finance" },
       { label: "Abroadways Advantage", to: "/products/facilities" },
-      { label: "Abroadways Free Class", to: "/mavencave-freeClass" },
-      { label: "Abroadways Digest", to: "/mavencave-digest" },
+      { label: "IELTS Masterclass", to: "/offers/ielts-masterclass" },
+      { label: "Study Abroad Blog", to: "/blog" },
       { label: "AbroadAI", to: "/abroadai" },
       { label: "All-In-One IELTS Preparation", to: "/exams/ielts/practice/all-in-one" },
     ],
