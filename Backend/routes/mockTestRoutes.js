@@ -6,6 +6,7 @@ const controller = require("../controllers/mockTestController");
 router.get("/catalog", controller.listCatalog);
 router.get("/exams/:examSlug", controller.getExamLanding);
 router.get("/exams/:examSlug/test-sets", controller.listTestSets);
+router.get("/me/exams/:examSlug/test-sets", protect, controller.getStudentExamLibrary);
 
 router.get("/questions", protect, controller.listQuestions);
 router.post("/questions", protect, controller.createQuestion);
@@ -16,6 +17,8 @@ router.get("/test-sets", protect, controller.listTestSets);
 router.post("/test-sets", protect, controller.createTestSet);
 router.put("/test-sets/:testSetId", protect, controller.updateTestSet);
 router.delete("/test-sets/:testSetId", protect, controller.deleteTestSet);
+router.get("/students", protect, controller.listAssignableStudents);
+router.post("/purchase", protect, controller.createPurchaseOrder);
 
 router.post("/sessions/start", protect, controller.startMockSession);
 router.get("/sessions/:sessionId", protect, controller.getMockSession);

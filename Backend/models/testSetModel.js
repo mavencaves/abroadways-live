@@ -8,6 +8,13 @@ const testSetSchema = new mongoose.Schema(
     description: { type: String, trim: true, default: "" },
     instructions: { type: String, trim: true, default: "" },
     durationMinutes: { type: Number, default: 60 },
+    accessType: {
+      type: String,
+      enum: ["free", "paid"],
+      default: "free",
+    },
+    price: { type: Number, default: 0, min: 0 },
+    currency: { type: String, trim: true, default: "BDT" },
     status: {
       type: String,
       enum: ["draft", "published", "archived"],
@@ -22,6 +29,7 @@ const testSetSchema = new mongoose.Schema(
       },
     ],
     questionIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
+    assignedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },

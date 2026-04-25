@@ -22,6 +22,21 @@ const serviceOrderSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    productCategory: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    productExamSlug: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    productTestSetId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TestSet',
+      default: null,
+    },
     amount: {
       type: Number,
       required: true,

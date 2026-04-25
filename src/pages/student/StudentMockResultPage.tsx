@@ -12,7 +12,7 @@ type ResultResponse = {
   recommendations?: string[];
   createdAt?: string;
   exam?: { title?: string; slug?: string };
-  testSet?: { title?: string };
+  testSet?: { _id?: string; title?: string; accessType?: "free" | "paid"; price?: number; currency?: string };
   breakdown?: Record<
     string,
     {
@@ -22,6 +22,13 @@ type ResultResponse = {
       attempts?: number;
     }
   >;
+  access?: {
+    accessType?: "free" | "paid";
+    price?: number;
+    currency?: string;
+    locked?: boolean;
+    hasFullResultAccess?: boolean;
+  };
   session?: {
     answers?: Array<{
       _id: string;
@@ -34,6 +41,7 @@ type ResultResponse = {
         text?: string;
         sectionKey?: string;
         marks?: number;
+        explanation?: string;
       };
     }>;
   };
@@ -57,6 +65,7 @@ export default function StudentMockResultPage() {
   }, [resultId]);
 
   const sectionEntries = useMemo(() => Object.entries(result?.breakdown || {}), [result]);
+  const resultLocked = Boolean(result?.access?.locked);
 
   if (isLoading) {
     return <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-slate-600">Loading result report...</div>;
@@ -77,7 +86,9 @@ export default function StudentMockResultPage() {
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight">Performance report</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                Review your score, section-level performance, manual-review status, and the next practice areas recommended by Abroadways.
+                {resultLocked
+                  ? "This is the limited free-view report. Unlock the premium pack to see full answer review, explanations, and targeted recommendations."
+                  : "Review your score, section-level performance, manual-review status, and the next practice areas recommended by Abroadways."}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -105,14 +116,27 @@ export default function StudentMockResultPage() {
               </p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Review state</p>
-              <p className="mt-2 text-lg font-semibold">
-                {(result.pendingManualReview || 0) > 0 ? "Pending manual review" : "Fully graded"}
-              </p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Access</p>
+              <p className="mt-2 text-lg font-semibold">{resultLocked ? "Limited free view" : "Full premium view"}</p>
             </div>
           </div>
         </div>
       </section>
+
+      {resultLocked ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+          <p className="font-semibold">Premium result details are locked.</p>
+          <p className="mt-2 text-sm leading-6">
+            Unlock this mock-test pack from the payments flow to see explanations, full answer review, weaknesses, and recommended next practice.
+          </p>
+          <Link
+            to="/student/payments"
+            className="mt-4 inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+          >
+            Go to payments
+          </Link>
+        </div>
+      ) : null}
 
       <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
@@ -156,48 +180,55 @@ export default function StudentMockResultPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold text-slate-900">Answer review</h2>
-            <div className="mt-6 space-y-4">
-              {(result.session?.answers || []).length ? (
-                result.session!.answers!.map((answer) => (
-                  <div key={answer._id} className="rounded-2xl border border-slate-200 p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
-                        {formatMockSectionTitle(answer.question?.sectionKey || "general")}
-                      </p>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        {answer.marksObtained || 0}/{answer.question?.marks || 0}
-                      </span>
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-slate-900">{answer.question?.text || "Question"}</p>
-                    <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                      <strong>Your answer:</strong>{" "}
-                      {typeof answer.answer === "string" ? answer.answer : JSON.stringify(answer.answer)}
-                    </div>
-                    {answer.feedback ? (
-                      <div className="mt-3 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-                        <strong>Reviewer feedback:</strong> {answer.feedback}
+          {!resultLocked ? (
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-2xl font-semibold text-slate-900">Answer review</h2>
+              <div className="mt-6 space-y-4">
+                {(result.session?.answers || []).length ? (
+                  result.session!.answers!.map((answer) => (
+                    <div key={answer._id} className="rounded-2xl border border-slate-200 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
+                          {formatMockSectionTitle(answer.question?.sectionKey || "general")}
+                        </p>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                          {answer.marksObtained || 0}/{answer.question?.marks || 0}
+                        </span>
                       </div>
-                    ) : !answer.graded ? (
-                      <p className="mt-3 text-sm text-amber-700">This response is waiting for manual review.</p>
-                    ) : null}
+                      <p className="mt-3 text-sm font-medium text-slate-900">{answer.question?.text || "Question"}</p>
+                      <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                        <strong>Your answer:</strong>{" "}
+                        {typeof answer.answer === "string" ? answer.answer : JSON.stringify(answer.answer)}
+                      </div>
+                      {answer.feedback ? (
+                        <div className="mt-3 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+                          <strong>Reviewer feedback:</strong> {answer.feedback}
+                        </div>
+                      ) : !answer.graded ? (
+                        <p className="mt-3 text-sm text-amber-700">This response is waiting for manual review.</p>
+                      ) : null}
+                      {answer.question?.explanation ? (
+                        <div className="mt-3 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+                          <strong>Explanation:</strong> {answer.question.explanation}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-600">
+                    Detailed answer review is not available for this result yet.
                   </div>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-600">
-                  Detailed answer review is not available for this result yet.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         <aside className="space-y-6">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Weakness analysis</h2>
             <div className="mt-4 space-y-3">
-              {(result.weaknesses || []).length ? (
+              {!resultLocked && (result.weaknesses || []).length ? (
                 result.weaknesses!.map((weakness) => (
                   <div key={weakness} className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
                     {formatMockSectionTitle(weakness)}
@@ -205,7 +236,9 @@ export default function StudentMockResultPage() {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600">
-                  No major weaknesses flagged in this result. Keep practicing to maintain your strengths.
+                  {resultLocked
+                    ? "Weakness analysis unlocks with the premium pack."
+                    : "No major weaknesses flagged in this result. Keep practicing to maintain your strengths."}
                 </div>
               )}
             </div>
@@ -214,7 +247,7 @@ export default function StudentMockResultPage() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Recommended next practice</h2>
             <div className="mt-4 space-y-3">
-              {(result.recommendations || []).length ? (
+              {!resultLocked && (result.recommendations || []).length ? (
                 result.recommendations!.map((item, index) => (
                   <div key={`${item}-${index}`} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950">
                     {item}
@@ -222,7 +255,9 @@ export default function StudentMockResultPage() {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600">
-                  Recommended practice suggestions will appear once performance patterns are available.
+                  {resultLocked
+                    ? "Recommended practice suggestions unlock with full premium access."
+                    : "Recommended practice suggestions will appear once performance patterns are available."}
                 </div>
               )}
             </div>

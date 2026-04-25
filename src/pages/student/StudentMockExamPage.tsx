@@ -8,6 +8,9 @@ type TestSet = {
   title: string;
   description?: string;
   durationMinutes?: number;
+  accessType?: "free" | "paid";
+  price?: number;
+  currency?: string;
   status: "draft" | "published" | "archived";
   sectionConfig?: Array<{
     key: string;
@@ -16,6 +19,16 @@ type TestSet = {
     durationMinutes?: number;
   }>;
   questionIds?: any[];
+  access?: {
+    accessType: "free" | "paid";
+    price: number;
+    currency: string;
+    isAssigned: boolean;
+    hasPaidAccess: boolean;
+    canStart: boolean;
+    hasFullResultAccess: boolean;
+    paidOrderId?: string | null;
+  };
 };
 
 type ResultItem = {
@@ -24,6 +37,11 @@ type ResultItem = {
   totalMax?: number;
   pendingManualReview?: number;
   createdAt?: string;
+  testSet?: {
+    _id?: string;
+    title?: string;
+    accessType?: "free" | "paid";
+  };
 };
 
 export default function StudentMockExamPage() {
@@ -34,6 +52,7 @@ export default function StudentMockExamPage() {
   const [testSets, setTestSets] = useState<TestSet[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [startingSetId, setStartingSetId] = useState("");
+  const [purchaseLoadingId, setPurchaseLoadingId] = useState("");
   const [mode, setMode] = useState<"practice" | "exam">("exam");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,10 +60,11 @@ export default function StudentMockExamPage() {
   useEffect(() => {
     setIsLoading(true);
     setError("");
-    Promise.all([mockTestsApi.getExamTestSets(exam), mockTestsApi.getMyResults(exam)])
-      .then(([testSetsResponse, resultsResponse]) => {
-        setTestSets(testSetsResponse.data || []);
-        setResults(resultsResponse.data || []);
+    mockTestsApi
+      .getStudentExamLibrary(exam)
+      .then((response) => {
+        setTestSets(response.data?.testSets || []);
+        setResults(response.data?.myResults || []);
       })
       .catch((err) => {
         setError(err?.response?.data?.message || "We could not load the practice dashboard for this exam.");
@@ -63,9 +83,23 @@ export default function StudentMockExamPage() {
       const response = await mockTestsApi.startSession({ testSetId, mode });
       navigate(`/student/mock-tests/session/${response.data._id}`);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "We could not start this session right now.");
+      const responseData = err?.response?.data;
+      setError(responseData?.message || "We could not start this session right now.");
     } finally {
       setStartingSetId("");
+    }
+  };
+
+  const handleUnlock = async (testSetId: string) => {
+    try {
+      setPurchaseLoadingId(testSetId);
+      const response = await mockTestsApi.createPurchaseOrder({ testSetId });
+      const orderId = response.data?.order?._id;
+      navigate(orderId ? `/student/payments?orderId=${orderId}` : "/student/payments");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "We could not create the purchase order right now.");
+    } finally {
+      setPurchaseLoadingId("");
     }
   };
 
@@ -88,7 +122,7 @@ export default function StudentMockExamPage() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{examMeta.title} practice dashboard</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-blue-50/90 md:text-base">
-                Choose a published test set, start a timed session, and review section-level performance after each attempt.
+                Start free previews, unlock premium packs, and keep all of your exam practice inside one Abroadways workflow.
               </p>
             </div>
           </div>
@@ -142,13 +176,43 @@ export default function StudentMockExamPage() {
                 <article key={set._id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            set.access?.accessType === "paid"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
+                        >
+                          {set.access?.accessType === "paid" ? "Premium pack" : "Free set"}
+                        </span>
+                        {set.access?.isAssigned ? (
+                          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                            Assigned to you
+                          </span>
+                        ) : null}
+                        {set.access?.hasPaidAccess ? (
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                            Full access unlocked
+                          </span>
+                        ) : null}
+                      </div>
                       <h3 className="text-2xl font-semibold text-slate-900">{set.title}</h3>
                       <p className="max-w-3xl text-sm leading-6 text-slate-600">
                         {set.description || "A published mock-test set built from original Abroadways questions."}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
-                      {set.durationMinutes || 60} minutes
+                    <div className="space-y-2 text-right">
+                      <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+                        {set.durationMinutes || 60} minutes
+                      </div>
+                      {set.access?.accessType === "paid" ? (
+                        <p className="text-sm font-semibold text-amber-700">
+                          {(set.access?.price || set.price || 0).toLocaleString("en-BD")} {set.access?.currency || set.currency || "BDT"}
+                        </p>
+                      ) : (
+                        <p className="text-sm font-semibold text-emerald-700">Free preview access</p>
+                      )}
                     </div>
                   </div>
                   {set.sectionConfig?.length ? (
@@ -165,14 +229,25 @@ export default function StudentMockExamPage() {
                   ) : null}
                   <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                     <span className="text-sm text-slate-500">{set.questionIds?.length || 0} questions in this set</span>
-                    <button
-                      type="button"
-                      onClick={() => handleStart(set._id)}
-                      disabled={startingSetId === set._id}
-                      className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                    >
-                      {startingSetId === set._id ? "Starting..." : "Start timed session"}
-                    </button>
+                    {set.access?.canStart ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStart(set._id)}
+                        disabled={startingSetId === set._id}
+                        className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      >
+                        {startingSetId === set._id ? "Starting..." : "Start timed session"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleUnlock(set._id)}
+                        disabled={purchaseLoadingId === set._id}
+                        className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-400"
+                      >
+                        {purchaseLoadingId === set._id ? "Preparing order..." : "Unlock premium pack"}
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}
@@ -198,7 +273,8 @@ export default function StudentMockExamPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">
-                          Score {(result.totalScore || 0)}/{result.totalMax || 0}
+                          {result.testSet?.accessType === "paid" ? "Premium result" : "Free result"} · Score{" "}
+                          {(result.totalScore || 0)}/{result.totalMax || 0}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
                           {result.createdAt ? new Date(result.createdAt).toLocaleString() : "Completed attempt"}
@@ -225,15 +301,17 @@ export default function StudentMockExamPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">Need the full overview?</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Visit the public product page to see section coverage, practice scope, and published library details.
-            </p>
+            <h2 className="text-xl font-semibold text-slate-900">Premium unlock benefits</h2>
+            <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">
+              <li>Access all premium packs published for this exam.</li>
+              <li>View full result reports with weaknesses and recommended practice.</li>
+              <li>Unlock answer review details, explanations, and reviewer feedback.</li>
+            </ul>
             <Link
-              to={`/mock-tests/${examMeta.slug}`}
+              to="/student/payments"
               className="mt-5 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
-              Open public overview
+              Open payments
             </Link>
           </div>
         </aside>

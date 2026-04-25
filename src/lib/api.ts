@@ -451,6 +451,8 @@ export const mockTestsApi = {
   getExamLanding: (examSlug: string) => apiClient.get(`/mock-tests/exams/${examSlug}`, { params: noCacheParams() }),
   getExamTestSets: (examSlug: string) =>
     apiClient.get(`/mock-tests/exams/${examSlug}/test-sets`, { params: noCacheParams() }),
+  getStudentExamLibrary: (examSlug: string) =>
+    apiClient.get(`/mock-tests/me/exams/${examSlug}/test-sets`, { params: noCacheParams() }),
   getQuestions: (params: {
     examSlug: string;
     sectionKey?: string;
@@ -497,6 +499,9 @@ export const mockTestsApi = {
     description?: string;
     instructions?: string;
     durationMinutes?: number;
+    accessType?: "free" | "paid";
+    price?: number;
+    currency?: string;
     status?: "draft" | "published" | "archived";
     sectionConfig?: Array<{
       key: string;
@@ -505,6 +510,7 @@ export const mockTestsApi = {
       durationMinutes?: number;
     }>;
     questionIds?: string[];
+    assignedUsers?: string[];
   }) => apiClient.post("/mock-tests/test-sets", payload),
   updateTestSet: (
     testSetId: string,
@@ -514,6 +520,9 @@ export const mockTestsApi = {
       description?: string;
       instructions?: string;
       durationMinutes?: number;
+      accessType?: "free" | "paid";
+      price?: number;
+      currency?: string;
       status?: "draft" | "published" | "archived";
       sectionConfig?: Array<{
         key: string;
@@ -522,9 +531,12 @@ export const mockTestsApi = {
         durationMinutes?: number;
       }>;
       questionIds?: string[];
+      assignedUsers?: string[];
     }
   ) => apiClient.put(`/mock-tests/test-sets/${testSetId}`, payload),
   deleteTestSet: (testSetId: string) => apiClient.delete(`/mock-tests/test-sets/${testSetId}`),
+  getAssignableStudents: () => apiClient.get("/mock-tests/students", { params: noCacheParams() }),
+  createPurchaseOrder: (payload: { testSetId: string }) => apiClient.post("/mock-tests/purchase", payload),
   startSession: (payload: { testSetId: string; mode?: "practice" | "exam" }) =>
     apiClient.post("/mock-tests/sessions/start", payload),
   getSession: (sessionId: string) => apiClient.get(`/mock-tests/sessions/${sessionId}`, { params: noCacheParams() }),

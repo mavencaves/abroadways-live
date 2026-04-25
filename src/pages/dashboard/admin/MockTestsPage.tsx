@@ -8,8 +8,22 @@ type SummaryResponse = {
   questionCount: number;
   testSetCount: number;
   publishedSetCount: number;
+  freeSetCount: number;
+  paidSetCount: number;
   resultCount: number;
   pendingReviewCount: number;
+  paidOrderCount: number;
+  paidRevenue: number;
+  totalSessions: number;
+  premiumSessions: number;
+  examUsage?: Array<{
+    slug: string;
+    title: string;
+    testSets: number;
+    paidTestSets: number;
+    results: number;
+    paidOrders: number;
+  }>;
 };
 
 export default function MockTestsPage() {
@@ -32,12 +46,12 @@ export default function MockTestsPage() {
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div className="space-y-4">
             <span className="inline-flex rounded-full border border-blue-300/30 bg-blue-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-blue-100">
-              Mock-test management
+              Mock-test monetization
             </span>
             <div>
               <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Abroadways Mock Tests</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
-                Manage the question bank, publish test sets, review subjective responses, and keep the product ready for students.
+                Manage original question banks, publish free and premium packs, assign access, and track usage and revenue from one product workspace.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -51,16 +65,16 @@ export default function MockTestsPage() {
                 to="/dashboard/mock-tests/test-sets"
                 className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-blue-300 hover:text-blue-200"
               >
-                Build test sets
+                Manage packs
               </Link>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
               ["Questions", `${summary?.questionCount || 0}`],
-              ["Test sets", `${summary?.testSetCount || 0}`],
-              ["Published", `${summary?.publishedSetCount || 0}`],
-              ["Pending review", `${summary?.pendingReviewCount || 0}`],
+              ["Free sets", `${summary?.freeSetCount || 0}`],
+              ["Paid sets", `${summary?.paidSetCount || 0}`],
+              ["Revenue", `${summary?.paidRevenue || 0} BDT`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-3xl border border-white/10 bg-white/10 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-300">{label}</p>
@@ -79,30 +93,47 @@ export default function MockTestsPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-900">Exam tracks</h2>
+              <h2 className="text-2xl font-semibold text-slate-900">Exam track usage</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                These product tracks are available for question management, test-set publishing, and result analysis.
+                Review how each exam track is growing across published packs, student results, and paid purchases.
               </p>
             </div>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {MOCK_TEST_EXAMS.map((exam) => (
+            {(summary?.examUsage?.length ? summary.examUsage : MOCK_TEST_EXAMS.map((exam) => ({
+              slug: exam.slug,
+              title: exam.title,
+              testSets: 0,
+              paidTestSets: 0,
+              results: 0,
+              paidOrders: 0,
+            }))).map((exam) => (
               <div key={exam.slug} className="rounded-3xl border border-slate-200 p-5">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">{exam.eyebrow}</span>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900">{exam.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{exam.description}</p>
+                <h3 className="text-xl font-semibold text-slate-900">{exam.title}</h3>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-slate-500">Test sets</p>
+                    <p className="mt-1 font-semibold text-slate-900">{exam.testSets}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-slate-500">Paid packs</p>
+                    <p className="mt-1 font-semibold text-slate-900">{exam.paidTestSets}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-slate-500">Results</p>
+                    <p className="mt-1 font-semibold text-slate-900">{exam.results}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-slate-500">Paid orders</p>
+                    <p className="mt-1 font-semibold text-slate-900">{exam.paidOrders}</p>
+                  </div>
+                </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link
-                    to={`/dashboard/mock-tests/questions?exam=${exam.slug}`}
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    Questions
-                  </Link>
                   <Link
                     to={`/dashboard/mock-tests/test-sets?exam=${exam.slug}`}
                     className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                   >
-                    Test sets
+                    Packs
                   </Link>
                   <Link
                     to={`/dashboard/mock-tests/results?exam=${exam.slug}`}
@@ -127,10 +158,13 @@ export default function MockTestsPage() {
                   <strong className="text-slate-900">{summary?.resultCount || 0}</strong> student result reports are stored in the platform.
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-                  <strong className="text-slate-900">{summary?.pendingReviewCount || 0}</strong> result reports currently need manual writing or speaking review.
+                  <strong className="text-slate-900">{summary?.pendingReviewCount || 0}</strong> result reports currently need manual review.
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-                  <strong className="text-slate-900">{summary?.publishedSetCount || 0}</strong> published test sets are live for students right now.
+                  <strong className="text-slate-900">{summary?.paidOrderCount || 0}</strong> paid mock-test orders have been completed.
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                  <strong className="text-slate-900">{summary?.premiumSessions || 0}</strong> premium sessions have been started so far.
                 </div>
               </div>
             )}

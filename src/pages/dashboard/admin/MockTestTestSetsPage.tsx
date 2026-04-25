@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { mockTestsApi } from "@/lib/api";
-import { MOCK_TEST_EXAMS } from "@/data/mock-test-config";
+import { MOCK_TEST_EXAM_MAP, MOCK_TEST_EXAMS } from "@/data/mock-test-config";
 
 type QuestionItem = {
   _id: string;
@@ -11,6 +11,15 @@ type QuestionItem = {
   marks?: number;
 };
 
+type StudentOption = {
+  _id: string;
+  studentProfileId: string;
+  name: string;
+  email: string;
+  preferredCountry?: string;
+  examInterest?: string;
+};
+
 type TestSetItem = {
   _id: string;
   title: string;
@@ -18,8 +27,12 @@ type TestSetItem = {
   description?: string;
   instructions?: string;
   durationMinutes?: number;
+  accessType?: "free" | "paid";
+  price?: number;
+  currency?: string;
   status: "draft" | "published" | "archived";
   questionIds?: QuestionItem[];
+  assignedUsers?: Array<{ _id: string; name?: string; email?: string }>;
   sectionConfig?: Array<{
     key: string;
     title?: string;
@@ -35,8 +48,12 @@ const emptyForm = {
   description: "",
   instructions: "",
   durationMinutes: "60",
+  accessType: "free" as "free" | "paid",
+  price: "0",
+  currency: "BDT",
   status: "draft" as "draft" | "published" | "archived",
   questionIds: [] as string[],
+  assignedUsers: [] as string[],
 };
 
 const slugify = (value: string) =>
@@ -52,6 +69,7 @@ export default function MockTestTestSetsPage() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [testSets, setTestSets] = useState<TestSetItem[]>([]);
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [students, setStudents] = useState<StudentOption[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,12 +80,14 @@ export default function MockTestTestSetsPage() {
     setIsLoading(true);
     setError("");
     try {
-      const [setsResponse, questionsResponse] = await Promise.all([
+      const [setsResponse, questionsResponse, studentsResponse] = await Promise.all([
         mockTestsApi.getAdminTestSets({ examSlug, status: statusFilter || undefined }),
         mockTestsApi.getQuestions({ examSlug }),
+        mockTestsApi.getAssignableStudents(),
       ]);
       setTestSets(setsResponse.data || []);
       setQuestions(questionsResponse.data || []);
+      setStudents(studentsResponse.data || []);
     } catch (err: any) {
       setError(err?.response?.data?.message || "We could not load test-set management.");
     } finally {
@@ -105,8 +125,12 @@ export default function MockTestTestSetsPage() {
       description: testSet.description || "",
       instructions: testSet.instructions || "",
       durationMinutes: `${testSet.durationMinutes || 60}`,
+      accessType: testSet.accessType || "free",
+      price: `${testSet.price || 0}`,
+      currency: testSet.currency || "BDT",
       status: testSet.status || "draft",
       questionIds: (testSet.questionIds || []).map((question) => question._id),
+      assignedUsers: (testSet.assignedUsers || []).map((user) => user._id),
     });
     setError("");
     setSuccess("");
@@ -135,6 +159,15 @@ export default function MockTestTestSetsPage() {
     }));
   };
 
+  const toggleAssignedUser = (userId: string) => {
+    setForm((current) => ({
+      ...current,
+      assignedUsers: current.assignedUsers.includes(userId)
+        ? current.assignedUsers.filter((item) => item !== userId)
+        : [...current.assignedUsers, userId],
+    }));
+  };
+
   const handleSave = async (event: FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
@@ -148,8 +181,12 @@ export default function MockTestTestSetsPage() {
       description: form.description.trim(),
       instructions: form.instructions.trim(),
       durationMinutes: Number(form.durationMinutes) || 60,
+      accessType: form.accessType,
+      price: form.accessType === "paid" ? Number(form.price || 0) : 0,
+      currency: form.currency || "BDT",
       status: form.status,
       questionIds: form.questionIds,
+      assignedUsers: form.assignedUsers,
       sectionConfig: selectedSectionConfig,
     };
 
@@ -175,7 +212,7 @@ export default function MockTestTestSetsPage() {
       <section>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Mock-test test sets</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Build timed sets from the question bank, then publish them to the public and student mock-test product.
+          Build timed sets, decide whether each set is free or premium, and assign access to specific students when needed.
         </p>
       </section>
 
@@ -187,7 +224,7 @@ export default function MockTestTestSetsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">{form.id ? "Edit test set" : "Create test set"}</h2>
-              <p className="mt-1 text-sm text-slate-600">Published sets immediately become available to students.</p>
+              <p className="mt-1 text-sm text-slate-600">Published premium sets will require purchase or assignment before students can start them.</p>
             </div>
             {form.id ? (
               <button
@@ -249,7 +286,7 @@ export default function MockTestTestSetsPage() {
                   }))
                 }
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
-                placeholder="IELTS Full Mock 01"
+                placeholder={`${MOCK_TEST_EXAM_MAP[examSlug]?.title || "Exam"} Full Mock 01`}
                 required
               />
             </label>
@@ -276,6 +313,45 @@ export default function MockTestTestSetsPage() {
               </label>
             </div>
 
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                Access
+                <select
+                  value={form.accessType}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      accessType: event.target.value as "free" | "paid",
+                      price: event.target.value === "free" ? "0" : current.price || "0",
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="free">Free</option>
+                  <option value="paid">Paid</option>
+                </select>
+              </label>
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                Price
+                <input
+                  type="number"
+                  min="0"
+                  value={form.price}
+                  onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
+                  disabled={form.accessType === "free"}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                />
+              </label>
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                Currency
+                <input
+                  value={form.currency}
+                  onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
+            </div>
+
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Description
               <textarea
@@ -297,6 +373,41 @@ export default function MockTestTestSetsPage() {
                 placeholder="Show these instructions before the student starts the session"
               />
             </label>
+
+            <div className="rounded-3xl border border-slate-200 p-4">
+              <h3 className="text-lg font-semibold text-slate-900">Assigned student access</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Assigned students can open this set even if it is marked as paid.
+              </p>
+              <div className="mt-4 max-h-56 space-y-2 overflow-y-auto">
+                {students.length ? (
+                  students.map((student) => {
+                    const selected = form.assignedUsers.includes(student._id);
+                    return (
+                      <label
+                        key={student._id}
+                        className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 text-sm transition ${
+                          selected ? "border-blue-200 bg-blue-50" : "border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleAssignedUser(student._id)}
+                          className="mt-1 h-4 w-4 accent-blue-600"
+                        />
+                        <span>
+                          <span className="block font-semibold text-slate-900">{student.name}</span>
+                          <span className="block text-slate-500">{student.email}</span>
+                        </span>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-slate-500">No student accounts are available for assignment yet.</p>
+                )}
+              </div>
+            </div>
 
             <div className="rounded-3xl border border-slate-200 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -388,6 +499,13 @@ export default function MockTestTestSetsPage() {
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                             {testSet.status}
                           </span>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              testSet.accessType === "paid" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
+                            }`}
+                          >
+                            {testSet.accessType === "paid" ? "Paid" : "Free"}
+                          </span>
                           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
                             {testSet.durationMinutes || 60} min
                           </span>
@@ -396,6 +514,16 @@ export default function MockTestTestSetsPage() {
                         <p className="text-sm text-slate-500">
                           {testSet.questionIds?.length || 0} questions · slug: {testSet.slug}
                         </p>
+                        {testSet.accessType === "paid" ? (
+                          <p className="text-sm font-semibold text-amber-700">
+                            {(testSet.price || 0).toLocaleString("en-BD")} {testSet.currency || "BDT"}
+                          </p>
+                        ) : null}
+                        {testSet.assignedUsers?.length ? (
+                          <p className="text-sm text-slate-600">
+                            Assigned to {testSet.assignedUsers.length} student{testSet.assignedUsers.length === 1 ? "" : "s"}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button
