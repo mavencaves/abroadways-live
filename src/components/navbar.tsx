@@ -229,10 +229,6 @@ export default function Navbar() {
 
                     <div className="hidden shrink-0 lg:block">
                         <div className="flex items-center gap-2">
-                            <Button asChild variant="outline" className="h-9 rounded-full border-blue-200 bg-white px-4 text-[13px] font-semibold text-blue-700 hover:bg-blue-50">
-                                <Link to="/abroadai">AbroadAI</Link>
-                            </Button>
-
                             {user ? (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -338,14 +334,6 @@ export default function Navbar() {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-3">
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        className="w-full min-w-0 border-blue-200 py-3 text-base font-medium text-blue-700 hover:bg-blue-50"
-                                                        onClick={() => setIsOpen(false)}
-                                                    >
-                                                        <Link to="/abroadai">Try AbroadAI Free</Link>
-                                                    </Button>
                                                     <Button
                                                         asChild
                                                         className="w-full min-w-0 bg-blue-600 py-3 text-base font-medium text-white hover:bg-blue-700"
