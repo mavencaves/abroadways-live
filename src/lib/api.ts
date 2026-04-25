@@ -211,8 +211,22 @@ export const chatApi = {
 export const adminApi = {
   getDashboardOverview: () => apiClient.get("/admin/dashboard/overview", { params: noCacheParams() }),
   getUsers: (params?: Record<string, any>) => apiClient.get("/admin/users", { params }),
+  createStaffUser: (payload: {
+    name: string;
+    email: string;
+    role: "admin" | "content-manager" | "course-manager";
+    temporaryPassword?: string;
+    country?: string;
+    avatarUrl?: string;
+  }) => apiClient.post("/admin/users/staff", payload),
   createUser: (payload: any) => apiClient.post("/admin/users", payload),
   updateUser: (id: string, payload: any) => apiClient.put(`/admin/users/${id}`, payload),
+  updateUserRole: (id: string, role: "admin" | "content-manager" | "course-manager" | "user") =>
+    apiClient.patch(`/admin/users/${id}/role`, { role }),
+  updateUserStatus: (id: string, status: "active" | "inactive") =>
+    apiClient.patch(`/admin/users/${id}/status`, { status }),
+  resetUserPassword: (id: string, temporaryPassword?: string) =>
+    apiClient.patch(`/admin/users/${id}/reset-password`, temporaryPassword ? { temporaryPassword } : {}),
   deleteUser: (id: string) => apiClient.delete(`/admin/users/${id}`),
 };
 

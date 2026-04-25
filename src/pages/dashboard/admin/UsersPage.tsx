@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Search, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Copy, KeyRound, Search, ShieldCheck, ShieldEllipsis, Trash2, UserCog, UserMinus, UserPlus, Users } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,30 +7,50 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export type UserType = {
+type UserRole = "admin" | "user" | "course-manager" | "content-manager";
+type UserStatus = "active" | "inactive";
+type StaffRole = Exclude<UserRole, "user">;
+
+type UserType = {
   _id: string;
   name: string;
   email: string;
   country?: string;
   avatarUrl?: string;
-  status: "active" | "inactive";
-  role: "admin" | "user" | "course-manager" | "content-manager";
+  status: UserStatus;
+  role: UserRole;
   createdAt?: string;
+};
+
+type StaffCreateForm = {
+  name: string;
+  email: string;
+  role: StaffRole;
+  temporaryPassword: string;
+  country: string;
 };
 
 const PAGE_SIZE = 10;
 
-const STATUS_LABELS: Record<UserType["status"], string> = {
+const ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Admin",
+  user: "User",
+  "content-manager": "Content Manager",
+  "course-manager": "Course Manager",
+};
+
+const STATUS_LABELS: Record<UserStatus, string> = {
   active: "Active",
   inactive: "Inactive",
 };
 
-const ROLE_LABELS: Record<UserType["role"], string> = {
-  admin: "Admin",
-  user: "User",
-  "course-manager": "Course Manager",
-  "content-manager": "Content Manager",
-};
+const ROLE_FILTER_OPTIONS = [
+  { value: "all", label: "All roles" },
+  { value: "admin", label: "Admin" },
+  { value: "content-manager", label: "Content Manager" },
+  { value: "course-manager", label: "Course Manager" },
+  { value: "user", label: "User" },
+] as const;
 
 const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "All statuses" },
@@ -38,59 +58,71 @@ const STATUS_FILTER_OPTIONS = [
   { value: "inactive", label: "Inactive" },
 ] as const;
 
-const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "All roles" },
+const STAFF_ROLE_OPTIONS: Array<{ value: StaffRole; label: string }> = [
   { value: "admin", label: "Admin" },
-  { value: "user", label: "User" },
-  { value: "course-manager", label: "Course Manager" },
   { value: "content-manager", label: "Content Manager" },
-] as const;
+  { value: "course-manager", label: "Course Manager" },
+];
 
-type FormState = {
-  name: string;
-  email: string;
-  country: string;
-  role: UserType["role"];
-  status: UserType["status"];
-  avatarUrl: string;
-};
-
-const DEFAULT_FORM: FormState = {
+const DEFAULT_STAFF_FORM: StaffCreateForm = {
   name: "",
   email: "",
+  role: "content-manager",
+  temporaryPassword: "",
   country: "",
-  role: "user",
-  status: "active",
-  avatarUrl: "",
 };
 
 const formatDate = (value?: string) =>
   value
-    ? new Date(value).toLocaleDateString("en-US", {
+    ? new Date(value).toLocaleString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
       })
     : "N/A";
+
+const getRoleBadgeClass = (role: UserRole) => {
+  switch (role) {
+    case "admin":
+      return "bg-slate-900 text-white";
+    case "content-manager":
+      return "bg-blue-100 text-blue-800";
+    case "course-manager":
+      return "bg-violet-100 text-violet-800";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+};
+
+const getStatusBadgeClass = (status: UserStatus) =>
+  status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800";
 
 export default function UsersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserType[]>([]);
   const [query, setQuery] = useState("");
   const [serverSearch, setServerSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [roleFilter, setRoleFilter] = useState<(typeof ROLE_FILTER_OPTIONS)[number]["value"]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserType | null>(null);
-  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState<StaffCreateForm>(DEFAULT_STAFF_FORM);
+  const [creatingStaff, setCreatingStaff] = useState(false);
+  const [activeRoleEditor, setActiveRoleEditor] = useState<UserType | null>(null);
+  const [pendingRole, setPendingRole] = useState<UserRole>("content-manager");
+  const [workingUserId, setWorkingUserId] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [showMenuId, setShowMenuId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [credentialNotice, setCredentialNotice] = useState<{
+    title: string;
+    email: string;
+    password: string;
+  } | null>(null);
+
   const canManageUsers = user?.role === "admin";
 
   useEffect(() => {
@@ -106,22 +138,21 @@ export default function UsersPage() {
       setLoadError(null);
 
       try {
-        const params: Record<string, any> = {
+        const response = await adminApi.getUsers({
           page,
           limit: PAGE_SIZE,
-        };
+          q: serverSearch || undefined,
+          status: statusFilter === "all" ? undefined : statusFilter,
+          role: roleFilter === "all" ? undefined : roleFilter,
+        });
 
-        if (serverSearch) params.q = serverSearch;
-        if (statusFilter !== "all") params.status = statusFilter;
-
-        const response = await adminApi.getUsers(params);
         if (!isMounted) return;
 
-        const data = response.data;
-        setUsers(data.users || []);
-        setTotal(data.meta?.total || 0);
+        setUsers(response.data.users || []);
+        setTotal(response.data.meta?.total || 0);
       } catch (error: any) {
         if (!isMounted) return;
+
         const status = error?.response?.status;
         const message =
           status === 401
@@ -129,10 +160,11 @@ export default function UsersPage() {
             : status === 403
               ? "Only admin accounts can access user management."
               : error?.response?.data?.message || "Failed to load users.";
-        toast.error(message);
+
         setLoadError(message);
         setUsers([]);
         setTotal(0);
+        toast.error(message);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -143,118 +175,181 @@ export default function UsersPage() {
     return () => {
       isMounted = false;
     };
-  }, [canManageUsers, page, refreshToken, serverSearch, statusFilter]);
+  }, [canManageUsers, page, refreshToken, roleFilter, serverSearch, statusFilter]);
 
-  const visibleUsers = useMemo(() => {
-    return users.filter((entry) => roleFilter === "all" || entry.role === roleFilter);
-  }, [roleFilter, users]);
+  const stats = useMemo(() => {
+    const inactiveCount = users.filter((entry) => entry.status === "inactive").length;
+    const adminCount = users.filter((entry) => entry.role === "admin").length;
+    const contentManagerCount = users.filter((entry) => entry.role === "content-manager").length;
 
-  function escapeCsv(text: string | number | undefined) {
-    if (text == null) return "";
-    const str = String(text);
-    const shouldQuote = /[",\n,]/.test(str);
-    return shouldQuote ? `"${str.replace(/"/g, "\"\"")}"` : str;
-  }
-
-  function exportCSV() {
-    if (!visibleUsers.length) {
-      toast.error("There are no users to export.");
-      return;
-    }
-
-    const headers = ["Name", "Email", "Country", "Role", "Status", "Created Date"];
-    const rows = visibleUsers.map((entry) => [
-      escapeCsv(entry.name),
-      escapeCsv(entry.email),
-      escapeCsv(entry.country || "Not specified"),
-      escapeCsv(ROLE_LABELS[entry.role]),
-      escapeCsv(STATUS_LABELS[entry.status]),
-      escapeCsv(formatDate(entry.createdAt)),
-    ]);
-
-    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `abroadways-users-page-${page}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exported successfully.");
-  }
-
-  const resetForm = () => {
-    setForm(DEFAULT_FORM);
-    setEditingUser(null);
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setShowModal(true);
-  };
-
-  const openEditModal = (entry: UserType) => {
-    setEditingUser(entry);
-    setForm({
-      name: entry.name,
-      email: entry.email,
-      country: entry.country || "",
-      role: entry.role,
-      status: entry.status,
-      avatarUrl: entry.avatarUrl || "",
-    });
-    setShowModal(true);
-  };
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!form.name || !form.email) {
-      toast.error("Please provide both name and email.");
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      if (editingUser) {
-        await adminApi.updateUser(editingUser._id, form);
-        toast.success("User updated successfully.");
-      } else {
-        await adminApi.createUser(form);
-        toast.success("User created successfully.");
-      }
-
-      setShowModal(false);
-      resetForm();
-      setPage(1);
-      setRefreshToken((token) => token + 1);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Unable to save the user.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleDelete(userId: string) {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-
-    setShowMenuId(null);
-    setDeletingId(userId);
-
-    try {
-      await adminApi.deleteUser(userId);
-      toast.success("User deleted successfully.");
-      setRefreshToken((token) => token + 1);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Unable to delete the user.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
+    return {
+      inactiveCount,
+      adminCount,
+      contentManagerCount,
+    };
+  }, [users]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const showingFrom = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const showingTo = Math.min(page * PAGE_SIZE, total);
+
+  const resetCreateForm = () => {
+    setCreateForm(DEFAULT_STAFF_FORM);
+  };
+
+  const isCurrentUser = (entry: UserType) => user?._id === entry._id;
+
+  const copyToClipboard = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error("Unable to copy to clipboard in this browser.");
+    }
+  };
+
+  const openRoleEditor = (entry: UserType) => {
+    setActiveRoleEditor(entry);
+    setPendingRole(entry.role);
+  };
+
+  const handleCreateStaff = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!createForm.name.trim() || !createForm.email.trim()) {
+      toast.error("Please provide a full name and email address.");
+      return;
+    }
+
+    try {
+      setCreatingStaff(true);
+      const response = await adminApi.createStaffUser({
+        name: createForm.name.trim(),
+        email: createForm.email.trim(),
+        role: createForm.role,
+        temporaryPassword: createForm.temporaryPassword.trim() || undefined,
+        country: createForm.country.trim() || undefined,
+      });
+
+      const createdUser = response.data.user as UserType;
+      const temporaryPassword = response.data.temporaryPassword as string | undefined;
+
+      toast.success(response.data.message || "Staff account created successfully.");
+      setShowCreateModal(false);
+      resetCreateForm();
+      setCredentialNotice(
+        temporaryPassword
+          ? {
+              title: `${ROLE_LABELS[createdUser.role]} credentials created`,
+              email: createdUser.email,
+              password: temporaryPassword,
+            }
+          : null
+      );
+      setPage(1);
+      setRefreshToken((value) => value + 1);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Unable to create the staff account.");
+    } finally {
+      setCreatingStaff(false);
+    }
+  };
+
+  const handleRoleChange = async () => {
+    if (!activeRoleEditor) return;
+
+    if (pendingRole === activeRoleEditor.role) {
+      setActiveRoleEditor(null);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Change ${activeRoleEditor.name}'s role from ${ROLE_LABELS[activeRoleEditor.role]} to ${ROLE_LABELS[pendingRole]}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setWorkingUserId(activeRoleEditor._id);
+      const response = await adminApi.updateUserRole(activeRoleEditor._id, pendingRole);
+      toast.success(response.data.message || "User role updated successfully.");
+      setActiveRoleEditor(null);
+      setRefreshToken((value) => value + 1);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Unable to update the user role.");
+    } finally {
+      setWorkingUserId(null);
+    }
+  };
+
+  const handleStatusToggle = async (entry: UserType) => {
+    const nextStatus: UserStatus = entry.status === "active" ? "inactive" : "active";
+    const confirmed = window.confirm(
+      `${nextStatus === "inactive" ? "Deactivate" : "Reactivate"} ${entry.name}'s account?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setWorkingUserId(entry._id);
+      const response = await adminApi.updateUserStatus(entry._id, nextStatus);
+      toast.success(response.data.message || "User status updated successfully.");
+      setRefreshToken((value) => value + 1);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Unable to update user status.");
+    } finally {
+      setWorkingUserId(null);
+    }
+  };
+
+  const handleResetPassword = async (entry: UserType) => {
+    const confirmed = window.confirm(`Reset a temporary password for ${entry.name}?`);
+
+    if (!confirmed) return;
+
+    try {
+      setWorkingUserId(entry._id);
+      const response = await adminApi.resetUserPassword(entry._id);
+      const temporaryPassword = response.data.temporaryPassword as string | undefined;
+      toast.success(response.data.message || "Temporary password reset successfully.");
+
+      if (temporaryPassword) {
+        setCredentialNotice({
+          title: `Temporary password reset for ${entry.name}`,
+          email: entry.email,
+          password: temporaryPassword,
+        });
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Unable to reset the temporary password.");
+    } finally {
+      setWorkingUserId(null);
+    }
+  };
+
+  const handleDelete = async (entry: UserType) => {
+    if (isCurrentUser(entry)) {
+      toast.error("You cannot delete your own account.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${entry.name}'s account? This should only be used for cleanup of accounts that should not remain in the system.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setWorkingUserId(entry._id);
+      const response = await adminApi.deleteUser(entry._id);
+      toast.success(response.data.message || "User deleted successfully.");
+      setRefreshToken((value) => value + 1);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Unable to delete the user.");
+    } finally {
+      setWorkingUserId(null);
+    }
+  };
 
   if (!canManageUsers) {
     return (
@@ -263,7 +358,7 @@ export default function UsersPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Workspace Access</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Users</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Manage dashboard users, roles, and account status from the central admin workspace.
+            Manage staff accounts, role permissions, and dashboard access from the central admin workspace.
           </p>
         </div>
 
@@ -286,22 +381,130 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Workspace Access</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Security & Access</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Users</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Manage dashboard users, roles, and account status from the central admin workspace.
+            Create staff accounts, adjust permissions, deactivate access, and issue temporary password resets without
+            weakening public signup or student access rules.
           </p>
         </div>
-        <div className="text-sm text-slate-500">
-          Showing <span className="font-medium text-slate-900">{visibleUsers.length}</span> visible records
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => setRefreshToken((value) => value + 1)}>
+            Refresh list
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Create staff user
+          </Button>
         </div>
       </div>
 
+      {credentialNotice ? (
+        <Card className="border-blue-200 bg-blue-50/70">
+          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Temporary credentials</p>
+              <h2 className="mt-2 text-lg font-semibold text-slate-950">{credentialNotice.title}</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Share this password securely. It is shown here once for{" "}
+                <span className="font-medium text-slate-900">{credentialNotice.email}</span>.
+              </p>
+              <div className="mt-3 rounded-xl border border-blue-200 bg-white px-4 py-3 font-mono text-sm text-slate-900">
+                {credentialNotice.password}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => copyToClipboard(credentialNotice.password, "Temporary password copied.")}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy password
+              </Button>
+              <Button variant="outline" onClick={() => setCredentialNotice(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-4">
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Total users</p><p className="mt-2 text-3xl font-semibold">{total}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Active</p><p className="mt-2 text-3xl font-semibold">{users.filter((entry) => entry.status === "active").length}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Content managers</p><p className="mt-2 text-3xl font-semibold">{users.filter((entry) => entry.role === "content-manager").length}</p></CardContent></Card>
-        <Card><CardContent className="p-6"><p className="text-sm text-slate-500">Course managers</p><p className="mt-2 text-3xl font-semibold">{users.filter((entry) => entry.role === "course-manager").length}</p></CardContent></Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Total users</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Admin accounts</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{stats.adminCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Content managers</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{stats.contentManagerCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-500">Inactive accounts</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-950">{stats.inactiveCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
+        <Card>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-center gap-3">
+              <ShieldEllipsis className="h-5 w-5 text-blue-700" />
+              <div>
+                <h2 className="text-lg font-semibold text-slate-950">Role permissions</h2>
+                <p className="text-sm text-slate-600">Access stays strict across public, student, and dashboard areas.</p>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Admin</p>
+                <p className="mt-2 text-sm text-slate-600">Full dashboard access, staff management, CRM, content, orders, documents, templates, and analytics.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Content Manager</p>
+                <p className="mt-2 text-sm text-slate-600">Content and CRM operations including blogs, events, inquiries, templates, and operational follow-up.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Course Manager</p>
+                <p className="mt-2 text-sm text-slate-600">Course and mock-test related workflows only. No admin user management and no student portal access.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">User</p>
+                <p className="mt-2 text-sm text-slate-600">Student portal only. Public signup continues to create this role by default.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-center gap-3">
+              <Users className="h-5 w-5 text-blue-700" />
+              <div>
+                <h2 className="text-lg font-semibold text-slate-950">Safety rules</h2>
+                <p className="text-sm text-slate-600">Built-in protections for live staff management.</p>
+              </div>
+            </div>
+            <ul className="space-y-2 text-sm leading-7 text-slate-600">
+              <li>- Public signup always creates `user` accounts.</li>
+              <li>- Only admin can access this screen and backend staff-management routes.</li>
+              <li>- You cannot delete or deactivate your own account from here.</li>
+              <li>- The system keeps at least one active admin account available.</li>
+              <li>- Temporary passwords are shown once and must be shared securely.</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -319,7 +522,7 @@ export default function UsersPage() {
             <select
               value={statusFilter}
               onChange={(event) => {
-                setStatusFilter(event.target.value as typeof statusFilter);
+                setStatusFilter(event.target.value as "all" | UserStatus);
                 setPage(1);
               }}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -332,7 +535,10 @@ export default function UsersPage() {
             </select>
             <select
               value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value as typeof roleFilter)}
+              onChange={(event) => {
+                setRoleFilter(event.target.value as "all" | UserRole);
+                setPage(1);
+              }}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
               {ROLE_FILTER_OPTIONS.map((option) => (
@@ -351,8 +557,18 @@ export default function UsersPage() {
               >
                 Search
               </Button>
-              <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
-              <Button onClick={openCreateModal}>Add User</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setQuery("");
+                  setServerSearch("");
+                  setStatusFilter("all");
+                  setRoleFilter("all");
+                  setPage(1);
+                }}
+              >
+                Reset
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -362,7 +578,7 @@ export default function UsersPage() {
         <Card>
           <CardContent className="space-y-4 p-8">
             <p className="text-sm font-medium text-red-600">{loadError}</p>
-            <Button onClick={() => setRefreshToken((token) => token + 1)}>Try Again</Button>
+            <Button onClick={() => setRefreshToken((value) => value + 1)}>Try again</Button>
           </CardContent>
         </Card>
       ) : (
@@ -377,80 +593,122 @@ export default function UsersPage() {
                     <th className="min-w-[150px] px-4 py-3">Role</th>
                     <th className="min-w-[120px] px-4 py-3">Status</th>
                     <th className="min-w-[160px] px-4 py-3">Created</th>
-                    <th className="min-w-[120px] px-4 py-3">Country</th>
-                    <th className="min-w-[90px] px-4 py-3 text-right">Actions</th>
+                    <th className="min-w-[130px] px-4 py-3">Country</th>
+                    <th className="min-w-[360px] px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-slate-500">Loading users...</td>
+                      <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
+                        Loading users...
+                      </td>
                     </tr>
-                  ) : visibleUsers.length === 0 ? (
+                  ) : users.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-12 text-center">
                         <p className="font-medium text-slate-900">No users match your current filters.</p>
-                        <p className="mt-2 text-sm text-slate-500">Try another search or reset the role and status filters.</p>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Try another search or clear the role and status filters.
+                        </p>
                       </td>
                     </tr>
                   ) : (
-                    visibleUsers.map((entry) => (
-                      <tr key={entry._id} className="border-b bg-white hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={entry.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(entry.name)}`}
-                              alt={entry.name}
-                              className="h-9 w-9 rounded-full bg-indigo-50 object-cover"
-                              onError={(event) => {
-                                event.currentTarget.onerror = null;
-                                event.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(entry.name)}`;
-                              }}
-                            />
-                            <div>
-                              <p className="font-medium text-slate-900">{entry.name}</p>
-                              <p className="text-xs text-slate-500">{entry.country || "Not specified"}</p>
+                    users.map((entry) => {
+                      const currentRowBusy = workingUserId === entry._id;
+                      const ownAccount = isCurrentUser(entry);
+
+                      return (
+                        <tr key={entry._id} className="border-b bg-white align-top hover:bg-slate-50">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={
+                                  entry.avatarUrl ||
+                                  `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(entry.name)}`
+                                }
+                                alt={entry.name}
+                                className="h-10 w-10 rounded-full bg-indigo-50 object-cover"
+                                onError={(event) => {
+                                  event.currentTarget.onerror = null;
+                                  event.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(entry.name)}`;
+                                }}
+                              />
+                              <div>
+                                <p className="font-medium text-slate-900">
+                                  {entry.name}
+                                  {ownAccount ? (
+                                    <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800">
+                                      You
+                                    </span>
+                                  ) : null}
+                                </p>
+                                <p className="text-xs text-slate-500">{entry.country || "Unspecified"}</p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{entry.email}</td>
-                        <td className="px-4 py-3">{ROLE_LABELS[entry.role]}</td>
-                        <td className="px-4 py-3">
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${entry.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                            {STATUS_LABELS[entry.status]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{formatDate(entry.createdAt)}</td>
-                        <td className="px-4 py-3 text-slate-700">{entry.country || "Not specified"}</td>
-                        <td className="relative px-4 py-3 text-right">
-                          <button
-                            className="rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-                            onClick={() => setShowMenuId(showMenuId === entry._id ? null : entry._id)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
-                            </svg>
-                          </button>
-                          {showMenuId === entry._id ? (
-                            <div
-                              className="absolute right-4 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border bg-white shadow-lg"
-                              onMouseLeave={() => setShowMenuId(null)}
-                            >
-                              <button className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-blue-50" onClick={() => openEditModal(entry)}>
-                                Edit user
-                              </button>
-                              <button
-                                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-60"
-                                onClick={() => handleDelete(entry._id)}
-                                disabled={deletingId === entry._id}
+                          </td>
+                          <td className="px-4 py-4 text-slate-700">{entry.email}</td>
+                          <td className="px-4 py-4">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(entry.role)}`}>
+                              {ROLE_LABELS[entry.role]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(entry.status)}`}>
+                              {STATUS_LABELS[entry.status]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-slate-700">{formatDate(entry.createdAt)}</td>
+                          <td className="px-4 py-4 text-slate-700">{entry.country || "Unspecified"}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openRoleEditor(entry)}
+                                disabled={currentRowBusy || ownAccount}
                               >
-                                {deletingId === entry._id ? "Deleting..." : "Delete user"}
-                              </button>
+                                <UserCog className="mr-2 h-4 w-4" />
+                                Change role
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusToggle(entry)}
+                                disabled={currentRowBusy || ownAccount}
+                              >
+                                <UserMinus className="mr-2 h-4 w-4" />
+                                {entry.status === "active" ? "Deactivate" : "Reactivate"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleResetPassword(entry)}
+                                disabled={currentRowBusy}
+                              >
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Reset temporary password
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                onClick={() => handleDelete(entry)}
+                                disabled={currentRowBusy || ownAccount}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </Button>
                             </div>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))
+                            {ownAccount ? (
+                              <p className="mt-2 text-xs text-slate-500">
+                                Self-delete, self-deactivate, and self-role changes are blocked for safety.
+                              </p>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -461,11 +719,21 @@ export default function UsersPage() {
                 {total === 0 ? "0 users" : `Showing ${showingFrom}-${showingTo} of ${total} users.`}
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" disabled={page === 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                <Button
+                  variant="outline"
+                  disabled={page === 1 || loading}
+                  onClick={() => setPage((value) => Math.max(1, value - 1))}
+                >
                   Previous
                 </Button>
-                <span className="text-sm text-slate-700">Page {page} of {totalPages}</span>
-                <Button variant="outline" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>
+                <span className="text-sm text-slate-700">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => setPage((value) => value + 1)}
+                >
                   Next
                 </Button>
               </div>
@@ -474,60 +742,57 @@ export default function UsersPage() {
         </Card>
       )}
 
-      {showModal ? (
+      {showCreateModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowModal(false); resetForm(); }} />
-          <div className="z-10 w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-            <h2 className="mb-5 text-xl font-medium text-slate-800">
-              {editingUser ? "Edit user" : "Add new user"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              setShowCreateModal(false);
+              resetCreateForm();
+            }}
+          />
+          <div className="z-10 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <UserPlus className="h-5 w-5 text-blue-700" />
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
-                <input
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
-                  placeholder="Full name"
-                />
+                <h2 className="text-xl font-semibold text-slate-950">Create staff user</h2>
+                <p className="text-sm text-slate-600">
+                  Student accounts stay on public signup. This form is only for admin, content-manager, and
+                  course-manager accounts.
+                </p>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
-                  placeholder="example@email.com"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Country</label>
-                <input
-                  value={form.country}
-                  onChange={(event) => setForm((prev) => ({ ...prev, country: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
-                  placeholder="Bangladesh"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Profile image URL</label>
-                <input
-                  value={form.avatarUrl}
-                  onChange={(event) => setForm((prev) => ({ ...prev, avatarUrl: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
-                  placeholder="https://example.com/avatar.jpg"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            </div>
+
+            <form onSubmit={handleCreateStaff} className="mt-6 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Role</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Full name</label>
+                  <Input
+                    value={createForm.name}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="Staff member name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                  <Input
+                    type="email"
+                    value={createForm.email}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, email: event.target.value }))}
+                    placeholder="staff@abroadways.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Staff role</label>
                   <select
-                    value={form.role}
-                    onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as UserType["role"] }))}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
+                    value={createForm.role}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, role: event.target.value as StaffRole }))}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   >
-                    {ROLE_FILTER_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+                    {STAFF_ROLE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -535,36 +800,80 @@ export default function UsersPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as UserType["status"] }))}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-700 focus:ring-blue-700"
-                  >
-                    {STATUS_FILTER_OPTIONS.filter((option) => option.value !== "all").map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Country</label>
+                  <Input
+                    value={createForm.country}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, country: event.target.value }))}
+                    placeholder="Bangladesh"
+                  />
                 </div>
               </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Temporary password</label>
+                <Input
+                  type="text"
+                  value={createForm.temporaryPassword}
+                  onChange={(event) => setCreateForm((prev) => ({ ...prev, temporaryPassword: event.target.value }))}
+                  placeholder="Leave blank to auto-generate"
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  If left blank, the backend will create a secure temporary password and show it once after save.
+                </p>
+              </div>
+
               <div className="flex justify-end gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setShowModal(false);
-                    resetForm();
+                    setShowCreateModal(false);
+                    resetCreateForm();
                   }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : editingUser ? "Update user" : "Create user"}
+                <Button type="submit" disabled={creatingStaff}>
+                  {creatingStaff ? "Creating..." : "Create staff user"}
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {activeRoleEditor ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setActiveRoleEditor(null)} />
+          <div className="z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-semibold text-slate-950">Change role</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Update <span className="font-medium text-slate-900">{activeRoleEditor.name}</span>'s dashboard role.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <label className="block text-sm font-medium text-slate-700">New role</label>
+              <select
+                value={pendingRole}
+                onChange={(event) => setPendingRole(event.target.value as UserRole)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {ROLE_FILTER_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setActiveRoleEditor(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleRoleChange} disabled={workingUserId === activeRoleEditor._id}>
+                {workingUserId === activeRoleEditor._id ? "Updating..." : "Confirm role change"}
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 const asyncHandler = require('express-async-handler');
+const crypto = require('crypto');
 const User = require('../models/userModel');
 
 const COUNTRY_NAME_MAP = {
@@ -25,7 +26,41 @@ const ROLE_TYPE_LABELS = {
   admin: 'Admin',
 };
 
+const USER_PROJECTION = 'name email role country status avatarUrl createdAt updatedAt lastActiveAt';
+const ALL_ROLES = ['admin', 'content-manager', 'course-manager', 'user'];
+const STAFF_ROLES = ['admin', 'content-manager', 'course-manager'];
+
 const normalizeCountryName = (value) => COUNTRY_NAME_MAP[value] || value || 'Unspecified';
+
+const sanitizeUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  country: user.country,
+  status: user.status,
+  avatarUrl: user.avatarUrl,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+  lastActiveAt: user.lastActiveAt,
+});
+
+const generateTemporaryPassword = () => `Abw-${crypto.randomBytes(4).toString('hex')}!`;
+
+const ensureActiveAdminRemains = async (targetUser, nextRole = targetUser.role, nextStatus = targetUser.status) => {
+  const isRemovingAdminAccess =
+    targetUser.role === 'admin' && (nextRole !== 'admin' || nextStatus !== 'active');
+
+  if (!isRemovingAdminAccess) {
+    return;
+  }
+
+  const activeAdminCount = await User.countDocuments({ role: 'admin', status: 'active' });
+
+  if (activeAdminCount <= 1) {
+    throw new Error('At least one active admin account must remain.');
+  }
+};
 
 const toWeekdayLabel = (value) => {
   const date = new Date(value);
@@ -37,23 +72,27 @@ const toWeekdayLabel = (value) => {
   return date.toLocaleDateString('en-US', { weekday: 'short' });
 };
 
-// @desc    Create a new user (Course or Content Manager)
-// @route   POST /api/v1/admin/users
+// @desc    Create a new staff user
+// @route   POST /api/v1/admin/users or /api/v1/admin/users/staff
 // @access  Private/Admin
-const createUser = asyncHandler(async (req, res) => {
+const createStaffUser = asyncHandler(async (req, res) => {
   const {
     name,
     email,
-    password,
-    role = 'user',
+    temporaryPassword,
+    role,
     country,
-    status,
     avatarUrl,
   } = req.body;
 
-  if (role === 'admin') {
+  if (!name || !email || !role) {
     res.status(400);
-    throw new Error('Cannot create another admin account');
+    throw new Error('Please provide name, email, and staff role.');
+  }
+
+  if (!STAFF_ROLES.includes(role)) {
+    res.status(400);
+    throw new Error('Only admin, content-manager, and course-manager staff accounts can be created here.');
   }
 
   const userExists = await User.findOne({ email });
@@ -62,13 +101,20 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error('User already exists');
   }
 
+  const password = temporaryPassword?.trim() || generateTemporaryPassword();
+
+  if (password.length < 8) {
+    res.status(400);
+    throw new Error('Temporary password must be at least 8 characters long.');
+  }
+
   const user = await User.create({
     name,
     email,
     password,
     role,
     country,
-    status,
+    status: 'active',
     avatarUrl,
   });
 
@@ -78,18 +124,13 @@ const createUser = asyncHandler(async (req, res) => {
   }
 
   res.status(201).json({
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    country: user.country,
-    status: user.status,
-    avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt,
+    message: `${ROLE_TYPE_LABELS[user.role] || 'Staff'} account created successfully.`,
+    temporaryPassword: password,
+    user: sanitizeUser(user),
   });
 });
 
-// @desc    Get all non-admin users
+// @desc    Get all users
 // @route   GET /api/v1/admin/users
 // @access  Private/Admin
 const getUsers = asyncHandler(async (req, res) => {
@@ -98,16 +139,21 @@ const getUsers = asyncHandler(async (req, res) => {
     limit = 10,
     q,
     status,
+    role,
   } = req.query;
 
   const pageNumber = Math.max(1, parseInt(page, 10));
   const pageSize = Math.max(1, Math.min(100, parseInt(limit, 10)));
   const skip = (pageNumber - 1) * pageSize;
 
-  const query = { role: { $ne: 'admin' } };
+  const query = {};
 
   if (status && status !== 'all') {
     query.status = status === 'inactive' ? 'inactive' : 'active';
+  }
+
+  if (role && role !== 'all' && ALL_ROLES.includes(role)) {
+    query.role = role;
   }
 
   if (q) {
@@ -116,7 +162,7 @@ const getUsers = asyncHandler(async (req, res) => {
   }
 
   const [users, total] = await Promise.all([
-    User.find(query).sort({ createdAt: -1 }).skip(skip).limit(pageSize),
+    User.find(query).select(USER_PROJECTION).sort({ createdAt: -1 }).skip(skip).limit(pageSize),
     User.countDocuments(query),
   ]);
 
@@ -144,21 +190,111 @@ const updateUser = asyncHandler(async (req, res) => {
 
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
-  user.role = req.body.role || user.role;
   user.country = req.body.country || user.country;
   user.status = req.body.status || user.status;
   user.avatarUrl = req.body.avatarUrl ?? user.avatarUrl;
 
   const updatedUser = await user.save();
+  res.json(sanitizeUser(updatedUser));
+});
+
+// @desc    Update a user's role
+// @route   PATCH /api/v1/admin/users/:id/role
+// @access  Private/Admin
+const updateUserRole = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const { role } = req.body;
+
+  if (!role || !ALL_ROLES.includes(role)) {
+    res.status(400);
+    throw new Error('Please provide a valid role.');
+  }
+
+  if (req.user._id.toString() === user._id.toString()) {
+    res.status(400);
+    throw new Error('You cannot change your own role from this screen.');
+  }
+
+  res.status(400);
+  await ensureActiveAdminRemains(user, role, user.status);
+  res.status(200);
+
+  user.role = role;
+  const updatedUser = await user.save();
+
   res.json({
-    _id: updatedUser._id,
-    name: updatedUser.name,
-    email: updatedUser.email,
-    role: updatedUser.role,
-    country: updatedUser.country,
-    status: updatedUser.status,
-    avatarUrl: updatedUser.avatarUrl,
-    createdAt: updatedUser.createdAt,
+    message: 'User role updated successfully.',
+    user: sanitizeUser(updatedUser),
+  });
+});
+
+// @desc    Activate or deactivate a user
+// @route   PATCH /api/v1/admin/users/:id/status
+// @access  Private/Admin
+const updateUserStatus = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const { status } = req.body;
+
+  if (!['active', 'inactive'].includes(status)) {
+    res.status(400);
+    throw new Error('Please provide a valid status.');
+  }
+
+  if (req.user._id.toString() === user._id.toString() && status === 'inactive') {
+    res.status(400);
+    throw new Error('You cannot deactivate your own account.');
+  }
+
+  res.status(400);
+  await ensureActiveAdminRemains(user, user.role, status);
+  res.status(200);
+
+  user.status = status;
+  const updatedUser = await user.save();
+
+  res.json({
+    message: `User ${status === 'active' ? 'activated' : 'deactivated'} successfully.`,
+    user: sanitizeUser(updatedUser),
+  });
+});
+
+// @desc    Reset a user's password to a temporary password
+// @route   PATCH /api/v1/admin/users/:id/reset-password
+// @access  Private/Admin
+const resetUserPassword = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id).select('+password');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const temporaryPassword = req.body?.temporaryPassword?.trim() || generateTemporaryPassword();
+
+  if (temporaryPassword.length < 8) {
+    res.status(400);
+    throw new Error('Temporary password must be at least 8 characters long.');
+  }
+
+  user.password = temporaryPassword;
+  await user.save();
+
+  res.json({
+    message: 'Temporary password reset successfully.',
+    temporaryPassword,
+    user: sanitizeUser(user),
   });
 });
 
@@ -173,10 +309,14 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  if (user.role === 'admin') {
+  if (req.user._id.toString() === user._id.toString()) {
     res.status(400);
-    throw new Error('Cannot delete another admin account');
+    throw new Error('You cannot delete your own account.');
   }
+
+  res.status(400);
+  await ensureActiveAdminRemains(user, 'removed', 'inactive');
+  res.status(200);
 
   await User.deleteOne({ _id: user._id });
   res.json({ message: 'User removed' });
@@ -262,9 +402,12 @@ const getAdminDashboardOverview = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  createUser,
+  createStaffUser,
   getUsers,
   updateUser,
+  updateUserRole,
+  updateUserStatus,
+  resetUserPassword,
   deleteUser,
   getAdminDashboardOverview,
 };
