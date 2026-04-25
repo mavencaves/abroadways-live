@@ -5,30 +5,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { BadgeCheck, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { inquiriesApi } from "@/lib/api";
 import { toast } from "sonner";
+import {
+    CONTACT_ADDRESS,
+    CONTACT_EMAIL,
+    CONTACT_MAP_URL,
+    CONTACT_PHONE_LABEL,
+    CONTACT_PHONES,
+    PRIMARY_WHATSAPP_NUMBER,
+} from "@/data/contact-info";
 
 const contactCards = [
     {
         title: "Call us",
-        value: "+880 1898801960",
-        href: "tel:+8801898801960",
+        value: CONTACT_PHONES.join(", "),
+        href: `tel:+88${CONTACT_PHONES[0]}`,
         icon: Phone,
     },
     {
         title: "Email us",
-        value: "info@abroadways.com.bd",
-        href: "mailto:info@abroadways.com.bd",
+        value: CONTACT_EMAIL,
+        href: `mailto:${CONTACT_EMAIL}`,
         icon: Mail,
     },
     {
         title: "Visit us",
-        value: "Dhaka, Bangladesh",
-        href: "https://maps.google.com/?q=Dhaka,Bangladesh",
+        value: CONTACT_ADDRESS,
+        href: CONTACT_MAP_URL,
         icon: MapPin,
     },
     {
         title: "WhatsApp",
-        value: "Chat with Abroadways",
-        href: "https://wa.me/8801898801960",
+        value: `Chat with Abroadways on ${CONTACT_PHONE_LABEL}`,
+        href: `https://wa.me/${PRIMARY_WHATSAPP_NUMBER}`,
         icon: MessageCircle,
     },
 ];
@@ -106,8 +114,8 @@ export default function ContactPage() {
                             Speak with a trusted study abroad team that understands student and parent priorities.
                         </h1>
                         <p className="mt-6 text-base leading-8 text-blue-100 sm:text-lg">
-                            Contact Abroadways for higher education guidance, scholarships, visa planning, LanguageCert
-                            support, and exam-related questions from Bangladesh.
+                            Contact Abroadways for higher education guidance, scholarships, visa planning, exam
+                            preparation, and broader admissions support from Bangladesh.
                         </p>
                     </div>
                 </div>

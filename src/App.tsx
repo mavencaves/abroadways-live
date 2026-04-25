@@ -109,6 +109,7 @@ import DashboardOverview from "./pages/dashboard/admin/DashBoardOverview";
 import BlogEditorPage from "./pages/dashboard/admin/BlogEditorPage";
 import EventEditorPage from "./pages/dashboard/admin/EventEditorPage";
 import MediaLibraryPage from "./pages/dashboard/admin/MediaLibraryPage";
+import PagesPage from "./pages/dashboard/admin/PagesPage";
 import EligibilityFirstPage from "./pages/Elegibility/ElegibilityFirstPage";
 import BookAseat from "./pages/BookAseat/BookAseat";
 import HigherEducationRegionPage from "@/pages/HigherEducationRegionPage.tsx";
@@ -398,6 +399,7 @@ function App() {
                     <Route path={"payments"} element={<PaymentsPage/>}/>
                     <Route path={"documents"} element={<DocumentsPage/>}/>
                     <Route path={"media"} element={<MediaLibraryPage/>}/>
+                    <Route path={"pages"} element={<PagesPage/>}/>
                     <Route path={"templates"} element={<TemplatesPage/>}/>
                     <Route path={"inquiries"} element={<InquiriesPage/>}/>
                     <Route path="*" element={<NotFoundPage/>}/>

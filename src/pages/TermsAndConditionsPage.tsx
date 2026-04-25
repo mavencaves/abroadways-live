@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL, CONTACT_PHONE_LABEL, CONTACT_PHONES } from "@/data/contact-info";
+
 const termsSections = [
   {
     title: "Use Of The Website",
@@ -69,12 +71,12 @@ export default function TermsAndConditionsPage() {
               <h2 className="text-xl font-semibold text-blue-800">Contact</h2>
               <p className="mt-4 leading-8 text-slate-600">
                 For questions about these Terms & Conditions, contact us at{" "}
-                <a href="mailto:info@abroadways.com.bd" className="font-medium text-blue-700 underline">
-                  info@abroadways.com.bd
+                <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-blue-700 underline">
+                  {CONTACT_EMAIL}
                 </a>{" "}
                 or call{" "}
-                <a href="tel:+8801898801960" className="font-medium text-blue-700 underline">
-                  +880 1898801960
+                <a href={`tel:+88${CONTACT_PHONES[0]}`} className="font-medium text-blue-700 underline">
+                  {CONTACT_PHONE_LABEL}
                 </a>.
               </p>
             </section>

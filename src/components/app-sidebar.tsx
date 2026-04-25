@@ -8,6 +8,7 @@ import {
   IconListDetails,
   IconMail,
   IconMessages,
+  IconNotebook,
   IconPhoto,
   IconMessage2,
   IconReceipt,
@@ -85,6 +86,12 @@ const navLinks = [
     title: "Media",
     url: "/dashboard/media",
     icon: IconPhoto,
+    allowedRoles: ["admin", "content-manager"],
+  },
+  {
+    title: "Pages",
+    url: "/dashboard/pages",
+    icon: IconNotebook,
     allowedRoles: ["admin", "content-manager"],
   },
   {

@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL, CONTACT_PHONE_LABEL, CONTACT_PHONES } from "@/data/contact-info";
+
 const refundSections = [
   {
     title: "Digital And Advisory Services",
@@ -49,11 +51,17 @@ export default function RefundPolicyPage() {
               <h2 className="text-xl font-semibold text-blue-800">How To Request A Refund Review</h2>
               <p className="mt-4 leading-8 text-slate-600">
                 To request a refund review, email{" "}
-                <a href="mailto:info@abroadways.com.bd" className="font-medium text-blue-700 underline">
-                  info@abroadways.com.bd
+                <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-blue-700 underline">
+                  {CONTACT_EMAIL}
                 </a>{" "}
                 with your full name, contact details, payment date, transaction reference, purchased service, and the
                 reason for your request. Our team will review the case and respond within a reasonable timeframe.
+              </p>
+              <p className="mt-4 leading-8 text-slate-600">
+                If you need immediate assistance, call{" "}
+                <a href={`tel:+88${CONTACT_PHONES[0]}`} className="font-medium text-blue-700 underline">
+                  {CONTACT_PHONE_LABEL}
+                </a>.
               </p>
             </section>
 

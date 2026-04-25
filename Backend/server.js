@@ -29,6 +29,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const serviceOrderRoutes = require('./routes/serviceOrderRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const publicPageRoutes = require('./routes/publicPageRoutes');
 
 const app = express();
 connectDB();
@@ -88,6 +89,7 @@ app.use('/api/v1/student', studentRoutes);
 app.use('/api/v1/appointments', appointmentRoutes);
 app.use('/api/v1/service-orders', serviceOrderRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/public-pages', publicPageRoutes);
 
 app.get('/', (req, res) => res.send('MAVENCAVE API is running'));
 

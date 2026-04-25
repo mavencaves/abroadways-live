@@ -4,6 +4,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Separator } from "@/components/ui/separator";
 import TrustBadge from "@/components/trust-badge";
 import {
+  CONTACT_ADDRESS,
+  CONTACT_EMAIL,
+  CONTACT_PHONE_LABEL,
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+} from "@/data/contact-info";
+import {
   Database,
   FacebookIcon,
   InstagramIcon,
@@ -139,8 +146,8 @@ const quickLinkGroups: Array<
 ];
 
 const socialLinks = [
-  { href: "https://facebook.com/abroadways", icon: FacebookIcon, label: "Facebook" },
-  { href: "https://instagram.com/abroadwaysbd", icon: InstagramIcon, label: "Instagram" },
+  { href: FACEBOOK_URL, icon: FacebookIcon, label: "Facebook" },
+  { href: INSTAGRAM_URL, icon: InstagramIcon, label: "Instagram" },
   { href: "https://linkedin.com/company/abroadways", icon: LinkedinIcon, label: "LinkedIn" },
   { href: "https://youtube.com/@abroadways", icon: YoutubeIcon, label: "YouTube" },
   { href: "https://twitter.com/abroadways", icon: Twitter, label: "Twitter" },
@@ -166,7 +173,7 @@ const contactInfo = [
     icon: PhoneCallIcon,
     text: (
       <span>
-        Call us: <span className="font-bold">+880 1898801960</span>
+        Call us: <span className="font-bold">{CONTACT_PHONE_LABEL}</span>
         <br />
         <span className="text-xs text-slate-300">(10:00 AM to 7:00 PM, Bangladesh time)</span>
       </span>
@@ -174,26 +181,14 @@ const contactInfo = [
   },
   {
     icon: MailIcon,
-    text: "Email us: info@abroadways.com.bd",
+    text: `Email us: ${CONTACT_EMAIL}`,
   },
 ];
 
 const officeAddresses = [
   {
     title: "Head Office - Dhaka, Bangladesh",
-    address: "Primary student consultation and higher education support desk in Dhaka.",
-  },
-  {
-    title: "Student Support Desk - Dhaka",
-    address: "Additional counselling and operational support for students and parents in Bangladesh.",
-  },
-  {
-    title: "Singapore International Desk",
-    address: "International coordination support for selected destination-related enquiries.",
-  },
-  {
-    title: "UAE International Desk",
-    address: "International assistance for students exploring broader global education options.",
+    address: CONTACT_ADDRESS,
   },
 ];
 

@@ -111,6 +111,39 @@ export const aboutApi = {
   getAll: () => apiClient.get("/about-us", { params: noCacheParams() }),
 };
 
+export const publicPagesApi = {
+  getAll: () => apiClient.get("/public-pages", { params: noCacheParams() }),
+  getBySlug: (slug: string) => apiClient.get(`/public-pages/${slug}`, { params: noCacheParams() }),
+  updateBySlug: (
+    slug: string,
+    payload: {
+      name: string;
+      pageTitle: string;
+      seoTitle?: string;
+      seoDescription?: string;
+      heroKicker?: string;
+      heroTitle: string;
+      heroDescription?: string;
+      heroImageUrl?: string;
+      heroImageAlt?: string;
+      bodyIntro?: string;
+      sections: Array<{
+        title: string;
+        body?: string;
+        bullets?: string[];
+        imageUrl?: string;
+        imageAlt?: string;
+      }>;
+      ctaTitle?: string;
+      ctaDescription?: string;
+      ctaPrimaryText?: string;
+      ctaPrimaryUrl?: string;
+      ctaSecondaryText?: string;
+      ctaSecondaryUrl?: string;
+    }
+  ) => apiClient.put(`/public-pages/${slug}`, payload),
+};
+
 export const inquiriesApi = {
   create: (data: {
     name: string;

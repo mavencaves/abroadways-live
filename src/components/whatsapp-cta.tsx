@@ -1,5 +1,7 @@
+import { PRIMARY_WHATSAPP_NUMBER } from "@/data/contact-info";
+
 export default function WhatsAppCTA() {
-  const phone = "8801898801960";
+  const phone = PRIMARY_WHATSAPP_NUMBER;
 
   return (
     <section className="section-shell-compact bg-white">
