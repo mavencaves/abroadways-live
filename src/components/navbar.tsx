@@ -57,7 +57,7 @@ function NavbarLogo({
             <img
                 src={siteLogo}
                 alt={siteLogoAlt || "Abroadways logo"}
-                className="h-12 w-auto max-w-[220px] shrink-0 object-contain lg:h-14 lg:max-w-[260px]"
+                className="h-14 w-auto max-w-[320px] shrink-0 object-contain lg:h-16 lg:max-w-[380px]"
             />
         );
     }
@@ -234,7 +234,7 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur supports-[backdrop-filter]:bg-white/84">
             <div className="section-container">
-                <div className="flex h-[76px] items-center justify-between gap-4 lg:h-[80px]">
+                <div className="flex h-[88px] items-center justify-between gap-4 lg:h-[96px]">
                     <div className="flex min-w-0 shrink-0 items-center">
                         <Link
                             to="/"
