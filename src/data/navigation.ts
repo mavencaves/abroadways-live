@@ -47,6 +47,7 @@ const studyAbroadDropdownItems: NavigationItem[] = [
 ];
 
 export const navigationItems: NavigationItem[] = [
+  { label: "Home", href: "/" },
   {
     label: "Study Abroad",
     href: "/study-abroad",
@@ -56,6 +57,7 @@ export const navigationItems: NavigationItem[] = [
   { label: "Courses", href: "/courses" },
   { label: "Mock Tests", href: "/mock-tests" },
   { label: "AbroadAI", href: "/abroadai" },
-  { label: "Events", href: "/event" },
+  { label: "Resources", href: "/resources" },
+  { label: "About Us", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
