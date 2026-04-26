@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const publicPageSectionSchema = new mongoose.Schema(
   {
+    key: { type: String, trim: true, default: "" },
     title: { type: String, trim: true, required: true },
     body: { type: String, trim: true, default: "" },
     bullets: [{ type: String, trim: true }],

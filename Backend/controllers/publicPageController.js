@@ -6,6 +6,7 @@ const sanitizeSections = (sections = []) =>
     ? sections
         .filter((section) => section && typeof section.title === "string" && section.title.trim())
         .map((section) => ({
+          key: typeof section.key === "string" ? section.key.trim() : "",
           title: section.title.trim(),
           body: typeof section.body === "string" ? section.body.trim() : "",
           bullets: Array.isArray(section.bullets)

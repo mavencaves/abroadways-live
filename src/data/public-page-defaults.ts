@@ -1,4 +1,5 @@
 export type PublicPageSection = {
+  key?: string;
   title: string;
   body: string;
   bullets?: string[];
@@ -29,6 +30,178 @@ export type PublicPageContent = {
 };
 
 export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
+  home: {
+    routeKey: "home",
+    slug: "home",
+    name: "Homepage",
+    pageTitle: "Homepage",
+    seoTitle: "Abroadways | Study Abroad, Exams, Mock Tests, and Student Support",
+    seoDescription:
+      "Abroadways supports Bangladeshi students with study abroad guidance, exam preparation, mock tests, and digital student tools.",
+    heroKicker: "Abroadways",
+    heroTitle: "Study Abroad with Confidence",
+    heroSubtitle:
+      "Premium study abroad guidance, exam preparation, and digital student support built for ambitious Bangladeshi students.",
+    heroImageUrl: "/images/Bristy/nguyen-dang-hoang-nhu-qDgTQOYk6B8-unsplash.jpg",
+    heroImageAlt: "Abroadways students planning their study abroad journey",
+    bodyIntro:
+      "One premium platform for counselling, applications, exam preparation, mock tests, and digital student support.",
+    sections: [
+      {
+        key: "service-study-abroad",
+        title: "Study Abroad Guidance",
+        body: "/study-abroad",
+        imageUrl: "/images/Bristy/portrait-smiling-male-student-holding-books.jpg",
+        imageAlt: "Study abroad guidance",
+      },
+      {
+        key: "service-exams",
+        title: "IELTS / PTE / LanguageCert",
+        body: "/exams/overview",
+        imageUrl: "/images/exams/hero.webp",
+        imageAlt: "Exam preparation",
+      },
+      {
+        key: "service-mock-tests",
+        title: "Mock Tests",
+        body: "/mock-tests",
+        imageUrl: "/images/Bristy/fotos-Xdh_J4xW1QE-unsplash.jpg",
+        imageAlt: "Mock tests platform",
+      },
+      {
+        key: "service-abroadai",
+        title: "AbroadAI",
+        body: "/abroadai",
+        imageUrl: "/images/Bristy/world.avif",
+        imageAlt: "AbroadAI student counselor",
+      },
+      {
+        key: "service-student-portal",
+        title: "Student Portal",
+        body: "/login",
+        imageUrl:
+          "/images/Bristy/getting-bit-after-class-help-shot-two-young-students-studying-together-classroom_590464-19534.avif",
+        imageAlt: "Student portal support",
+      },
+      {
+        key: "exam-ielts",
+        title: "IELTS",
+        body: "Confident exam preparation with a cleaner path from class to score.",
+        bullets: ["/exams/ielts/overview"],
+        imageUrl: "/images/writing.jpg",
+        imageAlt: "IELTS preparation",
+      },
+      {
+        key: "exam-pte",
+        title: "PTE",
+        body: "Digital-first prep built for students aiming for faster application movement.",
+        bullets: ["/exams/pte/overview"],
+        imageUrl: "/images/p1.jpg",
+        imageAlt: "PTE preparation",
+      },
+      {
+        key: "exam-toefl",
+        title: "TOEFL",
+        body: "Strong language preparation for global applicants and university-focused pathways.",
+        bullets: ["/exams/toefl/overview"],
+        imageUrl: "/images/TOEFL_pages/image-1.jpg",
+        imageAlt: "TOEFL preparation",
+      },
+      {
+        key: "exam-languagecert",
+        title: "LanguageCert",
+        body: "UKVI-approved language support with practical guidance and clearer student steps.",
+        bullets: ["/exams/overview"],
+        imageUrl: "/images/c-hero.jpg",
+        imageAlt: "LanguageCert preparation",
+      },
+      {
+        key: "exam-gre",
+        title: "GRE",
+        body: "Sharper graduate-prep support for students applying with bigger academic goals.",
+        bullets: ["/exams/gre/overview"],
+        imageUrl: "/images/gre_books/image-1.jpg",
+        imageAlt: "GRE preparation",
+      },
+      {
+        key: "exam-gmat",
+        title: "GMAT",
+        body: "A premium, business-school-focused preparation experience with cleaner direction.",
+        bullets: ["/exams/gmat/overview"],
+        imageUrl: "/images/Bristy/entrepreneurs-meeting-office.jpg",
+        imageAlt: "GMAT preparation",
+      },
+      {
+        key: "destination-uk",
+        title: "Study in UK",
+        body: "/study-abroad/uk",
+        imageUrl: "/images/edinburgh.jpg",
+        imageAlt: "Study in the United Kingdom",
+      },
+      {
+        key: "destination-canada",
+        title: "Study in Canada",
+        body: "/study-abroad/canada",
+        imageUrl: "/images/toronto.jpg",
+        imageAlt: "Study in Canada",
+      },
+      {
+        key: "destination-australia",
+        title: "Study in Australia",
+        body: "/study-abroad/australia",
+        imageUrl: "/images/Bristy/australia-flag.png",
+        imageAlt: "Study in Australia",
+      },
+      {
+        key: "destination-europe",
+        title: "Study in Europe",
+        body: "/study-abroad/europe",
+        imageUrl: "/images/manchester.jpg",
+        imageAlt: "Study in Europe",
+      },
+      {
+        key: "destination-malaysia",
+        title: "Study in Malaysia",
+        body: "/study-abroad/malaysia",
+        imageUrl: "/images/Bristy/mapbox-zU6tCBzO0Ig-unsplash.jpg",
+        imageAlt: "Study in Malaysia",
+      },
+      {
+        key: "accreditation-ukvi",
+        title: "UKVI Approved LanguageCert Test Center",
+        body: "",
+        imageUrl: "",
+        imageAlt: "",
+      },
+      {
+        key: "accreditation-icef",
+        title: "ICEF Accredited",
+        body: "",
+        imageUrl: "",
+        imageAlt: "",
+      },
+      {
+        key: "accreditation-airc",
+        title: "AIRC Certified",
+        body: "",
+        imageUrl: "",
+        imageAlt: "",
+      },
+      {
+        key: "cta-background",
+        title: "Homepage CTA Background",
+        body: "",
+        imageUrl: "",
+        imageAlt: "",
+      },
+    ],
+    ctaTitle: "Start your study abroad journey today",
+    ctaDescription: "",
+    ctaPrimaryText: "Book Free Consultation",
+    ctaPrimaryUrl: "/contact",
+    ctaSecondaryText: "",
+    ctaSecondaryUrl: "",
+  },
   "ielts-masterclass": {
     routeKey: "ielts-masterclass",
     slug: "ielts-masterclass",

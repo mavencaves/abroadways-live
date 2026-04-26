@@ -129,6 +129,7 @@ export const publicPagesApi = {
       heroImageAlt?: string;
       bodyIntro?: string;
       sections: Array<{
+        key?: string;
         title: string;
         body?: string;
         bullets?: string[];
@@ -160,6 +161,7 @@ export const publicPagesApi = {
       heroImageAlt?: string;
       bodyIntro?: string;
       sections: Array<{
+        key?: string;
         title: string;
         body?: string;
         bullets?: string[];

@@ -49,7 +49,7 @@ const blankPage = (): PublicPageRecord => ({
   heroImageUrl: "",
   heroImageAlt: "",
   bodyIntro: "",
-  sections: [{ title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
+  sections: [{ key: "", title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
   ctaTitle: "",
   ctaDescription: "",
   ctaPrimaryText: "",
@@ -102,6 +102,7 @@ export default function PagesPage() {
                 Array.isArray(page.sections) && page.sections.length > 0
                   ? page.sections.map((section: PublicPageSection) => ({
                       ...section,
+                      key: section.key || "",
                       bullets: [...(section.bullets || [])],
                     }))
                   : fallback.sections,
@@ -173,6 +174,7 @@ export default function PagesPage() {
         bullets: (section.bullets || []).map((bullet) => bullet.trim()).filter(Boolean),
         imageUrl: section.imageUrl?.trim() || "",
         imageAlt: section.imageAlt?.trim() || "",
+        key: section.key?.trim() || "",
       })),
     ctaTitle: page.ctaTitle?.trim() || "",
     ctaDescription: page.ctaDescription?.trim() || "",
@@ -213,6 +215,7 @@ export default function PagesPage() {
             Array.isArray(response.data.sections) && response.data.sections.length > 0
               ? response.data.sections.map((section: PublicPageSection) => ({
                   ...section,
+                  key: section.key || "",
                   bullets: [...(section.bullets || [])],
                 }))
               : (PUBLIC_PAGE_DEFAULTS[responseKey] ? clonePage(PUBLIC_PAGE_DEFAULTS[responseKey]) : blankPage()).sections,
@@ -469,7 +472,7 @@ export default function PagesPage() {
                   onClick={() =>
                     updatePage((page) => ({
                       ...page,
-                      sections: [...page.sections, { title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
+                      sections: [...page.sections, { key: "", title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
                     }))
                   }
                 >
@@ -504,7 +507,12 @@ export default function PagesPage() {
                     ) : null}
                   </div>
 
-                  <div className="grid gap-4">
+                    <div className="grid gap-4">
+                    <Input
+                      value={section.key || ""}
+                      onChange={(event) => updateSection(index, (current) => ({ ...current, key: event.target.value }))}
+                      placeholder="Section key"
+                    />
                     <Input
                       value={section.title}
                       onChange={(event) => updateSection(index, (current) => ({ ...current, title: event.target.value }))}
