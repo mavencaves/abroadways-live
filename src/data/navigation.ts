@@ -47,7 +47,6 @@ const studyAbroadDropdownItems: NavigationItem[] = [
 ];
 
 export const navigationItems: NavigationItem[] = [
-  { label: "Home", href: "/" },
   {
     label: "Study Abroad",
     href: "/study-abroad",
@@ -57,29 +56,6 @@ export const navigationItems: NavigationItem[] = [
   { label: "Courses", href: "/courses" },
   { label: "Mock Tests", href: "/mock-tests" },
   { label: "AbroadAI", href: "/abroadai" },
-  {
-    label: "Resources",
-    href: "/resources",
-    hasDropdown: true,
-    dropdownItems: [
-      { label: "Resources Overview", href: "/resources" },
-      {
-        label: "Books",
-        href: "/resources",
-        hasDropdown: true,
-        dropdownItems: [
-          { label: "IELTS Books", href: "/resources/books/ielts" },
-          { label: "PTE Books", href: "/resources/books/pte" },
-          { label: "GRE Books", href: "/resources/books/gre" },
-        ],
-      },
-      { label: "SOP Support", href: "/resources/sop" },
-      { label: "Eligibility Checker", href: "/resources/eligibility" },
-      { label: "Visa Predictor", href: "/visa-predictor" },
-      { label: "Cost Calculator", href: "/calculator/cost" },
-      { label: "CGPA Calculator", href: "/calculator/cgpa" },
-    ],
-  },
-  { label: "About Us", href: "/about" },
+  { label: "Events", href: "/event" },
   { label: "Contact", href: "/contact" },
 ];
