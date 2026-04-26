@@ -26,10 +26,23 @@ type PublicPageRecord = PublicPageContent & {
 
 const managedPages = MANAGED_PUBLIC_PAGE_SLUGS.map((slug) => PUBLIC_PAGE_DEFAULTS[slug]);
 
+const isHomeRouteKey = (value: string) => value.trim().toLowerCase() === "home";
+
+const buildSectionTitleFallback = (section: PublicPageSection) => {
+  const rawKey = `${section.key || ""}`.trim();
+  if (!rawKey) return "";
+
+  return rawKey
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
 const clonePage = (page: PublicPageContent): PublicPageRecord => ({
   ...page,
   routeKey: page.routeKey || page.slug,
-  status: (page.routeKey || page.slug) === "home" ? "published" : "draft",
+  status: isHomeRouteKey(page.routeKey || page.slug) ? "published" : "draft",
   sections: page.sections.map((section) => ({
     ...section,
     bullets: [...(section.bullets || [])],
@@ -179,7 +192,7 @@ export default function PagesPage() {
               ...fallback,
               ...page,
               routeKey: key,
-              status: page.status || "draft",
+              status: isHomeRouteKey(key) ? "published" : page.status || "draft",
               sections:
                 Array.isArray(page.sections) && page.sections.length > 0
                   ? page.sections.map((section: PublicPageSection) => ({
@@ -249,9 +262,17 @@ export default function PagesPage() {
     heroImageAlt: page.heroImageAlt?.trim() || "",
     bodyIntro: page.bodyIntro?.trim() || "",
     sections: page.sections
-      .filter((section) => section.title.trim())
+      .filter((section) => {
+        const title = section.title.trim();
+        const key = `${section.key || ""}`.trim();
+        const body = `${section.body || ""}`.trim();
+        const imageUrl = `${section.imageUrl || ""}`.trim();
+        const bullets = (section.bullets || []).map((bullet) => bullet.trim()).filter(Boolean);
+
+        return Boolean(title || key || body || imageUrl || bullets.length);
+      })
       .map((section) => ({
-        title: section.title.trim(),
+        title: section.title.trim() || buildSectionTitleFallback(section),
         body: section.body?.trim() || "",
         bullets: (section.bullets || []).map((bullet) => bullet.trim()).filter(Boolean),
         imageUrl: section.imageUrl?.trim() || "",
@@ -264,7 +285,7 @@ export default function PagesPage() {
     ctaPrimaryUrl: page.ctaPrimaryUrl?.trim() || "",
     ctaSecondaryText: page.ctaSecondaryText?.trim() || "",
     ctaSecondaryUrl: page.ctaSecondaryUrl?.trim() || "",
-    status: page.status,
+    status: isHomeRouteKey(page.routeKey) ? "published" : page.status,
   });
 
   const validatePage = (page: PublicPageRecord) => {
@@ -292,7 +313,7 @@ export default function PagesPage() {
           ...(PUBLIC_PAGE_DEFAULTS[responseKey] ? clonePage(PUBLIC_PAGE_DEFAULTS[responseKey]) : blankPage()),
           ...response.data,
           routeKey: responseKey,
-          status: response.data.status || "draft",
+          status: isHomeRouteKey(responseKey) ? "published" : response.data.status || "draft",
           sections:
             Array.isArray(response.data.sections) && response.data.sections.length > 0
               ? response.data.sections.map((section: PublicPageSection) => ({
@@ -486,7 +507,12 @@ export default function PagesPage() {
               />
               <select
                 value={selectedPage.status}
-                onChange={(event) => updatePage((page) => ({ ...page, status: event.target.value as PageStatus }))}
+                onChange={(event) =>
+                  updatePage((page) => ({
+                    ...page,
+                    status: isHomeRouteKey(page.routeKey) ? "published" : (event.target.value as PageStatus),
+                  }))
+                }
                 className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
               >
                 <option value="draft">Draft</option>

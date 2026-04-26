@@ -130,8 +130,24 @@ function findSection(sections: PublicPageSection[], key: string) {
   return sections.find((section) => section.key === key) || homeFallback.sections.find((section) => section.key === key);
 }
 
+function normalizeImageKey(key: string) {
+  return key
+    .replace(/^service-/, "")
+    .replace(/^exam-/, "")
+    .replace(/^destination-/, "")
+    .replace(/^accreditation-/, "");
+}
+
 export default function HomePage() {
   const [pageContent, setPageContent] = useState<PublicPageContent>(homeFallback);
+  const pageContentWithAliases = pageContent as PublicPageContent & {
+    heroImage?: string;
+    serviceImages?: Record<string, string>;
+    examPrepImage?: string | Record<string, string>;
+    destinationImages?: Record<string, string>;
+    accreditationImages?: Record<string, string>;
+    ctaBackgroundImage?: string;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -142,7 +158,8 @@ export default function HomePage() {
         if (mounted) {
           setPageContent(mergeHomeContent(response.data));
         }
-      } catch {
+      } catch (error) {
+        console.warn("Homepage CMS content could not be loaded. Falling back to built-in images.", error);
         if (mounted) {
           setPageContent(homeFallback);
         }
@@ -160,47 +177,68 @@ export default function HomePage() {
     () =>
       serviceMeta.map((item) => {
         const section = findSection(pageContent.sections, item.key);
+        const imageKey = normalizeImageKey(item.key);
 
         return {
           ...item,
-          image: section?.imageUrl || "",
+          image:
+            section?.imageUrl ||
+            pageContentWithAliases.serviceImages?.[item.key] ||
+            pageContentWithAliases.serviceImages?.[imageKey] ||
+            findSection(homeFallback.sections, item.key)?.imageUrl ||
+            "",
           imageAlt: section?.imageAlt || item.title,
         };
       }),
-    [pageContent.sections],
+    [pageContent.sections, pageContentWithAliases.serviceImages],
   );
 
   const destinations = useMemo(
     () =>
       destinationsMeta.map((item) => {
         const section = findSection(pageContent.sections, item.key);
+        const imageKey = normalizeImageKey(item.key);
 
         return {
           ...item,
-          image: section?.imageUrl || "",
+          image:
+            section?.imageUrl ||
+            pageContentWithAliases.destinationImages?.[item.key] ||
+            pageContentWithAliases.destinationImages?.[imageKey] ||
+            findSection(homeFallback.sections, item.key)?.imageUrl ||
+            "",
           imageAlt: section?.imageAlt || item.title,
         };
       }),
-    [pageContent.sections],
+    [pageContent.sections, pageContentWithAliases.destinationImages],
   );
 
   const exams = useMemo(
     () =>
       examsMeta.map((item) => {
         const section = findSection(pageContent.sections, item.key);
+        const imageKey = normalizeImageKey(item.key);
+        const examPrepImage =
+          typeof pageContentWithAliases.examPrepImage === "string"
+            ? pageContentWithAliases.examPrepImage
+            : pageContentWithAliases.examPrepImage?.[item.key] || pageContentWithAliases.examPrepImage?.[imageKey];
 
         return {
           ...item,
-          image: section?.imageUrl || "",
+          image: section?.imageUrl || examPrepImage || findSection(homeFallback.sections, item.key)?.imageUrl || "",
           imageAlt: section?.imageAlt || item.title,
         };
       }),
-    [pageContent.sections],
+    [pageContent.sections, pageContentWithAliases.examPrepImage],
   );
 
-  const heroImage = pageContent.heroImageUrl || homeFallback.heroImageUrl;
+  const heroImage = pageContent.heroImageUrl || pageContentWithAliases.heroImage || homeFallback.heroImageUrl;
   const heroImageAlt = pageContent.heroImageAlt || homeFallback.heroImageAlt;
-  const ctaBackground = findSection(pageContent.sections, "cta-background")?.imageUrl || "";
+  const ctaBackground =
+    findSection(pageContent.sections, "cta-background")?.imageUrl ||
+    pageContentWithAliases.ctaBackgroundImage ||
+    findSection(homeFallback.sections, "cta-background")?.imageUrl ||
+    "";
   const heroTitle = pageContent.heroTitle || homeFallback.heroTitle;
   const heroSubtitle = pageContent.heroSubtitle || homeFallback.heroSubtitle;
   const finalCtaTitle = pageContent.ctaTitle || homeFallback.ctaTitle || "Start your study abroad journey today";
