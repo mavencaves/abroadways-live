@@ -127,6 +127,11 @@ export const publicPagesApi = {
       heroSubtitle?: string;
       heroImageUrl?: string;
       heroImageAlt?: string;
+      siteLogo?: string;
+      siteLogoAlt?: string;
+      siteLogoDark?: string;
+      siteLogoDarkAlt?: string;
+      favicon?: string;
       bodyIntro?: string;
       sections: Array<{
         key?: string;
@@ -159,6 +164,11 @@ export const publicPagesApi = {
       heroSubtitle?: string;
       heroImageUrl?: string;
       heroImageAlt?: string;
+      siteLogo?: string;
+      siteLogoAlt?: string;
+      siteLogoDark?: string;
+      siteLogoDarkAlt?: string;
+      favicon?: string;
       bodyIntro?: string;
       sections: Array<{
         key?: string;

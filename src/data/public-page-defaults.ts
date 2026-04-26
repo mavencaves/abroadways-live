@@ -19,6 +19,11 @@ export type PublicPageContent = {
   heroSubtitle?: string;
   heroImageUrl?: string;
   heroImageAlt?: string;
+  siteLogo?: string;
+  siteLogoAlt?: string;
+  siteLogoDark?: string;
+  siteLogoDarkAlt?: string;
+  favicon?: string;
   bodyIntro?: string;
   sections: PublicPageSection[];
   ctaTitle?: string;
@@ -30,6 +35,32 @@ export type PublicPageContent = {
 };
 
 export const PUBLIC_PAGE_DEFAULTS: Record<string, PublicPageContent> = {
+  site: {
+    routeKey: "site",
+    slug: "site",
+    name: "Site Settings",
+    pageTitle: "Site Settings",
+    seoTitle: "Site Settings | Abroadways CMS",
+    seoDescription: "Manage Abroadways branding assets such as the site logo, dark logo, and favicon.",
+    heroKicker: "Global Brand Settings",
+    heroTitle: "Manage the shared visual identity for Abroadways",
+    heroSubtitle: "Upload and update the logo, dark logo, and favicon from the dashboard without changing code.",
+    heroImageUrl: "",
+    heroImageAlt: "",
+    siteLogo: "",
+    siteLogoAlt: "Abroadways logo",
+    siteLogoDark: "",
+    siteLogoDarkAlt: "Abroadways dark logo",
+    favicon: "",
+    bodyIntro: "These assets are used across the public site. Keep this page published so the live navbar and favicon can read the latest branding.",
+    sections: [],
+    ctaTitle: "",
+    ctaDescription: "",
+    ctaPrimaryText: "",
+    ctaPrimaryUrl: "",
+    ctaSecondaryText: "",
+    ctaSecondaryUrl: "",
+  },
   home: {
     routeKey: "home",
     slug: "home",

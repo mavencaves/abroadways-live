@@ -1,7 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const PublicPage = require("../models/publicPageModel");
 
-const isHomeRouteKey = (value = "") => `${value}`.trim().toLowerCase() === "home";
+const isAlwaysPublishedRouteKey = (value = "") => {
+  const normalized = `${value}`.trim().toLowerCase();
+  return normalized === "home" || normalized === "site";
+};
 
 const buildSectionTitleFallback = (key = "") =>
   `${key}`
@@ -64,7 +67,12 @@ const buildPayload = (body = {}, userId = null, routeKeyFromParam = "") => {
     ctaPrimaryUrl: `${body.ctaPrimaryUrl || ""}`.trim(),
     ctaSecondaryText: `${body.ctaSecondaryText || ""}`.trim(),
     ctaSecondaryUrl: `${body.ctaSecondaryUrl || ""}`.trim(),
-    status: isHomeRouteKey(routeKey)
+    siteLogo: `${body.siteLogo || ""}`.trim(),
+    siteLogoAlt: `${body.siteLogoAlt || ""}`.trim(),
+    siteLogoDark: `${body.siteLogoDark || ""}`.trim(),
+    siteLogoDarkAlt: `${body.siteLogoDarkAlt || ""}`.trim(),
+    favicon: `${body.favicon || ""}`.trim(),
+    status: isAlwaysPublishedRouteKey(routeKey)
       ? "published"
       : ["draft", "published", "archived"].includes(`${body.status || ""}`)
         ? body.status

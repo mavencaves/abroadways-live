@@ -1,5 +1,5 @@
 import { BadgeCheck, ChevronDown, ChevronRight, Menu } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,55 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { type NavigationItem, navigationItems } from "@/data/navigation.ts";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
+import { publicPagesApi } from "@/lib/api";
+
+type SiteBranding = {
+    siteLogo?: string;
+    siteLogoAlt?: string;
+    siteLogoDark?: string;
+    siteLogoDarkAlt?: string;
+    favicon?: string;
+};
+
+function DefaultBrandMark() {
+    return (
+        <>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,#06142f_0%,#0b2a67_55%,#2563eb_100%)] text-sm font-bold text-white shadow-[0_14px_30px_rgba(37,99,235,0.22)] transition-transform duration-200 group-hover:scale-[1.03] lg:h-10.5 lg:w-10.5">
+                A
+            </div>
+            <div className="flex min-w-0 flex-col items-start justify-center">
+                <span className="block text-[1.36rem] font-bold tracking-tight leading-none text-slate-950 lg:text-[1.5rem]">
+                    Abroad<span className="text-blue-700">ways</span>
+                </span>
+                <span className="mt-1 inline-flex max-w-full items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.13em] leading-none text-orange-700 sm:text-[9.25px]">
+                    <BadgeCheck className="h-3 w-3 shrink-0 text-orange-500" />
+                    <span className="truncate">UKVI Approved LanguageCert Test Centre</span>
+                </span>
+            </div>
+        </>
+    );
+}
+
+function NavbarLogo({
+    siteLogo,
+    siteLogoAlt,
+}: {
+    siteLogo?: string;
+    siteLogoAlt?: string;
+}) {
+    if (siteLogo) {
+        return (
+            <img
+                src={siteLogo}
+                alt={siteLogoAlt || "Abroadways logo"}
+                className="h-12 w-auto max-w-[220px] shrink-0 object-contain lg:h-14 lg:max-w-[260px]"
+            />
+        );
+    }
+
+    return <DefaultBrandMark />;
+}
+
 const MultiLevelDropdown = ({ items }: { items: NavigationItem[] }) => {
     return (
         <>
@@ -131,8 +180,42 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const [examDropdownOpen, setExamDropdownOpen] = useState(false);
+    const [siteBranding, setSiteBranding] = useState<SiteBranding | null>(null);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadSiteBranding = async () => {
+            try {
+                const response = await publicPagesApi.getByRouteKey("site");
+                if (!mounted || !response?.data) return;
+
+                setSiteBranding(response.data);
+
+                if (response.data.favicon && typeof document !== "undefined") {
+                    let faviconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+
+                    if (!faviconLink) {
+                        faviconLink = document.createElement("link");
+                        faviconLink.rel = "icon";
+                        document.head.appendChild(faviconLink);
+                    }
+
+                    faviconLink.href = response.data.favicon;
+                }
+            } catch (error) {
+                console.warn("Site branding CMS content could not be loaded. Falling back to the default navbar logo.", error);
+            }
+        };
+
+        loadSiteBranding();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const toggleExpanded = (itemLabel: string) => {
         setExpandedItems((prev) =>
@@ -157,18 +240,10 @@ export default function Navbar() {
                             to="/"
                             className="group flex min-w-0 items-center gap-2.5 text-slate-950 transition-colors hover:text-blue-800"
                         >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,#06142f_0%,#0b2a67_55%,#2563eb_100%)] text-sm font-bold text-white shadow-[0_14px_30px_rgba(37,99,235,0.22)] transition-transform duration-200 group-hover:scale-[1.03] lg:h-10.5 lg:w-10.5">
-                                A
-                            </div>
-                            <div className="flex min-w-0 flex-col items-start justify-center">
-                                <span className="block text-[1.36rem] font-bold tracking-tight leading-none text-slate-950 lg:text-[1.5rem]">
-                                    Abroad<span className="text-blue-700">ways</span>
-                                </span>
-                                <span className="mt-1 inline-flex max-w-full items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.13em] leading-none text-orange-700 sm:text-[9.25px]">
-                                    <BadgeCheck className="h-3 w-3 shrink-0 text-orange-500" />
-                                    <span className="truncate">UKVI Approved LanguageCert Test Centre</span>
-                                </span>
-                            </div>
+                            <NavbarLogo
+                                siteLogo={siteBranding?.siteLogo || siteBranding?.siteLogoDark}
+                                siteLogoAlt={siteBranding?.siteLogoAlt || siteBranding?.siteLogoDarkAlt}
+                            />
                         </Link>
                     </div>
 
@@ -273,18 +348,10 @@ export default function Navbar() {
                             <SheetContent side="right" className="w-full p-0 sm:w-[400px]">
                                 <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
                                     <Link to="/" className="flex min-w-0 items-center gap-3 text-blue-700">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#06142f_0%,#0b2a67_55%,#2563eb_100%)] text-sm font-bold text-white">
-                                            A
-                                        </div>
-                                        <div className="flex min-w-0 flex-col items-start justify-center">
-                                            <span className="text-xl font-bold tracking-tight leading-none text-slate-950">
-                                                Abroad<span className="text-blue-700">ways</span>
-                                            </span>
-                                            <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full border border-orange-300/50 bg-[linear-gradient(180deg,#fff7ed_0%,#ffedd5_100%)] px-2 py-1 text-[8.75px] font-semibold uppercase tracking-[0.14em] text-orange-700 shadow-[0_6px_18px_rgba(249,115,22,0.10)]">
-                                                <BadgeCheck className="h-3 w-3 shrink-0 text-orange-500" />
-                                                <span className="truncate">UKVI Approved LanguageCert Test Centre</span>
-                                            </span>
-                                        </div>
+                                        <NavbarLogo
+                                            siteLogo={siteBranding?.siteLogo || siteBranding?.siteLogoDark}
+                                            siteLogoAlt={siteBranding?.siteLogoAlt || siteBranding?.siteLogoDarkAlt}
+                                        />
                                     </Link>
                                 </div>
                                 <div className="flex h-full flex-col">

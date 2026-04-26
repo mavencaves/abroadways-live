@@ -27,6 +27,8 @@ type PublicPageRecord = PublicPageContent & {
 const managedPages = MANAGED_PUBLIC_PAGE_SLUGS.map((slug) => PUBLIC_PAGE_DEFAULTS[slug]);
 
 const isHomeRouteKey = (value: string) => value.trim().toLowerCase() === "home";
+const isSiteRouteKey = (value: string) => value.trim().toLowerCase() === "site";
+const isAlwaysPublishedRouteKey = (value: string) => isHomeRouteKey(value) || isSiteRouteKey(value);
 
 const buildSectionTitleFallback = (section: PublicPageSection) => {
   const rawKey = `${section.key || ""}`.trim();
@@ -42,7 +44,7 @@ const buildSectionTitleFallback = (section: PublicPageSection) => {
 const clonePage = (page: PublicPageContent): PublicPageRecord => ({
   ...page,
   routeKey: page.routeKey || page.slug,
-  status: isHomeRouteKey(page.routeKey || page.slug) ? "published" : "draft",
+  status: isAlwaysPublishedRouteKey(page.routeKey || page.slug) ? "published" : "draft",
   sections: page.sections.map((section) => ({
     ...section,
     bullets: [...(section.bullets || [])],
@@ -61,6 +63,11 @@ const blankPage = (): PublicPageRecord => ({
   heroSubtitle: "",
   heroImageUrl: "",
   heroImageAlt: "",
+  siteLogo: "",
+  siteLogoAlt: "",
+  siteLogoDark: "",
+  siteLogoDarkAlt: "",
+  favicon: "",
   bodyIntro: "",
   sections: [{ key: "", title: "", body: "", bullets: [], imageUrl: "", imageAlt: "" }],
   ctaTitle: "",
@@ -192,7 +199,7 @@ export default function PagesPage() {
               ...fallback,
               ...page,
               routeKey: key,
-              status: isHomeRouteKey(key) ? "published" : page.status || "draft",
+              status: isAlwaysPublishedRouteKey(key) ? "published" : page.status || "draft",
               sections:
                 Array.isArray(page.sections) && page.sections.length > 0
                   ? page.sections.map((section: PublicPageSection) => ({
@@ -260,6 +267,11 @@ export default function PagesPage() {
     heroSubtitle: page.heroSubtitle?.trim() || "",
     heroImageUrl: page.heroImageUrl?.trim() || "",
     heroImageAlt: page.heroImageAlt?.trim() || "",
+    siteLogo: page.siteLogo?.trim() || "",
+    siteLogoAlt: page.siteLogoAlt?.trim() || "",
+    siteLogoDark: page.siteLogoDark?.trim() || "",
+    siteLogoDarkAlt: page.siteLogoDarkAlt?.trim() || "",
+    favicon: page.favicon?.trim() || "",
     bodyIntro: page.bodyIntro?.trim() || "",
     sections: page.sections
       .filter((section) => {
@@ -285,7 +297,7 @@ export default function PagesPage() {
     ctaPrimaryUrl: page.ctaPrimaryUrl?.trim() || "",
     ctaSecondaryText: page.ctaSecondaryText?.trim() || "",
     ctaSecondaryUrl: page.ctaSecondaryUrl?.trim() || "",
-    status: isHomeRouteKey(page.routeKey) ? "published" : page.status,
+    status: isAlwaysPublishedRouteKey(page.routeKey) ? "published" : page.status,
   });
 
   const validatePage = (page: PublicPageRecord) => {
@@ -313,7 +325,7 @@ export default function PagesPage() {
           ...(PUBLIC_PAGE_DEFAULTS[responseKey] ? clonePage(PUBLIC_PAGE_DEFAULTS[responseKey]) : blankPage()),
           ...response.data,
           routeKey: responseKey,
-          status: isHomeRouteKey(responseKey) ? "published" : response.data.status || "draft",
+          status: isAlwaysPublishedRouteKey(responseKey) ? "published" : response.data.status || "draft",
           sections:
             Array.isArray(response.data.sections) && response.data.sections.length > 0
               ? response.data.sections.map((section: PublicPageSection) => ({
@@ -459,9 +471,9 @@ export default function PagesPage() {
                 <p className="mt-1 text-sm text-slate-500">
                   Use media-library or Cloudinary URLs directly in the image fields.
                 </p>
-                {selectedPage.routeKey === "home" ? (
+                {isAlwaysPublishedRouteKey(selectedPage.routeKey) ? (
                   <p className="mt-2 text-xs font-medium text-blue-700">
-                    Homepage note: keep status set to `Published` or the public homepage will continue using fallback content.
+                    This settings page must stay `Published` so the public site can read the latest live branding and homepage content.
                   </p>
                 ) : null}
               </div>
@@ -510,7 +522,7 @@ export default function PagesPage() {
                 onChange={(event) =>
                   updatePage((page) => ({
                     ...page,
-                    status: isHomeRouteKey(page.routeKey) ? "published" : (event.target.value as PageStatus),
+                    status: isAlwaysPublishedRouteKey(page.routeKey) ? "published" : (event.target.value as PageStatus),
                   }))
                 }
                 className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
@@ -555,6 +567,41 @@ export default function PagesPage() {
               onValueChange={(value) => updatePage((page) => ({ ...page, heroImageUrl: value }))}
               onAltChange={(value) => updatePage((page) => ({ ...page, heroImageAlt: value }))}
             />
+
+            {isSiteRouteKey(selectedPage.routeKey) ? (
+              <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Global brand assets</p>
+                  <p className="text-sm text-slate-500">
+                    Upload logos in `/dashboard/media` or use the upload buttons here. The public navbar uses the site logo if one is saved.
+                  </p>
+                </div>
+
+                <ImageFieldEditor
+                  label="Site logo"
+                  value={selectedPage.siteLogo || ""}
+                  altValue={selectedPage.siteLogoAlt || ""}
+                  onValueChange={(value) => updatePage((page) => ({ ...page, siteLogo: value }))}
+                  onAltChange={(value) => updatePage((page) => ({ ...page, siteLogoAlt: value }))}
+                />
+
+                <ImageFieldEditor
+                  label="Site logo dark"
+                  value={selectedPage.siteLogoDark || ""}
+                  altValue={selectedPage.siteLogoDarkAlt || ""}
+                  onValueChange={(value) => updatePage((page) => ({ ...page, siteLogoDark: value }))}
+                  onAltChange={(value) => updatePage((page) => ({ ...page, siteLogoDarkAlt: value }))}
+                />
+
+                <ImageFieldEditor
+                  label="Favicon"
+                  value={selectedPage.favicon || ""}
+                  altValue="Site favicon"
+                  onValueChange={(value) => updatePage((page) => ({ ...page, favicon: value }))}
+                  onAltChange={() => undefined}
+                />
+              </div>
+            ) : null}
 
             <Textarea
               value={selectedPage.bodyIntro || ""}
