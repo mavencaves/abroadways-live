@@ -201,6 +201,11 @@ export default function HomePage() {
   const heroImage = pageContent.heroImageUrl || homeFallback.heroImageUrl;
   const heroImageAlt = pageContent.heroImageAlt || homeFallback.heroImageAlt;
   const ctaBackground = findSection(pageContent.sections, "cta-background")?.imageUrl || "";
+  const heroTitle = pageContent.heroTitle || homeFallback.heroTitle;
+  const heroSubtitle = pageContent.heroSubtitle || homeFallback.heroSubtitle;
+  const finalCtaTitle = pageContent.ctaTitle || homeFallback.ctaTitle || "Start your study abroad journey today";
+  const finalCtaButtonText =
+    pageContent.ctaPrimaryText || homeFallback.ctaPrimaryText || "Book Free Consultation";
 
   return (
     <main className="bg-[#041126] text-white">
@@ -214,10 +219,10 @@ export default function HomePage() {
 
             <div className="space-y-5">
               <h1 className="max-w-xl text-5xl font-semibold tracking-tight md:text-6xl lg:text-7xl">
-                From Bangladesh to the World, Strategically
+                {heroTitle}
               </h1>
               <p className="max-w-xl text-base leading-8 text-blue-100/88 md:text-lg">
-                Study abroad guidance, exam preparation, applications, and visa support in one trusted platform.
+                {heroSubtitle}
               </p>
             </div>
 
@@ -492,12 +497,12 @@ export default function HomePage() {
                   Final CTA
                 </div>
                 <h2 className="mt-5 text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
-                  Not sure where to start?
+                  {finalCtaTitle}
                 </h2>
                 <div className="mt-8">
                   <Button asChild size="xl" className="shadow-[0_20px_55px_rgba(37,99,235,0.30)]">
                     <Link to="/contact">
-                      Book Free Consultation
+                      {finalCtaButtonText}
                       <ArrowRight />
                     </Link>
                   </Button>

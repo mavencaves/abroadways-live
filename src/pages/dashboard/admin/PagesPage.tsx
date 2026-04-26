@@ -29,7 +29,7 @@ const managedPages = MANAGED_PUBLIC_PAGE_SLUGS.map((slug) => PUBLIC_PAGE_DEFAULT
 const clonePage = (page: PublicPageContent): PublicPageRecord => ({
   ...page,
   routeKey: page.routeKey || page.slug,
-  status: "draft",
+  status: (page.routeKey || page.slug) === "home" ? "published" : "draft",
   sections: page.sections.map((section) => ({
     ...section,
     bullets: [...(section.bullets || [])],
@@ -438,6 +438,11 @@ export default function PagesPage() {
                 <p className="mt-1 text-sm text-slate-500">
                   Use media-library or Cloudinary URLs directly in the image fields.
                 </p>
+                {selectedPage.routeKey === "home" ? (
+                  <p className="mt-2 text-xs font-medium text-blue-700">
+                    Homepage note: keep status set to `Published` or the public homepage will continue using fallback content.
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 {!isCreating && canDeletePages && selectedPage._id ? (

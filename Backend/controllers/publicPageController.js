@@ -27,7 +27,7 @@ const buildPayload = (body = {}, userId = null, routeKeyFromParam = "") => ({
   heroKicker: `${body.heroKicker || ""}`.trim(),
   heroTitle: `${body.heroTitle || ""}`.trim(),
   heroSubtitle: `${body.heroSubtitle || body.heroDescription || ""}`.trim(),
-  heroImageUrl: `${body.heroImageUrl || ""}`.trim(),
+  heroImageUrl: `${body.heroImageUrl || body.heroImage || ""}`.trim(),
   heroImageAlt: `${body.heroImageAlt || ""}`.trim(),
   bodyIntro: `${body.bodyIntro || ""}`.trim(),
   sections: sanitizeSections(body.sections),
