@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Edit3, ImageIcon, LayoutTemplate, Plus, Save, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Edit3, ImageIcon, LayoutTemplate, LoaderCircle, Plus, Save, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { publicPagesApi } from "@/lib/api";
+import { mediaApi, publicPagesApi } from "@/lib/api";
 import {
   MANAGED_PUBLIC_PAGE_SLUGS,
   PUBLIC_PAGE_DEFAULTS,
@@ -58,6 +58,88 @@ const blankPage = (): PublicPageRecord => ({
   ctaSecondaryUrl: "",
   status: "draft",
 });
+
+function ImageFieldEditor({
+  label,
+  value,
+  altValue,
+  onValueChange,
+  onAltChange,
+}: {
+  label: string;
+  value: string;
+  altValue: string;
+  onValueChange: (value: string) => void;
+  onAltChange: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (file?: File) => {
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const response = await mediaApi.upload(file);
+      const nextUrl = response.data?.secureUrl || response.data?.url || "";
+      if (!nextUrl) {
+        throw new Error("Upload finished without an image URL.");
+      }
+      onValueChange(nextUrl);
+      toast.success("Image uploaded and linked.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed to upload image.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={value}
+            onChange={(event) => onValueChange(event.target.value)}
+            placeholder={`${label} URL`}
+            className="pl-10"
+          />
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => handleUpload(event.target.files?.[0])}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {uploading ? "Uploading..." : "Upload Image"}
+        </Button>
+      </div>
+      <Input
+        value={altValue}
+        onChange={(event) => onAltChange(event.target.value)}
+        placeholder={`${label} alt text`}
+      />
+      {value ? (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          <img src={value} alt={altValue || label} className="h-48 w-full object-cover" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function PagesPage() {
   const { user } = useAuth();
@@ -435,22 +517,13 @@ export default function PagesPage() {
               className="min-h-24"
             />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="relative">
-                <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={selectedPage.heroImageUrl || ""}
-                  onChange={(event) => updatePage((page) => ({ ...page, heroImageUrl: event.target.value }))}
-                  placeholder="Hero image/photo URL"
-                  className="pl-10"
-                />
-              </div>
-              <Input
-                value={selectedPage.heroImageAlt || ""}
-                onChange={(event) => updatePage((page) => ({ ...page, heroImageAlt: event.target.value }))}
-                placeholder="Hero image alt text"
-              />
-            </div>
+            <ImageFieldEditor
+              label="Hero image"
+              value={selectedPage.heroImageUrl || ""}
+              altValue={selectedPage.heroImageAlt || ""}
+              onValueChange={(value) => updatePage((page) => ({ ...page, heroImageUrl: value }))}
+              onAltChange={(value) => updatePage((page) => ({ ...page, heroImageAlt: value }))}
+            />
 
             <Textarea
               value={selectedPage.bodyIntro || ""}
@@ -484,9 +557,16 @@ export default function PagesPage() {
               {selectedPage.sections.map((section, index) => (
                 <div key={`${selectedPage.routeKey}-section-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <div className="mb-4 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                    <div className="space-y-1">
+                      <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                       <Edit3 className="h-4 w-4 text-blue-700" />
                       Section {index + 1}
+                      </div>
+                      {section.key ? (
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          {section.key}
+                        </p>
+                      ) : null}
                     </div>
                     {selectedPage.sections.length > 1 ? (
                       <Button
@@ -535,22 +615,17 @@ export default function PagesPage() {
                       placeholder="One bullet per line"
                       className="min-h-24"
                     />
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="relative">
-                        <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <Input
-                          value={section.imageUrl || ""}
-                          onChange={(event) => updateSection(index, (current) => ({ ...current, imageUrl: event.target.value }))}
-                          placeholder="Section image/photo URL"
-                          className="pl-10"
-                        />
-                      </div>
-                      <Input
-                        value={section.imageAlt || ""}
-                        onChange={(event) => updateSection(index, (current) => ({ ...current, imageAlt: event.target.value }))}
-                        placeholder="Section image alt text"
-                      />
-                    </div>
+                    <ImageFieldEditor
+                      label={section.title || section.key || `Section ${index + 1} image`}
+                      value={section.imageUrl || ""}
+                      altValue={section.imageAlt || ""}
+                      onValueChange={(value) =>
+                        updateSection(index, (current) => ({ ...current, imageUrl: value }))
+                      }
+                      onAltChange={(value) =>
+                        updateSection(index, (current) => ({ ...current, imageAlt: value }))
+                      }
+                    />
                   </div>
                 </div>
               ))}

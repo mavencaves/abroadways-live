@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -11,12 +12,20 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { publicPagesApi } from "@/lib/api";
 import {
   CONTACT_ADDRESS,
   CONTACT_PHONES,
   FACEBOOK_URL,
   INSTAGRAM_URL,
 } from "@/data/contact-info";
+import {
+  PUBLIC_PAGE_DEFAULTS,
+  type PublicPageContent,
+  type PublicPageSection,
+} from "@/data/public-page-defaults";
+
+const homeFallback = PUBLIC_PAGE_DEFAULTS.home;
 
 const stats = [
   { value: "20,000+", label: "Students Guided" },
@@ -24,33 +33,33 @@ const stats = [
   { value: "25+", label: "Countries Covered" },
 ];
 
-const services = [
+const serviceMeta = [
   {
+    key: "service-study-abroad",
     title: "Study Abroad",
     text: "Country planning, counselling, applications, and visa direction.",
     icon: GraduationCap,
-    image: "/images/Bristy/portrait-smiling-male-student-holding-books.jpg",
   },
   {
+    key: "service-exams",
     title: "Test Preparation",
     text: "Structured preparation across major English and graduate exams.",
     icon: BookOpenCheck,
-    image: "/images/exams/hero.webp",
   },
   {
+    key: "service-abroadai",
     title: "Digital Support",
     text: "Mock tests, AbroadAI, and student tools that keep momentum strong.",
     icon: Bot,
-    image: "/images/Bristy/world.avif",
   },
 ];
 
-const destinations = [
-  { title: "UK", href: "/study-abroad/uk", image: "/images/edinburgh.jpg" },
-  { title: "Canada", href: "/study-abroad/canada", image: "/images/toronto.jpg" },
-  { title: "Australia", href: "/study-abroad/australia", image: "/images/Bristy/australia-flag.png" },
-  { title: "Europe", href: "/study-abroad/europe", image: "/images/manchester.jpg" },
-  { title: "Malaysia", href: "/study-abroad/malaysia", image: "/images/Bristy/mapbox-zU6tCBzO0Ig-unsplash.jpg" },
+const destinationsMeta = [
+  { key: "destination-uk", title: "UK", href: "/study-abroad/uk" },
+  { key: "destination-canada", title: "Canada", href: "/study-abroad/canada" },
+  { key: "destination-australia", title: "Australia", href: "/study-abroad/australia" },
+  { key: "destination-europe", title: "Europe", href: "/study-abroad/europe" },
+  { key: "destination-malaysia", title: "Malaysia", href: "/study-abroad/malaysia" },
 ];
 
 const processSteps = [
@@ -71,13 +80,13 @@ const processSteps = [
   },
 ];
 
-const exams = [
-  { title: "IELTS", href: "/exams/ielts/overview", image: "/images/writing.jpg" },
-  { title: "PTE", href: "/exams/pte/overview", image: "/images/p1.jpg" },
-  { title: "TOEFL", href: "/exams/toefl/overview", image: "/images/TOEFL_pages/image-1.jpg" },
-  { title: "LanguageCert", href: "/exams/overview", image: "/images/c-hero.jpg" },
-  { title: "GRE", href: "/exams/gre/overview", image: "/images/gre_books/image-1.jpg" },
-  { title: "GMAT", href: "/exams/gmat/overview", image: "/images/Bristy/entrepreneurs-meeting-office.jpg" },
+const examsMeta = [
+  { key: "exam-ielts", title: "IELTS", href: "/exams/ielts/overview" },
+  { key: "exam-pte", title: "PTE", href: "/exams/pte/overview" },
+  { key: "exam-toefl", title: "TOEFL", href: "/exams/toefl/overview" },
+  { key: "exam-languagecert", title: "LanguageCert", href: "/exams/overview" },
+  { key: "exam-gre", title: "GRE", href: "/exams/gre/overview" },
+  { key: "exam-gmat", title: "GMAT", href: "/exams/gmat/overview" },
 ];
 
 const testimonials = [
@@ -101,7 +110,98 @@ const testimonials = [
   },
 ];
 
+function mergeHomeContent(page: Partial<PublicPageContent> | null | undefined): PublicPageContent {
+  if (!page) return homeFallback;
+
+  return {
+    ...homeFallback,
+    ...page,
+    sections:
+      Array.isArray(page.sections) && page.sections.length > 0
+        ? page.sections.map((section) => ({
+            ...section,
+            bullets: [...(section.bullets || [])],
+          }))
+        : homeFallback.sections,
+  };
+}
+
+function findSection(sections: PublicPageSection[], key: string) {
+  return sections.find((section) => section.key === key) || homeFallback.sections.find((section) => section.key === key);
+}
+
 export default function HomePage() {
+  const [pageContent, setPageContent] = useState<PublicPageContent>(homeFallback);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPage = async () => {
+      try {
+        const response = await publicPagesApi.getByRouteKey("home");
+        if (mounted) {
+          setPageContent(mergeHomeContent(response.data));
+        }
+      } catch {
+        if (mounted) {
+          setPageContent(homeFallback);
+        }
+      }
+    };
+
+    loadPage();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const services = useMemo(
+    () =>
+      serviceMeta.map((item) => {
+        const section = findSection(pageContent.sections, item.key);
+
+        return {
+          ...item,
+          image: section?.imageUrl || "",
+          imageAlt: section?.imageAlt || item.title,
+        };
+      }),
+    [pageContent.sections],
+  );
+
+  const destinations = useMemo(
+    () =>
+      destinationsMeta.map((item) => {
+        const section = findSection(pageContent.sections, item.key);
+
+        return {
+          ...item,
+          image: section?.imageUrl || "",
+          imageAlt: section?.imageAlt || item.title,
+        };
+      }),
+    [pageContent.sections],
+  );
+
+  const exams = useMemo(
+    () =>
+      examsMeta.map((item) => {
+        const section = findSection(pageContent.sections, item.key);
+
+        return {
+          ...item,
+          image: section?.imageUrl || "",
+          imageAlt: section?.imageAlt || item.title,
+        };
+      }),
+    [pageContent.sections],
+  );
+
+  const heroImage = pageContent.heroImageUrl || homeFallback.heroImageUrl;
+  const heroImageAlt = pageContent.heroImageAlt || homeFallback.heroImageAlt;
+  const ctaBackground = findSection(pageContent.sections, "cta-background")?.imageUrl || "";
+
   return (
     <main className="bg-[#041126] text-white">
       <section className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(135deg,#041126_0%,#08204a_45%,#0b2f73_100%)]">
@@ -114,7 +214,7 @@ export default function HomePage() {
 
             <div className="space-y-5">
               <h1 className="max-w-xl text-5xl font-semibold tracking-tight md:text-6xl lg:text-7xl">
-                From Bangladesh to the World — Strategically
+                From Bangladesh to the World, Strategically
               </h1>
               <p className="max-w-xl text-base leading-8 text-blue-100/88 md:text-lg">
                 Study abroad guidance, exam preparation, applications, and visa support in one trusted platform.
@@ -173,8 +273,8 @@ export default function HomePage() {
             <div className="absolute -right-6 bottom-12 hidden h-36 w-36 rounded-full bg-amber-300/10 blur-3xl lg:block" />
             <div className="overflow-hidden rounded-[2.8rem] border border-white/10 bg-white/8 p-3 shadow-[0_40px_120px_rgba(2,8,23,0.28)] backdrop-blur">
               <img
-                src="/images/Bristy/nguyen-dang-hoang-nhu-qDgTQOYk6B8-unsplash.jpg"
-                alt="Students preparing for global education opportunities"
+                src={heroImage}
+                alt={heroImageAlt}
                 className="h-[430px] w-full rounded-[2rem] object-cover sm:h-[540px] lg:h-[700px]"
               />
             </div>
@@ -213,11 +313,11 @@ export default function HomePage() {
 
               return (
                 <div
-                  key={item.title}
+                  key={item.key}
                   className="overflow-hidden rounded-[2.2rem] border border-white/10 bg-white/7 shadow-[0_24px_70px_rgba(2,8,23,0.16)] backdrop-blur"
                 >
                   <div className="relative h-72 overflow-hidden">
-                    <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                    <img src={item.image} alt={item.imageAlt} className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.10)_0%,rgba(2,6,23,0.60)_100%)]" />
                   </div>
                   <div className="p-6">
@@ -251,14 +351,14 @@ export default function HomePage() {
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
             {destinations.map((item, index) => (
               <Link
-                key={item.title}
+                key={item.key}
                 to={item.href}
                 className={`group overflow-hidden rounded-[2rem] border border-white/10 bg-white/7 shadow-[0_24px_70px_rgba(2,8,23,0.16)] backdrop-blur transition duration-300 hover:-translate-y-1 ${
                   index < 2 ? "xl:col-span-2" : ""
                 } ${index === 2 ? "xl:col-span-1" : ""}`}
               >
                 <div className={`relative overflow-hidden ${index < 2 ? "h-80" : "h-72"}`}>
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <img src={item.image} alt={item.imageAlt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.10)_0%,rgba(2,6,23,0.62)_100%)]" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
                     <p className="text-3xl font-semibold tracking-tight text-white">{item.title}</p>
@@ -321,12 +421,12 @@ export default function HomePage() {
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {exams.map((item) => (
               <Link
-                key={item.title}
+                key={item.key}
                 to={item.href}
                 className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/7 shadow-[0_24px_70px_rgba(2,8,23,0.16)] backdrop-blur transition duration-300 hover:-translate-y-1"
               >
                 <div className="relative h-72 overflow-hidden">
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <img src={item.image} alt={item.imageAlt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.08)_0%,rgba(2,6,23,0.62)_100%)]" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
                     <p className="text-3xl font-semibold tracking-tight text-white">{item.title}</p>
@@ -376,7 +476,16 @@ export default function HomePage() {
 
       <section className="bg-[linear-gradient(180deg,#071a3f_0%,#0b2a67_100%)] py-16 lg:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[2.6rem] border border-white/10 bg-white/8 p-8 shadow-[0_36px_100px_rgba(2,8,23,0.18)] backdrop-blur lg:p-12">
+          <div
+            className="overflow-hidden rounded-[2.6rem] border border-white/10 p-8 shadow-[0_36px_100px_rgba(2,8,23,0.18)] backdrop-blur lg:p-12"
+            style={{
+              backgroundImage: ctaBackground
+                ? `linear-gradient(135deg, rgba(7,26,63,0.88) 0%, rgba(11,42,103,0.84) 100%), url(${ctaBackground})`
+                : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.06) 100%)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-end">
               <div className="max-w-3xl">
                 <div className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100">
